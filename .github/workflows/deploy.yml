@@ -7,9 +7,7 @@ on:
 permissions:
   contents: write
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
+# This workflow builds and deploys the Flutter web app to GitHub Pages
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
