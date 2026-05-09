@@ -125,6 +125,31 @@ class SupabaseService {
         .upsert(fullUpdates);
   }
 
+  // Messaging Logic
+  static Stream<List<Map<String, dynamic>>> getMessagesStream(String otherUserId) {
+    final myId = client.auth.currentUser!.id;
+    return client
+        .from('messages')
+        .stream(primaryKey: ['id'])
+        .order('created_at', ascending: true);
+  }
+
+  static Future<void> sendMessage(String receiverId, String content) async {
+    final myId = client.auth.currentUser!.id;
+    await client.from('messages').insert({
+      'sender_id': myId,
+      'receiver_id': receiverId,
+      'content': content,
+    });
+  }
+
+  static Future<List<Map<String, dynamic>>> getMyChats() async {
+    final myId = client.auth.currentUser!.id;
+    // This fetches unique profiles you've interacted with
+    final response = await client.rpc('get_my_chats');
+    return List<Map<String, dynamic>>.from(response);
+  }
+
   static Stream<List<Map<String, dynamic>>> getNearbyVines() {
     // In production, this would use a PostGIS RPC call like the mobile app
     return client

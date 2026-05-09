@@ -1,8 +1,47 @@
 import 'package:flutter/material.dart';
 import 'package:o_web/theme.dart';
+import 'package:o_web/services/supabase_service.dart';
 
-class MessagingScreen extends StatelessWidget {
+class MessagingScreen extends StatefulWidget {
   const MessagingScreen({super.key});
+
+  @override
+  State<MessagingScreen> createState() => _MessagingScreenState();
+}
+
+class _MessagingScreenState extends State<MessagingScreen> {
+  Profile? _selectedProfile;
+  final _messageController = TextEditingController();
+  List<Profile> _chats = [];
+  bool _isLoadingChats = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadChats();
+  }
+
+  Future<void> _loadChats() async {
+    try {
+      final data = await SupabaseService.getMyChats();
+      setState(() {
+        _chats = data.map((json) => Profile.fromJson(json)).toList();
+        _isLoadingChats = false;
+        if (_chats.isNotEmpty) _selectedProfile = _chats.first;
+      });
+    } catch (e) {
+      setState(() => _isLoadingChats = false);
+    }
+  }
+
+  void _sendMessage() async {
+    if (_messageController.text.isEmpty || _selectedProfile == null) return;
+    
+    final content = _messageController.text;
+    _messageController.clear();
+    
+    await SupabaseService.sendMessage(_selectedProfile!.id, content);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -20,133 +59,131 @@ class MessagingScreen extends StatelessWidget {
             children: [
               Padding(
                 padding: const EdgeInsets.all(24.0),
-                child: Text(
-                  'Messages',
-                  style: Theme.of(context).textTheme.displaySmall,
-                ),
+                child: Text('Messages', style: Theme.of(context).textTheme.displaySmall),
               ),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: 10,
-                  itemBuilder: (context, index) {
-                    return const ContactTile();
-                  },
+              if (_isLoadingChats)
+                const Center(child: CircularProgressIndicator(color: OTheme.neonPink))
+              else
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: _chats.length,
+                    itemBuilder: (context, index) {
+                      final profile = _chats[index];
+                      return ListTile(
+                        selected: _selectedProfile?.id == profile.id,
+                        selectedTileColor: OTheme.neonPink.withOpacity(0.1),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                        leading: CircleAvatar(
+                          backgroundImage: profile.avatarUrl != null ? NetworkImage(profile.avatarUrl!) : null,
+                          backgroundColor: OTheme.deepCharcoal,
+                          child: profile.avatarUrl == null ? const Icon(Icons.person, color: OTheme.neonPink) : null,
+                        ),
+                        title: Text(profile.displayName ?? 'Unknown', style: const TextStyle(color: Colors.white)),
+                        subtitle: const Text('New message...', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                        onTap: () => setState(() => _selectedProfile = profile),
+                      );
+                    },
+                  ),
                 ),
-              ),
             ],
           ),
         ),
         // Chat Window
         Expanded(
-          child: Column(
+          child: _selectedProfile == null 
+            ? const Center(child: Text('Select a conversation to start chatting', style: TextStyle(color: Colors.white24)))
+            : Column(
             children: [
               // Chat Header
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(color: Colors.white.withOpacity(0.05)),
-                  ),
-                ),
-                child: const Row(
-                  children: [
-                    CircleAvatar(
-                      backgroundColor: OTheme.deepCharcoal,
-                      child: Icon(Icons.person, color: OTheme.neonPink),
-                    ),
-                    SizedBox(width: 16),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Alex',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        Text(
-                          'Online',
-                          style: TextStyle(fontSize: 12, color: Colors.green),
-                        ),
-                      ],
-                    ),
-                    Spacer(),
-                    Icon(Icons.more_vert, color: Colors.white54),
-                  ],
-                ),
-              ),
+              _buildChatHeader(),
               // Messages
               Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.all(24),
-                  children: const [
-                    ChatMessage(
-                      text: "Hey! Just saw your profile. Love the vibes.",
-                      isMe: false,
-                    ),
-                    ChatMessage(
-                      text: "Thanks! Appreciate it. How's your weekend going?",
-                      isMe: true,
-                    ),
-                    ChatMessage(
-                      text: "Pretty good, just exploring the city. You?",
-                      isMe: false,
-                    ),
-                  ],
+                child: StreamBuilder<List<Map<String, dynamic>>>(
+                  stream: SupabaseService.getMessagesStream(_selectedProfile!.id),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) return const Center(child: CircularProgressIndicator(color: OTheme.neonPink));
+                    
+                    final messages = snapshot.data!
+                      .where((m) => 
+                        (m['sender_id'] == _selectedProfile!.id && m['receiver_id'] == SupabaseService.client.auth.currentUser!.id) ||
+                        (m['sender_id'] == SupabaseService.client.auth.currentUser!.id && m['receiver_id'] == _selectedProfile!.id)
+                      ).toList();
+
+                    return ListView.builder(
+                      padding: const EdgeInsets.all(24),
+                      itemCount: messages.length,
+                      itemBuilder: (context, index) {
+                        final m = messages[index];
+                        final isMe = m['sender_id'] == SupabaseService.client.auth.currentUser!.id;
+                        return ChatMessage(text: m['content'], isMe: isMe);
+                      },
+                    );
+                  }
                 ),
               ),
               // Input
-              Container(
-                padding: const EdgeInsets.all(24),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        decoration: InputDecoration(
-                          hintText: 'Type a message...',
-                          filled: true,
-                          fillColor: OTheme.deepCharcoal,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(30),
-                            borderSide: BorderSide.none,
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 12,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    FloatingActionButton(
-                      onPressed: () {},
-                      backgroundColor: OTheme.neonPink,
-                      child: const Icon(Icons.send, color: Colors.black),
-                    ),
-                  ],
-                ),
-              ),
+              _buildInput(),
             ],
           ),
         ),
       ],
     );
   }
-}
 
-class ContactTile extends StatelessWidget {
-  const ContactTile({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-      leading: const CircleAvatar(
-        backgroundColor: OTheme.deepCharcoal,
-        child: Icon(Icons.person, color: OTheme.neonPink),
+  Widget _buildChatHeader() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: Colors.white.withOpacity(0.05))),
       ),
-      title: const Text('Alex'),
-      subtitle: const Text('Pretty good, just exploring...'),
-      trailing: const Text('2m', style: TextStyle(fontSize: 12, color: Colors.white54)),
-      onTap: () {},
+      child: Row(
+        children: [
+          CircleAvatar(
+            backgroundImage: _selectedProfile?.avatarUrl != null ? NetworkImage(_selectedProfile!.avatarUrl!) : null,
+            backgroundColor: OTheme.deepCharcoal,
+            child: _selectedProfile?.avatarUrl == null ? const Icon(Icons.person, color: OTheme.neonPink) : null,
+          ),
+          const SizedBox(width: 16),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(_selectedProfile?.displayName ?? 'User', style: const TextStyle(fontWeight: FontWeight.bold)),
+              const Text('Online', style: TextStyle(fontSize: 12, color: Colors.green)),
+            ],
+          ),
+          const Spacer(),
+          const Icon(Icons.more_vert, color: Colors.white54),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInput() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: _messageController,
+              onSubmitted: (_) => _sendMessage(),
+              decoration: InputDecoration(
+                hintText: 'Type a message...',
+                filled: true,
+                fillColor: OTheme.deepCharcoal,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          FloatingActionButton(
+            onPressed: _sendMessage,
+            backgroundColor: OTheme.neonPink,
+            child: const Icon(Icons.send, color: Colors.black),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -172,12 +209,7 @@ class ChatMessage extends StatelessWidget {
           ),
         ),
         constraints: const BoxConstraints(maxWidth: 400),
-        child: Text(
-          text,
-          style: TextStyle(
-            color: isMe ? Colors.black : Colors.white,
-          ),
-        ),
+        child: Text(text, style: TextStyle(color: isMe ? Colors.black : Colors.white)),
       ),
     );
   }
