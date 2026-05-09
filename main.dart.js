@@ -97108,7 +97108,7 @@ A.Gp.prototype={
 aA(){this.aO()
 this.a.toString
 this.d=!1},
-vt(){var s=0,r=A.B(t.H),q=1,p=[],o=[],n=this,m,l,k,j,i,h
+vt(){var s=0,r=A.B(t.H),q=1,p=[],o=[],n=this,m,l,k,j,i,h,g
 var $async$vt=A.C(function(a,b){if(a===1){p.push(b)
 s=q}for(;;)switch(s){case 0:n.a3(new A.arO(n))
 q=3
@@ -97130,9 +97130,13 @@ o.push(5)
 s=4
 break
 case 3:q=2
-h=p.pop()
-m=A.ab(h)
-n.a3(new A.arP(n,m))
+g=p.pop()
+m=A.ab(g)
+l={}
+h=l.a=J.cZ(m)
+if(B.c.v(h,"429"))l.a="Too many attempts. Please wait a few minutes before trying again."
+else if(B.c.v(h,"Invalid login credentials"))l.a="Check your email or password and try again."
+n.a3(new A.arP(l,n))
 o.push(5)
 s=4
 break
@@ -97172,7 +97176,7 @@ s.r=!0
 s.w=null},
 $S:0}
 A.arP.prototype={
-$0(){return this.a.w=J.cZ(this.b)},
+$0(){return this.b.w=this.a.a},
 $S:0}
 A.arQ.prototype={
 $0(){return this.a.r=!1},
