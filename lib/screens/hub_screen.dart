@@ -251,6 +251,7 @@ class _CreatePostDialogState extends State<_CreatePostDialog> {
   Uint8List? _selectedFileBytes;
   String? _selectedFileName;
   bool _isCropping = false;
+  double? _aspectRatio;
   final _cropController = CropController();
 
   @override
@@ -261,6 +262,7 @@ class _CreatePostDialogState extends State<_CreatePostDialog> {
     _imageUrlController = TextEditingController(text: widget.post?.imageUrl);
     _tagController = TextEditingController(text: widget.post?.tag ?? 'UPDATE');
     _type = widget.post?.type ?? HubPostType.update;
+    _aspectRatio = _type == HubPostType.featured ? 16 / 9 : 4 / 3;
   }
 
   Future<void> _pickImage() async {
@@ -301,10 +303,20 @@ class _CreatePostDialogState extends State<_CreatePostDialog> {
         ),
         const SizedBox(height: 8),
         const Text(
-          'Select the area you want to be visible in the post.',
+          'Select the area and size you want to be visible.',
           style: TextStyle(color: Colors.white70, fontSize: 14),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 20),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _buildRatioButton('16:9', 16 / 9),
+            _buildRatioButton('4:3', 4 / 3),
+            _buildRatioButton('1:1', 1 / 1),
+            _buildRatioButton('FREE', null),
+          ],
+        ),
+        const SizedBox(height: 20),
         Expanded(
           child: Container(
             decoration: BoxDecoration(
@@ -322,7 +334,7 @@ class _CreatePostDialogState extends State<_CreatePostDialog> {
                   _imageUrlController.text = 'Cropped & Ready';
                 });
               },
-              aspectRatio: _type == HubPostType.featured ? 16 / 9 : 4 / 3,
+              aspectRatio: _aspectRatio,
               initialSize: 0.8,
             ),
           ),
@@ -348,6 +360,23 @@ class _CreatePostDialogState extends State<_CreatePostDialog> {
           ],
         ),
       ],
+    );
+  }
+
+  Widget _buildRatioButton(String label, double? ratio) {
+    final isSelected = _aspectRatio == ratio;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: OutlinedButton(
+        onPressed: () => setState(() => _aspectRatio = ratio),
+        style: OutlinedButton.styleFrom(
+          backgroundColor: isSelected ? OTheme.neonPink : Colors.transparent,
+          side: BorderSide(color: isSelected ? OTheme.neonPink : Colors.white24),
+          foregroundColor: isSelected ? Colors.white : Colors.white70,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+        ),
+        child: Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+      ),
     );
   }
 
