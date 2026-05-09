@@ -298,7 +298,7 @@ class _CreatePostDialogState extends State<_CreatePostDialog> {
     return Column(
       children: [
         const Text(
-          'Adjust Image Visibility',
+          'Adjust Image Visibility (v2)',
           style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
@@ -371,13 +371,25 @@ class _CreatePostDialogState extends State<_CreatePostDialog> {
       child: ElevatedButton(
         onPressed: () => setState(() => _aspectRatio = ratio),
         style: ElevatedButton.styleFrom(
-          backgroundColor: isSelected ? OTheme.neonPink : OTheme.deepCharcoal,
+          backgroundColor: isSelected ? OTheme.neonPink : Colors.white.withOpacity(0.05),
           foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          elevation: isSelected ? 4 : 0,
-          side: BorderSide(color: isSelected ? Colors.transparent : Colors.white10),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          elevation: isSelected ? 8 : 0,
+          side: BorderSide(color: isSelected ? OTheme.neonPink : Colors.white38, width: 1.5),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
-        child: Text(label, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              ratio == null ? Icons.aspect_ratio : Icons.crop_original,
+              size: 14,
+              color: isSelected ? Colors.white : Colors.white38,
+            ),
+            const SizedBox(height: 4),
+            Text(label, style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold)),
+          ],
+        ),
       ),
     );
   }
