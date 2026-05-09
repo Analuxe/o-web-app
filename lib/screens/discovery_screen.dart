@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:o_web/theme.dart';
+import 'package:o_web/services/supabase_service.dart';
 
-class DiscoveryScreen extends StatelessWidget {
+class DiscoveryScreen extends StatefulWidget {
   const DiscoveryScreen({super.key});
 
+  @override
+  State<DiscoveryScreen> createState() => _DiscoveryScreenState();
+}
+
+class _DiscoveryScreenState extends State<DiscoveryScreen> {
   @override
   Widget build(BuildContext context) {
     return Row(
@@ -25,16 +31,32 @@ class DiscoveryScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 32),
                 Expanded(
-                  child: GridView.builder(
-                    gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                      maxCrossAxisExtent: 300,
-                      childAspectRatio: 0.75,
-                      crossAxisSpacing: 24,
-                      mainAxisSpacing: 24,
-                    ),
-                    itemCount: 12,
-                    itemBuilder: (context, index) {
-                      return const UserCard();
+                  child: StreamBuilder<List<Map<String, dynamic>>>(
+                    stream: SupabaseService.getNearbyVines(),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) return const Center(child: CircularProgressIndicator(color: OTheme.neonPink));
+                      
+                      final profiles = snapshot.data!
+                          .map((json) => Profile.fromJson(json))
+                          .where((p) => p.id != SupabaseService.client.auth.currentUser?.id)
+                          .toList();
+
+                      if (profiles.isEmpty) {
+                        return const Center(child: Text('No vines nearby yet.', style: TextStyle(color: Colors.white24)));
+                      }
+
+                      return GridView.builder(
+                        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                          maxCrossAxisExtent: 300,
+                          childAspectRatio: 0.75,
+                          crossAxisSpacing: 24,
+                          mainAxisSpacing: 24,
+                        ),
+                        itemCount: profiles.length,
+                        itemBuilder: (context, index) {
+                          return UserCard(profile: profiles[index]);
+                        },
+                      );
                     },
                   ),
                 ),
@@ -177,8 +199,30 @@ class _FilterChip extends StatelessWidget {
   }
 }
 
-class UserCard extends StatelessWidget {
-  const UserCard({super.key});
+class UserCard extends StatefulWidget {
+  final Profile profile;
+  const UserCard({super.key, required this.profile});
+
+  @override
+  State<UserCard> createState() => _UserCardState();
+}
+
+class _UserCardState extends State<UserCard> {
+  bool _isExtended = false;
+
+  void _handleExtend() async {
+    setState(() => _isExtended = true);
+    await SupabaseService.extendVine(widget.profile.id);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Vine Extended to ${widget.profile.displayName}!'),
+          backgroundColor: OTheme.neonPink,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -186,75 +230,91 @@ class UserCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: OTheme.deepCharcoal,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(
+          color: _isExtended ? OTheme.neonPink.withOpacity(0.5) : Colors.white.withOpacity(0.05),
+          width: _isExtended ? 2 : 1,
+        ),
+        boxShadow: _isExtended ? [
+          BoxShadow(color: OTheme.neonPink.withOpacity(0.2), blurRadius: 20, spreadRadius: -5),
+        ] : null,
       ),
       clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
         children: [
-          Expanded(
-            child: Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    OTheme.neonPink.withOpacity(0.2),
-                    OTheme.black.withOpacity(0.8),
-                  ],
-                ),
-              ),
-              child: const Icon(
-                Icons.person,
-                size: 64,
-                color: OTheme.neonPink,
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Text(
-                      'Alex, 24',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
-                        color: Colors.green,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                const Text(
-                  'He/Him • 0.5 miles',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.white54,
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    image: widget.profile.avatarUrl != null 
+                      ? DecorationImage(image: NetworkImage(widget.profile.avatarUrl!), fit: BoxFit.cover)
+                      : null,
+                    gradient: widget.profile.avatarUrl == null ? LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        OTheme.neonPink.withOpacity(0.2),
+                        OTheme.black.withOpacity(0.8),
+                      ],
+                    ) : null,
                   ),
+                  child: widget.profile.avatarUrl == null ? const Icon(
+                    Icons.person,
+                    size: 64,
+                    color: OTheme.neonPink,
+                  ) : null,
                 ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _Tag(label: 'Design'),
-                    _Tag(label: 'Music'),
+                    Row(
+                      children: [
+                        Text(
+                          '${widget.profile.displayName}, ${widget.profile.age}',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        if (widget.profile.isVerified)
+                          const Icon(Icons.verified, color: OTheme.neonPink, size: 16),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${widget.profile.pronouns} • Nearby',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.white54,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      children: (widget.profile.interests ?? []).take(2).map((i) => _Tag(label: i)).toList(),
+                    ),
                   ],
                 ),
-              ],
+              ),
+            ],
+          ),
+          Positioned(
+            right: 12,
+            bottom: 12,
+            child: FloatingActionButton.small(
+              onPressed: _isExtended ? null : _handleExtend,
+              backgroundColor: _isExtended ? Colors.grey : OTheme.neonPink,
+              child: Icon(
+                _isExtended ? Icons.check : Icons.add,
+                color: Colors.black,
+              ),
             ),
           ),
         ],

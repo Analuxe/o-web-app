@@ -150,6 +150,23 @@ class SupabaseService {
     return List<Map<String, dynamic>>.from(response);
   }
 
+  // Connection (Extend Vine) Logic
+  static Future<void> extendVine(String targetUserId) async {
+    final myId = client.auth.currentUser!.id;
+    await client.from('connections').upsert({
+      'sender_id': myId,
+      'receiver_id': targetUserId,
+      'status': 'pending',
+    });
+  }
+
+  static Stream<List<Map<String, dynamic>>> getConnectionsStream() {
+    return client
+        .from('connections')
+        .stream(primaryKey: ['id'])
+        .order('created_at', ascending: false);
+  }
+
   static Stream<List<Map<String, dynamic>>> getNearbyVines() {
     // In production, this would use a PostGIS RPC call like the mobile app
     return client
