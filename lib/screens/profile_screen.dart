@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:o_web/theme.dart';
 import 'package:o_web/services/supabase_service.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:o_web/screens/verification_screen.dart';
 import 'dart:typed_data';
 
 class ProfileScreen extends StatefulWidget {
