@@ -272,6 +272,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               ),
             ),
             child: Column(
+              children: [
                 const SizedBox(height: 32),
                 InkWell(
                   onTap: (_isVerifyingHuman || _isHumanVerified) ? null : _verifyHuman,
@@ -369,6 +370,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       ],
                     ),
                   ),
+              ],
             ),
           ),
         ),
