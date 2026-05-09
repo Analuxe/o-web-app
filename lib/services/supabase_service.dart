@@ -105,13 +105,18 @@ class SupabaseService {
     final user = client.auth.currentUser;
     if (user == null) return null;
 
-    final data = await client
-        .from('profiles')
-        .select()
-        .eq('id', user.id)
-        .single();
-    
-    return Profile.fromJson(data);
+    try {
+      final data = await client
+          .from('profiles')
+          .select()
+          .eq('id', user.id)
+          .maybeSingle();
+      
+      if (data == null) return null;
+      return Profile.fromJson(data);
+    } catch (e) {
+      return null;
+    }
   }
 
   static Future<void> updateProfile(Map<String, dynamic> updates) async {

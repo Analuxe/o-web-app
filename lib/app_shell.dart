@@ -81,7 +81,7 @@ class SideNavBar extends StatelessWidget {
             icon: Icons.settings_outlined,
             label: 'Settings',
             path: '/settings',
-            isSelected: false,
+            isSelected: GoRouterState.of(context).uri.toString() == '/settings',
           ),
         ],
       ),

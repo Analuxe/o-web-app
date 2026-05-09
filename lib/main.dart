@@ -10,6 +10,7 @@ import 'package:o_web/screens/auth_screen.dart';
 import 'package:o_web/screens/matchmaker_screen.dart';
 
 import 'package:o_web/screens/onboarding_screen.dart';
+import 'package:o_web/screens/settings_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -66,6 +67,10 @@ final _router = GoRouter(
         GoRoute(
           path: '/profile',
           builder: (context, state) => const ProfileScreen(),
+        ),
+        GoRoute(
+          path: '/settings',
+          builder: (context, state) => const SettingsScreen(),
         ),
         GoRoute(
           path: '/matchmaker',
