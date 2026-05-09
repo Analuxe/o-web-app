@@ -36,7 +36,7 @@ class _AuthScreenState extends State<AuthScreen> {
       } else {
         await SupabaseService.signIn(_emailController.text, _passwordController.text);
       }
-      if (mounted) context.go('/onboarding');
+      if (mounted) context.go('/');
     } catch (e) {
       String errorMessage = e.toString();
       if (errorMessage.contains('429')) {
