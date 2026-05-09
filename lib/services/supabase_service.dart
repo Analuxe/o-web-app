@@ -314,15 +314,14 @@ class SupabaseService {
   static Future<String> uploadHubMedia(Uint8List bytes, String fileName) async {
     final path = 'hub/${DateTime.now().millisecondsSinceEpoch}_$fileName';
     
-    // Using 'validation' bucket as it's confirmed to exist and be accessible.
-    // In a production environment, a dedicated 'hub_content' bucket should be created.
+    // Using dedicated 'hub_content' bucket for platform news and updates.
     try {
       await client.storage
-          .from('validation')
+          .from('hub_content')
           .uploadBinary(path, bytes);
 
       return client.storage
-          .from('validation')
+          .from('hub_content')
           .getPublicUrl(path);
     } catch (e) {
       debugPrint('Error uploading hub media: $e');
