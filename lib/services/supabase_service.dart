@@ -387,7 +387,18 @@ class SupabaseService {
     return client.storage.from('validation').getPublicUrl(path);
   }
 
+  static Future<void> createProfile(Profile profile) async {
+    final json = profile.toJson();
+    // Security: Remove sensitive flags if present to prevent self-promotion
+    json.remove('is_admin');
+    json.remove('is_verified');
+    json.remove('is_vip');
+    
+    await client.from('profiles').insert(json);
+  }
+
   static Future<void> promoteToAdmin(String username) async {
+    // Only a super-admin should be calling this via the UI
     final response = await client
         .from('profiles')
         .select('id')
