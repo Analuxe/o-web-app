@@ -82,13 +82,13 @@ class _VerificationScreenState extends State<VerificationScreen> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return const Scaffold(
-        backgroundColor: OTheme.backgroundBlack,
+        backgroundColor: OTheme.black,
         body: Center(child: CircularProgressIndicator(color: OTheme.neonPink)),
       );
     }
 
     return Scaffold(
-      backgroundColor: OTheme.backgroundBlack,
+      backgroundColor: OTheme.black,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
