@@ -10,6 +10,33 @@ class AdminScreen extends StatefulWidget {
 
 class _AdminScreenState extends State<AdminScreen> {
   String activeTab = 'analytics';
+  int totalUsers = 0;
+  int verifiedUsers = 0;
+  int safetyFlags = 0;
+  bool isLoadingStats = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStats();
+  }
+
+  Future<void> _loadStats() async {
+    final client = SupabaseService.client;
+    
+    final usersRes = await client.from('profiles').select('*', count: CountOption.exact);
+    final verifiedRes = await client.from('profiles').select('*', count: CountOption.exact).eq('is_verified', true);
+    final reportsRes = await client.from('reports').select('*', count: CountOption.exact);
+
+    if (mounted) {
+      setState(() {
+        totalUsers = usersRes.count ?? 0;
+        verifiedUsers = verifiedRes.count ?? 0;
+        safetyFlags = reportsRes.count ?? 0;
+        isLoadingStats = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -60,6 +87,9 @@ class _AdminScreenState extends State<AdminScreen> {
   }
 
   Widget _buildAnalytics() {
+    if (isLoadingStats) {
+      return const Center(child: CircularProgressIndicator(color: OTheme.neonPink));
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -71,9 +101,9 @@ class _AdminScreenState extends State<AdminScreen> {
           mainAxisSpacing: 24,
           childAspectRatio: 1.5,
           children: [
-            const StatCard(
+            StatCard(
               title: 'Total Users',
-              value: '482',
+              value: totalUsers.toString(),
               icon: Icons.people_outline,
             ),
             const StatCard(
@@ -82,14 +112,14 @@ class _AdminScreenState extends State<AdminScreen> {
               icon: Icons.star_outline,
               isHighlight: true,
             ),
-            const StatCard(
+            StatCard(
               title: 'Verified Profiles',
-              value: '156',
+              value: verifiedUsers.toString(),
               icon: Icons.verified_user_outlined,
             ),
-            const StatCard(
+            StatCard(
               title: 'Safety Flags',
-              value: '12',
+              value: safetyFlags.toString(),
               icon: Icons.flag_outlined,
               isDanger: true,
             ),
