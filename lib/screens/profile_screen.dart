@@ -243,9 +243,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  void _buildLabel(String label) {}
-
-  Widget _buildLabelWidget(String label) {
+  Widget _buildLabel(String label) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Text(
@@ -265,7 +263,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildLabelWidget(label),
+        _buildLabel(label),
         if (isEditing)
           TextField(
             controller: controller,
