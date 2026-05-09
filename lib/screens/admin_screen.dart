@@ -297,11 +297,11 @@ class _AdminScreenState extends State<AdminScreen> {
                   ElevatedButton.icon(
                     onPressed: _showAddAdminDialog,
                     icon: const Icon(Icons.admin_panel_settings, size: 16),
-                    label: const Text('Add Admin'),
+                    label: const Text('Add Moderator'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white.withOpacity(0.1),
-                      foregroundColor: Colors.white,
-                      side: const BorderSide(color: Colors.white24),
+                      backgroundColor: OTheme.neonPink.withOpacity(0.1),
+                      foregroundColor: OTheme.neonPink,
+                      side: const BorderSide(color: OTheme.neonPink),
                     ),
                   ),
                 ],
