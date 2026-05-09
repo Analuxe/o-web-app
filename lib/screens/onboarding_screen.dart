@@ -60,19 +60,34 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       }
 
       setState(() => _isCheckingUsername = true);
-      final isAvailable = await SupabaseService.isUsernameAvailable(username);
-      setState(() => _isCheckingUsername = false);
-
-      if (!isAvailable) {
+      try {
+        final isAvailable = await SupabaseService.isUsernameAvailable(username);
+        if (!isAvailable) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Username is already taken. Please choose another.'),
+                backgroundColor: Colors.orangeAccent,
+              ),
+            );
+          }
+          return;
+        }
+      } catch (e) {
+        debugPrint('Username check failed: $e');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Username is already taken. Please choose another.'),
-              backgroundColor: Colors.orangeAccent,
+            SnackBar(
+              content: Text('Verification failed: ${e.toString()}'),
+              backgroundColor: Colors.redAccent,
             ),
           );
         }
-        return;
+        return; // Don't proceed if check fails
+      } finally {
+        if (mounted) {
+          setState(() => _isCheckingUsername = false);
+        }
       }
     }
 
