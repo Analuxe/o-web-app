@@ -124,7 +124,11 @@ class _AuthScreenState extends State<AuthScreen> {
                     Text(_error!, style: const TextStyle(color: Colors.redAccent)),
                     const SizedBox(height: 24),
                   ],
-                  _AuthField(label: 'Email Address', hint: 'name@example.com', controller: _emailController),
+                  _AuthField(
+                    label: isSignUp ? 'Email Address' : 'Email or Username', 
+                    hint: isSignUp ? 'name@example.com' : 'email or username', 
+                    controller: _emailController
+                  ),
                   const SizedBox(height: 24),
                   _AuthField(label: 'Password', hint: '••••••••', isPassword: true, controller: _passwordController),
                   if (isSignUp) ...[

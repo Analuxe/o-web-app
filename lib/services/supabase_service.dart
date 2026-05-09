@@ -97,7 +97,23 @@ class SupabaseService {
   static SupabaseClient get client => Supabase.instance.client;
 
   // Auth Logic
-  static Future<AuthResponse> signIn(String email, String password) async {
+  static Future<AuthResponse> signIn(String identifier, String password) async {
+    String email = identifier.trim();
+    
+    // Check if identifier is an email. Simple regex check.
+    if (!RegExp(r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+").hasMatch(email)) {
+      // If not an email, assume it's a username and try to find the linked email
+      final response = await client
+          .from('profiles')
+          .select('email')
+          .eq('username', email)
+          .maybeSingle();
+      
+      if (response != null && response['email'] != null) {
+        email = response['email'];
+      }
+    }
+    
     return await client.auth.signInWithPassword(email: email, password: password);
   }
 
@@ -132,7 +148,11 @@ class SupabaseService {
     final user = client.auth.currentUser;
     if (user == null) return;
 
-    final fullUpdates = {...updates, 'id': user.id};
+    final fullUpdates = {
+      ...updates, 
+      'id': user.id,
+      'email': user.email, // Ensure email is stored for username-based login
+    };
 
     await client
         .from('profiles')
