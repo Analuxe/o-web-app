@@ -325,6 +325,7 @@ class _CreatePostDialogState extends State<_CreatePostDialog> {
             ),
             clipBehavior: Clip.antiAlias,
             child: Crop(
+              key: ValueKey(_aspectRatio),
               image: _selectedFileBytes!,
               controller: _cropController,
               onCropped: (image) {
@@ -367,15 +368,16 @@ class _CreatePostDialogState extends State<_CreatePostDialog> {
     final isSelected = _aspectRatio == ratio;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4),
-      child: OutlinedButton(
+      child: ElevatedButton(
         onPressed: () => setState(() => _aspectRatio = ratio),
-        style: OutlinedButton.styleFrom(
-          backgroundColor: isSelected ? OTheme.neonPink : Colors.transparent,
-          side: BorderSide(color: isSelected ? OTheme.neonPink : Colors.white24),
-          foregroundColor: isSelected ? Colors.white : Colors.white70,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: isSelected ? OTheme.neonPink : OTheme.deepCharcoal,
+          foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(horizontal: 12),
+          elevation: isSelected ? 4 : 0,
+          side: BorderSide(color: isSelected ? Colors.transparent : Colors.white10),
         ),
-        child: Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+        child: Text(label, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
       ),
     );
   }
