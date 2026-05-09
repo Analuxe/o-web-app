@@ -72,23 +72,40 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Future<void> _completeOnboarding() async {
     setState(() => _isSaving = true);
     
-    // Human verification is now API-driven, so we don't need photo storage for validation
-    await SupabaseService.updateProfile({
-      'username': _usernameController.text,
-      'display_name': _nameController.text,
-      'age': int.tryParse(_ageController.text),
-      'bio': _bioController.text,
-      'pronouns': _selectedPronouns,
-      'interests': _selectedInterests,
-      'avatar_url': null,
-      'is_validated': true, // User is now validated via the human check API
-      'is_verified': false,
-    });
+    try {
+      // Human verification is now API-driven, so we don't need photo storage for validation
+      await SupabaseService.updateProfile({
+        'username': _usernameController.text.trim(),
+        'display_name': _nameController.text.trim(),
+        'age': int.tryParse(_ageController.text),
+        'bio': _bioController.text.trim(),
+        'pronouns': _selectedPronouns,
+        'interests': _selectedInterests,
+        'avatar_url': null,
+        'is_validated': true, // User is now validated via the human check API
+        'is_verified': false,
+      });
 
-    if (mounted) {
-      context.go('/discovery');
+      if (mounted) {
+        context.go('/discovery');
+      }
+    } catch (e) {
+      debugPrint('Onboarding failed: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Setup failed: ${e.toString()}'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
     }
   }
+
 
 
   @override
