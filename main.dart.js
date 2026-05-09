@@ -30882,10 +30882,10 @@ l===$&&A.a()
 l=l.at
 l===$&&A.a()
 s=7
-return A.p(l.cJ("validation").vr(j,a),$async$at2)
+return A.p(l.cJ("hub_content").vr(j,a),$async$at2)
 case 7:m=m.b.at
 m===$&&A.a()
-m=m.cJ("validation").PO(j)
+m=m.cJ("hub_content").PO(j)
 q=m
 s=1
 break
