@@ -71,11 +71,21 @@ class _AuthScreenState extends State<AuthScreen> {
                     Image.asset('assets/logo.png', height: 160),
                     const SizedBox(height: 24),
                     const Text(
-                      'Link in. Branch out.',
+                      'Open up.',
                       style: TextStyle(
-                        fontSize: 32,
+                        fontSize: 40,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
+                        letterSpacing: -1,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Find your O.',
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: Colors.white54,
+                        letterSpacing: 0.5,
                       ),
                     ),
                   ],
@@ -100,8 +110,8 @@ class _AuthScreenState extends State<AuthScreen> {
                   const SizedBox(height: 12),
                   Text(
                     isSignUp 
-                      ? 'Join the community signal.' 
-                      : 'Step back into the warm, moody space.',
+                      ? 'Come as you are. No judgment here.' 
+                      : 'Welcome back. We missed you.',
                     style: const TextStyle(color: Colors.white54, fontSize: 16),
                   ),
                   if (_error != null) ...[
