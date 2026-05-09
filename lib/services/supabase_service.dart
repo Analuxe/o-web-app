@@ -314,15 +314,20 @@ class SupabaseService {
   static Future<String> uploadHubMedia(Uint8List bytes, String fileName) async {
     final path = 'hub/${DateTime.now().millisecondsSinceEpoch}_$fileName';
     
-    // We'll use the 'avatars' bucket as a fallback if 'hub' doesn't exist, 
-    // but ideally there's a dedicated bucket. Let's use 'avatars' for now to be safe.
-    await client.storage
-        .from('avatars')
-        .uploadBinary(path, bytes);
+    // Using 'validation' bucket as it's confirmed to exist and be accessible.
+    // In a production environment, a dedicated 'hub_content' bucket should be created.
+    try {
+      await client.storage
+          .from('validation')
+          .uploadBinary(path, bytes);
 
-    return client.storage
-        .from('avatars')
-        .getPublicUrl(path);
+      return client.storage
+          .from('validation')
+          .getPublicUrl(path);
+    } catch (e) {
+      debugPrint('Error uploading hub media: $e');
+      rethrow;
+    }
   }
 
   // Verification Flow Logic
