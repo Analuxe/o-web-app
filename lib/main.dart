@@ -42,9 +42,10 @@ final _router = GoRouter(
 
     final bool isOnboarding = state.matchedLocation == '/onboarding';
 
-    // Bypass onboarding if user has a username
+    // Simple, non-blocking check: if no username, go to onboarding
     if (profile == null || profile.username == null || profile.username!.isEmpty) {
-      return isOnboarding ? null : '/onboarding';
+      if (isOnboarding) return null;
+      return '/onboarding';
     }
 
     // Admin Protection
