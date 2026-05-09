@@ -38,7 +38,13 @@ class _AuthScreenState extends State<AuthScreen> {
       }
       if (mounted) context.go('/onboarding');
     } catch (e) {
-      setState(() => _error = e.toString());
+      String errorMessage = e.toString();
+      if (errorMessage.contains('429')) {
+        errorMessage = 'Too many attempts. Please wait a few minutes before trying again.';
+      } else if (errorMessage.contains('Invalid login credentials')) {
+        errorMessage = 'Check your email or password and try again.';
+      }
+      setState(() => _error = errorMessage);
     } finally {
       setState(() => _isLoading = false);
     }
