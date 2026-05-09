@@ -23,6 +23,49 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   bool _isSaving = false;
   bool _isHumanVerified = false;
   bool _isVerifyingHuman = false;
+  bool _isLoadingProfile = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadExistingProfile();
+  }
+
+  Future<void> _loadExistingProfile() async {
+    try {
+      final profile = await SupabaseService.getMyProfile();
+      if (profile != null && mounted) {
+        setState(() {
+          _usernameController.text = profile.username ?? '';
+          _nameController.text = profile.displayName ?? '';
+          _ageController.text = profile.age?.toString() ?? '';
+          _bioController.text = profile.bio ?? '';
+          _selectedPronouns = profile.pronouns;
+          if (profile.interests != null) {
+            _selectedInterests.addAll(profile.interests!);
+          }
+          _isHumanVerified = profile.isValidated;
+          
+          // Determine which step to start at
+          if (profile.username != null && profile.displayName != null && profile.age != null) {
+            _currentStep = 1;
+          }
+          if (profile.pronouns != null) {
+            _currentStep = 2;
+          }
+          if (profile.interests != null && profile.interests!.isNotEmpty) {
+            _currentStep = 3;
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading existing profile: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingProfile = false);
+      }
+    }
+  }
 
   final List<String> _availableInterests = [
     'Art', 'Music', 'Tech', 'Travel', 'Food', 'Fitness', 'Cinema', 'Gaming',
@@ -78,7 +121,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Verification failed: ${e.toString()}'),
+              content: Text('Verification failed: $e'),
               backgroundColor: Colors.redAccent,
             ),
           );
@@ -192,7 +235,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 ),
                 const SizedBox(height: 40),
                 
-                if (_isSaving)
+                if (_isLoadingProfile)
+                  const Column(
+                    children: [
+                      CircularProgressIndicator(color: OTheme.neonPink),
+                      SizedBox(height: 24),
+                      Text('Syncing your frequency...', style: TextStyle(color: Colors.white70)),
+                    ],
+                  )
+                else if (_isSaving)
                   const Column(
                     children: [
                       CircularProgressIndicator(color: OTheme.neonPink),
@@ -214,7 +265,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 const SizedBox(height: 40),
                 if (!_isSaving)
                   ElevatedButton(
-                    onPressed: (_isSaving || _isCheckingUsername) ? null : _nextStep,
+                    onPressed: (_isSaving || _isCheckingUsername || _isLoadingProfile) ? null : _nextStep,
                     style: ElevatedButton.styleFrom(
                       minimumSize: const Size(double.infinity, 60),
                     ),
@@ -327,88 +378,94 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             child: Column(
               children: [
                 const SizedBox(height: 32),
-                InkWell(
-                  onTap: (_isVerifyingHuman || _isHumanVerified) ? null : _verifyHuman,
-                  borderRadius: BorderRadius.circular(4),
-                  child: Container(
-                    width: 300,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF9F9F9),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 300),
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: InkWell(
+                      onTap: (_isVerifyingHuman || _isHumanVerified) ? null : _verifyHuman,
                       borderRadius: BorderRadius.circular(4),
-                      border: Border.all(color: const Color(0xFFD3D3D3)),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.1),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 28,
-                          height: 28,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            border: Border.all(
-                              color: _isHumanVerified ? Colors.green : const Color(0xFFC1C1C1),
-                              width: 2,
-                            ),
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                          child: _isVerifyingHuman
-                              ? const Padding(
-                                  padding: EdgeInsets.all(4.0),
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.blue,
-                                  ),
-                                )
-                              : (_isHumanVerified
-                                  ? const Icon(Icons.check, color: Colors.green, size: 20)
-                                  : null),
-                        ),
-                        const SizedBox(width: 14),
-                        const Expanded(
-                          child: Text(
-                            "I'm not a robot",
-                            style: TextStyle(
-                              color: Colors.black87,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w400,
-                            ),
-                          ),
-                        ),
-                        Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Image.network(
-                              'https://www.gstatic.com/recaptcha/api2/logo_48.png',
-                              height: 32,
-                            ),
-                            const Text(
-                              'reCAPTCHA',
-                              style: TextStyle(
-                                color: Colors.black54,
-                                fontSize: 8,
-                              ),
-                            ),
-                            const Text(
-                              'Privacy - Terms',
-                              style: TextStyle(
-                                color: Colors.black54,
-                                fontSize: 8,
-                              ),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF9F9F9),
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(color: const Color(0xFFD3D3D3)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.1),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
                             ),
                           ],
                         ),
-                      ],
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 28,
+                              height: 28,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                border: Border.all(
+                                  color: _isHumanVerified ? Colors.green : const Color(0xFFC1C1C1),
+                                  width: 2,
+                                ),
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                              child: _isVerifyingHuman
+                                  ? const Padding(
+                                      padding: EdgeInsets.all(4.0),
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.blue,
+                                      ),
+                                    )
+                                  : (_isHumanVerified
+                                      ? const Icon(Icons.check, color: Colors.green, size: 20)
+                                      : null),
+                            ),
+                            const SizedBox(width: 14),
+                            const Text(
+                              "I'm not a robot",
+                              style: TextStyle(
+                                color: Colors.black87,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w400,
+                              ),
+                            ),
+                            const SizedBox(width: 24),
+                            Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Image.network(
+                                  'https://www.gstatic.com/recaptcha/api2/logo_48.png',
+                                  height: 32,
+                                  errorBuilder: (context, error, stackTrace) => const Icon(Icons.security, color: Colors.blue, size: 24),
+                                ),
+                                const Text(
+                                  'reCAPTCHA',
+                                  style: TextStyle(
+                                    color: Colors.black54,
+                                    fontSize: 8,
+                                  ),
+                                ),
+                                const Text(
+                                  'Privacy - Terms',
+                                  style: TextStyle(
+                                    color: Colors.black54,
+                                    fontSize: 8,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ),
-                if (_isHumanVerified)
+              if (_isHumanVerified)
                   const Padding(
                     padding: EdgeInsets.only(top: 24),
                     child: Row(

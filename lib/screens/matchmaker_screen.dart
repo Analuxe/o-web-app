@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:o_web/theme.dart';
+import 'package:o_web/services/supabase_service.dart';
 import 'dart:async';
+import 'dart:math';
 
 class MatchmakerScreen extends StatefulWidget {
   const MatchmakerScreen({super.key});
@@ -11,36 +13,97 @@ class MatchmakerScreen extends StatefulWidget {
 
 class _MatchmakerScreenState extends State<MatchmakerScreen> {
   bool isSearching = false;
-  bool matchFound = false;
+  Profile? matchedProfile;
+  int distanceRange = 25;
+  List<String> selectedIntents = ['Singles', 'Hookups'];
+  bool isLoadingSettings = true;
 
-  void startSearch() {
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    try {
+      final optIn = await SupabaseService.getMatchmakerOptIn();
+      if (optIn != null && mounted) {
+        setState(() {
+          distanceRange = optIn['max_distance'] ?? 25;
+          selectedIntents = List<String>.from(optIn['intents'] ?? ['Singles', 'Hookups']);
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading matchmaker settings: $e');
+    } finally {
+      if (mounted) {
+        setState(() => isLoadingSettings = false);
+      }
+    }
+  }
+
+  void _toggleIntent(String intent) {
+    setState(() {
+      if (selectedIntents.contains(intent)) {
+        selectedIntents.remove(intent);
+      } else {
+        selectedIntents.add(intent);
+      }
+    });
+  }
+
+  Future<void> startSearch() async {
     setState(() {
       isSearching = true;
-      matchFound = false;
+      matchedProfile = null;
     });
 
-    // Simulate search delay
-    Timer(const Duration(seconds: 3), () {
-      setState(() {
-        isSearching = false;
-        matchFound = true;
-      });
-    });
+    try {
+      // Save settings first
+      await SupabaseService.saveMatchmakerOptIn(distanceRange, selectedIntents);
+      
+      // Simulate scanning animation delay
+      await Future.delayed(const Duration(seconds: 2));
+
+      // Find candidates
+      final candidates = await SupabaseService.findMatchmakerCandidates(distanceRange, selectedIntents);
+      
+      if (mounted) {
+        setState(() {
+          isSearching = false;
+          if (candidates.isNotEmpty) {
+            // Pick a random candidate for the "Match" experience
+            matchedProfile = candidates[Random().nextInt(candidates.length)];
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint('Error finding matches: $e');
+      if (mounted) {
+        setState(() => isSearching = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Matchmaker error: $e'), backgroundColor: Colors.redAccent),
+        );
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Container(
-        constraints: const BoxConstraints(maxWidth: 800),
-        padding: const EdgeInsets.all(48),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (!isSearching && !matchFound) _buildInitialState(),
-            if (isSearching) _buildSearchingState(),
-            if (matchFound) _buildMatchFoundState(),
-          ],
+    return SingleChildScrollView(
+      child: Center(
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 800),
+          padding: const EdgeInsets.all(48),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (isLoadingSettings) const Center(child: CircularProgressIndicator(color: OTheme.neonPink)),
+              if (!isLoadingSettings && !isSearching && matchedProfile == null) _buildInitialState(),
+              if (isSearching) _buildSearchingState(),
+              if (matchedProfile != null) _buildMatchFoundState(),
+            ],
+          ),
         ),
       ),
     );
@@ -73,22 +136,42 @@ class _MatchmakerScreenState extends State<MatchmakerScreen> {
             children: [
               const Text('Search Preferences', style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 24),
-              const Row(
+              Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Distance Range', style: TextStyle(color: OTheme.softRose)),
-                  Text('25 miles', style: TextStyle(fontWeight: FontWeight.bold)),
+                  const Text('Distance Range', style: TextStyle(color: OTheme.softRose)),
+                  Text('$distanceRange miles', style: const TextStyle(fontWeight: FontWeight.bold)),
                 ],
               ),
-              Slider(value: 0.5, onChanged: (v) {}, activeColor: OTheme.neonPink),
+              Slider(
+                value: distanceRange.toDouble(),
+                min: 5,
+                max: 100,
+                divisions: 19,
+                onChanged: (v) => setState(() => distanceRange = v.round()),
+                activeColor: OTheme.neonPink,
+              ),
               const SizedBox(height: 24),
               const Text('Intents', style: TextStyle(color: OTheme.softRose)),
               const SizedBox(height: 12),
-              const Wrap(
+              Wrap(
                 spacing: 12,
                 children: [
-                  _Chip(label: 'Singles', isSelected: true),
-                  _Chip(label: 'Hookups', isSelected: true),
+                  _Chip(
+                    label: 'Singles', 
+                    isSelected: selectedIntents.contains('Singles'),
+                    onTap: () => _toggleIntent('Singles'),
+                  ),
+                  _Chip(
+                    label: 'Hookups', 
+                    isSelected: selectedIntents.contains('Hookups'),
+                    onTap: () => _toggleIntent('Hookups'),
+                  ),
+                  _Chip(
+                    label: 'Friends', 
+                    isSelected: selectedIntents.contains('Friends'),
+                    onTap: () => _toggleIntent('Friends'),
+                  ),
                 ],
               ),
             ],
@@ -140,17 +223,17 @@ class _MatchmakerScreenState extends State<MatchmakerScreen> {
               margin: const EdgeInsets.symmetric(horizontal: 24),
               child: const Icon(Icons.favorite, color: OTheme.neonPink, size: 48),
             ),
-            const _UserCircle(url: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&q=80'),
+            _UserCircle(url: matchedProfile?.avatarUrl ?? 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&q=80'),
           ],
         ),
         const SizedBox(height: 40),
-        const Text(
-          'Fabian, 26',
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+        Text(
+          '${matchedProfile?.displayName ?? 'Anonymous'}, ${matchedProfile?.age ?? '??'}',
+          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
         ),
-        const Text(
-          'Shared: Techno, Brunch, Nightlife',
-          style: TextStyle(color: OTheme.softRose),
+        Text(
+          'Shared Interests: ${matchedProfile?.interests?.join(', ') ?? 'Vibes'}',
+          style: const TextStyle(color: OTheme.softRose),
         ),
         const SizedBox(height: 48),
         Container(
@@ -185,7 +268,7 @@ class _MatchmakerScreenState extends State<MatchmakerScreen> {
             ),
             const SizedBox(width: 24),
             OutlinedButton(
-              onPressed: () => setState(() => matchFound = false),
+              onPressed: () => setState(() => matchedProfile = null),
               style: OutlinedButton.styleFrom(foregroundColor: Colors.white54),
               child: const Text('Maybe Later'),
             ),
@@ -199,18 +282,23 @@ class _MatchmakerScreenState extends State<MatchmakerScreen> {
 class _Chip extends StatelessWidget {
   final String label;
   final bool isSelected;
-  const _Chip({required this.label, required this.isSelected});
+  final VoidCallback onTap;
+  const _Chip({required this.label, required this.isSelected, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: isSelected ? OTheme.neonPink.withOpacity(0.1) : Colors.transparent,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: isSelected ? OTheme.neonPink : Colors.white10),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? OTheme.neonPink.withOpacity(0.1) : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: isSelected ? OTheme.neonPink : Colors.white10),
+        ),
+        child: Text(label, style: TextStyle(color: isSelected ? OTheme.neonPink : Colors.white54)),
       ),
-      child: Text(label, style: TextStyle(color: isSelected ? OTheme.neonPink : Colors.white54)),
     );
   }
 }

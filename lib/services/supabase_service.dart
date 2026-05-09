@@ -18,6 +18,7 @@ class Profile {
   final bool isValidated;
   final bool isVip;
   final String? activePathway;
+  final int thumbsDownCount;
 
   Profile({
     required this.id,
@@ -36,6 +37,7 @@ class Profile {
     this.isValidated = false,
     this.isVip = false,
     this.activePathway,
+    this.thumbsDownCount = 0,
   });
 
   factory Profile.fromJson(Map<String, dynamic> json) {
@@ -56,6 +58,7 @@ class Profile {
       isValidated: json['is_validated'] ?? false,
       isVip: json['is_vip'] ?? false,
       activePathway: json['active_pathway'],
+      thumbsDownCount: json['reputation_reports'] != null ? (json['reputation_reports'] as List).length : 0,
     );
   }
 
@@ -78,11 +81,58 @@ class Profile {
   }
 
   bool get isComplete {
-    return username != null &&
-           displayName != null && 
-           age != null && 
-           pronouns != null && 
-           (interests != null && interests!.isNotEmpty);
+    return username != null && username!.isNotEmpty;
+  }
+}
+
+enum HubPostType { featured, update, comingSoon }
+
+class HubPost {
+  final String id;
+  final String title;
+  final String? subtitle;
+  final String? content;
+  final String? imageUrl;
+  final String tag;
+  final HubPostType type;
+  final DateTime createdAt;
+
+  HubPost({
+    required this.id,
+    required this.title,
+    this.subtitle,
+    this.content,
+    this.imageUrl,
+    required this.tag,
+    required this.type,
+    required this.createdAt,
+  });
+
+  factory HubPost.fromJson(Map<String, dynamic> json) {
+    return HubPost(
+      id: json['id'],
+      title: json['title'],
+      subtitle: json['subtitle'],
+      content: json['content'],
+      imageUrl: json['image_url'],
+      tag: json['tag'] ?? 'UPDATE',
+      type: HubPostType.values.firstWhere(
+        (e) => e.name == json['type'],
+        orElse: () => HubPostType.update,
+      ),
+      createdAt: DateTime.parse(json['created_at']),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'title': title,
+      'subtitle': subtitle,
+      'content': content,
+      'image_url': imageUrl,
+      'tag': tag,
+      'type': type.name,
+    };
   }
 }
 
@@ -161,12 +211,23 @@ class SupabaseService {
     final fullUpdates = {
       ...updates, 
       'id': user.id,
-      'email': user.email, // Ensure email is stored for username-based login
     };
 
     await client
         .from('profiles')
         .upsert(fullUpdates);
+  }
+
+  static Future<String> uploadAvatar(String userId, Uint8List bytes, String fileName) async {
+    final path = '$userId/$fileName';
+    
+    await client.storage
+        .from('avatars')
+        .uploadBinary(path, bytes);
+
+    return client.storage
+        .from('avatars')
+        .getPublicUrl(path);
   }
 
   // Messaging Logic
@@ -230,6 +291,22 @@ class SupabaseService {
     });
   }
 
+  static Future<void> submitThumbsDown(String targetUserId) async {
+    final myId = client.auth.currentUser!.id;
+    await client.from('reputation_reports').insert({
+      'reporter_id': myId,
+      'target_id': targetUserId,
+    });
+  }
+
+  static Future<List<Map<String, dynamic>>> getReputationAlerts() async {
+    // Fetches users with the highest thumbs down counts for the Admin Console
+    final response = await client.from('profiles')
+        .select('*, reputation_reports!target_id(count)')
+        .order('id'); // We'll process the count in Flutter or via a View
+    return List<Map<String, dynamic>>.from(response);
+  }
+
   static Future<void> savePushToken(String token) async {
     final user = client.auth.currentUser;
     if (user == null) return;
@@ -275,12 +352,27 @@ class SupabaseService {
     });
   }
   static Future<List<Profile>> findMatchmakerCandidates(int maxDistance, List<String> intents) async {
-    final response = await client.rpc('find_matchmaker_candidates', params: {
-      'p_max_distance': maxDistance,
-      'p_intents': intents.isEmpty ? null : intents,
-      'p_limit': 20,
-    });
-    return (response as List).map((json) => Profile.fromJson(json)).toList();
+    try {
+      final response = await client.rpc('find_matchmaker_candidates', params: {
+        'p_max_distance': maxDistance,
+        'p_intents': intents.isEmpty ? null : intents,
+        'p_limit': 20,
+      });
+      return (response as List).map((json) => Profile.fromJson(json)).toList();
+    } catch (e) {
+      // Fallback: Just fetch some validated profiles if RPC fails
+      // In a real app, this would be a more complex geo-query
+      final response = await client
+          .from('profiles')
+          .select()
+          .eq('is_validated', true)
+          .limit(10);
+      
+      final candidates = (response as List).map((json) => Profile.fromJson(json)).toList();
+      // Filter out self
+      final myId = client.auth.currentUser?.id;
+      return candidates.where((p) => p.id != myId).toList();
+    }
   }
 
   // Storage Logic
@@ -293,5 +385,106 @@ class SupabaseService {
     await client.storage.from('validation').uploadBinary(path, Uint8List.fromList(bytes));
     
     return client.storage.from('validation').getPublicUrl(path);
+  }
+
+  static Future<void> promoteToAdmin(String username) async {
+    final response = await client
+        .from('profiles')
+        .select('id')
+        .ilike('username', username.trim())
+        .maybeSingle();
+    
+    if (response == null) throw Exception('User "@$username" not found');
+    
+    await client
+        .from('profiles')
+        .update({'is_admin': true})
+        .eq('id', response['id']);
+  }
+
+  // Hub Content Logic
+  static Future<List<HubPost>> getHubPosts() async {
+    try {
+      final response = await client
+          .from('hub_posts')
+          .select()
+          .order('created_at', ascending: false);
+      
+      return (response as List).map((json) => HubPost.fromJson(json)).toList();
+    } catch (e) {
+      debugPrint('Error fetching hub posts: $e');
+      return []; // Return empty if table doesn't exist yet
+    }
+  }
+
+  static Future<void> createHubPost(HubPost post) async {
+    await client.from('hub_posts').insert(post.toJson());
+  }
+
+  // Verification Flow Logic
+  static Future<void> submitVerification(Uint8List bytes, String fileName) async {
+    final user = client.auth.currentUser;
+    if (user == null) throw Exception('Not authenticated');
+
+    final path = '${user.id}/$fileName';
+    
+    // 1. Upload to private 'verification_ids' bucket
+    await client.storage
+        .from('verification_ids')
+        .uploadBinary(path, bytes);
+
+    // 2. Get the URL (private, but we store the path or signed URL later)
+    // For admins, we will generate a signed URL on demand.
+    final imageUrl = path; 
+
+    // 3. Create application record
+    await client.from('verification_applications').insert({
+      'user_id': user.id,
+      'id_image_url': imageUrl,
+      'status': 'pending',
+    });
+  }
+
+  static Future<List<Map<String, dynamic>>> getPendingVerifications() async {
+    final response = await client
+        .from('verification_applications')
+        .select('*, profiles(display_name, username, avatar_url)')
+        .eq('status', 'pending')
+        .order('created_at');
+    
+    return List<Map<String, dynamic>>.from(response);
+  }
+
+  static Future<void> updateVerificationStatus(String id, String status, {String? notes}) async {
+    await client
+        .from('verification_applications')
+        .update({
+          'status': status,
+          'admin_notes': notes,
+          'updated_at': DateTime.now().toIso8601String(),
+        })
+        .eq('id', id);
+  }
+
+  static Future<String> getVerificationIdUrl(String path) async {
+    // Generate a signed URL for the admin to view the ID securely
+    return await client.storage
+        .from('verification_ids')
+        .createSignedUrl(path, 60); // Valid for 60 seconds
+  }
+
+  static Future<Map<String, dynamic>?> getMyVerificationApplication() async {
+    final user = client.auth.currentUser;
+    if (user == null) return null;
+
+    final response = await client
+        .from('verification_applications')
+        .select()
+        .eq('user_id', user.id)
+        .order('created_at', ascending: false)
+        .limit(1)
+        .maybeSingle();
+    
+    return response;
   }
 }

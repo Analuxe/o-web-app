@@ -1,0 +1,559 @@
+import 'package:flutter/material.dart';
+import 'package:o_web/theme.dart';
+import 'package:o_web/services/supabase_service.dart';
+import 'package:intl/intl.dart';
+
+class HubScreen extends StatefulWidget {
+  const HubScreen({super.key});
+
+  @override
+  State<HubScreen> createState() => _HubScreenState();
+}
+
+class _HubScreenState extends State<HubScreen> {
+  bool _isAdmin = false;
+  List<HubPost> _posts = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    setState(() => _isLoading = true);
+    try {
+      final profile = await SupabaseService.getMyProfile();
+      final posts = await SupabaseService.getHubPosts();
+      if (mounted) {
+        setState(() {
+          _isAdmin = profile?.isAdmin ?? false;
+          _posts = posts;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _showCreatePostDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => _CreatePostDialog(onSuccess: _loadData),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator(color: OTheme.neonPink));
+    }
+
+    final featuredPosts = _posts.where((p) => p.type == HubPostType.featured).toList();
+    final updatePosts = _posts.where((p) => p.type == HubPostType.update).toList();
+    final comingSoonPosts = _posts.where((p) => p.type == HubPostType.comingSoon).toList();
+
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      floatingActionButton: _isAdmin
+          ? FloatingActionButton.extended(
+              onPressed: _showCreatePostDialog,
+              backgroundColor: OTheme.neonPink,
+              icon: const Icon(Icons.add, color: Colors.white),
+              label: const Text('New Post', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            )
+          : null,
+      body: RefreshIndicator(
+        onRefresh: _loadData,
+        color: OTheme.neonPink,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Good Afternoon, Explorer',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                        'Stay updated with the latest from O.',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (_isAdmin && _posts.isEmpty)
+                    TextButton.icon(
+                      onPressed: _seedDummyData,
+                      icon: const Icon(Icons.auto_fix_high, color: OTheme.neonPink),
+                      label: const Text('Seed Initial Content', style: TextStyle(color: OTheme.neonPink)),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 48),
+              
+              if (featuredPosts.isNotEmpty) ...[
+                const _SectionHeader(title: 'Featured News'),
+                const SizedBox(height: 24),
+                ...featuredPosts.map((post) => Padding(
+                  padding: const EdgeInsets.only(bottom: 24),
+                  child: _FeaturedCard(
+                    title: post.title,
+                    subtitle: post.subtitle ?? '',
+                    image: post.imageUrl ?? 'https://images.unsplash.com/photo-1614850523296-d8c1af93d400?auto=format&fit=crop&q=80&w=1000',
+                    tag: post.tag,
+                  ),
+                )),
+                const SizedBox(height: 24),
+              ],
+              
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    flex: 2,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const _SectionHeader(title: 'Latest Updates'),
+                        const SizedBox(height: 24),
+                        if (updatePosts.isEmpty)
+                          const Text('No updates yet.', style: TextStyle(color: Colors.white38))
+                        else
+                          ...updatePosts.map((post) => _UpdateItem(
+                            title: post.title,
+                            date: DateFormat('MMM dd, yyyy').format(post.createdAt),
+                            description: post.subtitle ?? '',
+                            icon: _getIconForTag(post.tag),
+                          )),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 48),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const _SectionHeader(title: 'Coming Soon'),
+                        const SizedBox(height: 24),
+                        if (comingSoonPosts.isEmpty)
+                          const Text('Nothing planned yet.', style: TextStyle(color: Colors.white38))
+                        else
+                          ...comingSoonPosts.map((post) => Padding(
+                            padding: const EdgeInsets.only(bottom: 24),
+                            child: _ComingSoonCard(
+                              title: post.title,
+                              description: post.subtitle ?? '',
+                              icon: _getIconForTag(post.tag),
+                            ),
+                          )),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  IconData _getIconForTag(String tag) {
+    switch (tag.toUpperCase()) {
+      case 'SECURITY': return Icons.security_outlined;
+      case 'ALGORITHM': return Icons.auto_awesome_outlined;
+      case 'COMMUNITY': return Icons.groups_outlined;
+      case 'PREMIUM': return Icons.star_border_purple500_outlined;
+      case 'EVENT': return Icons.event_outlined;
+      default: return Icons.info_outline;
+    }
+  }
+
+  Future<void> _seedDummyData() async {
+    setState(() => _isLoading = true);
+    final dummyPosts = [
+      HubPost(
+        id: '',
+        title: 'Welcome to the New O Web',
+        subtitle: 'Experience the full power of O on your desktop. Faster, sleeker, and more intuitive.',
+        imageUrl: 'https://images.unsplash.com/photo-1614850523296-d8c1af93d400?auto=format&fit=crop&q=80&w=1000',
+        tag: 'NEW FEATURE',
+        type: HubPostType.featured,
+        createdAt: DateTime.now(),
+      ),
+      HubPost(
+        id: '',
+        title: 'Enhanced Privacy Controls',
+        subtitle: 'We\'ve added more granular controls over who can see your profile details.',
+        tag: 'SECURITY',
+        type: HubPostType.update,
+        createdAt: DateTime.now().subtract(const Duration(days: 1)),
+      ),
+      HubPost(
+        id: '',
+        title: 'O Premium',
+        subtitle: 'Unlock exclusive features and priority matching.',
+        tag: 'PREMIUM',
+        type: HubPostType.comingSoon,
+        createdAt: DateTime.now(),
+      ),
+    ];
+
+    for (var post in dummyPosts) {
+      await SupabaseService.createHubPost(post);
+    }
+    _loadData();
+  }
+}
+
+class _CreatePostDialog extends StatefulWidget {
+  final VoidCallback onSuccess;
+  const _CreatePostDialog({required this.onSuccess});
+
+  @override
+  State<_CreatePostDialog> createState() => _CreatePostDialogState();
+}
+
+class _CreatePostDialogState extends State<_CreatePostDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _titleController = TextEditingController();
+  final _subtitleController = TextEditingController();
+  final _imageUrlController = TextEditingController();
+  final _tagController = TextEditingController(text: 'UPDATE');
+  HubPostType _type = HubPostType.update;
+  bool _isSaving = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: OTheme.deepCharcoal,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      child: Container(
+        width: 500,
+        padding: const EdgeInsets.all(32),
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Create New Hub Post',
+                  style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 24),
+                DropdownButtonFormField<HubPostType>(
+                  value: _type,
+                  dropdownColor: OTheme.deepCharcoal,
+                  decoration: const InputDecoration(labelText: 'Post Type'),
+                  items: HubPostType.values.map((t) => DropdownMenuItem(
+                    value: t,
+                    child: Text(t.name.toUpperCase()),
+                  )).toList(),
+                  onChanged: (v) => setState(() => _type = v!),
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _titleController,
+                  decoration: const InputDecoration(labelText: 'Title'),
+                  validator: (v) => v!.isEmpty ? 'Required' : null,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _subtitleController,
+                  decoration: const InputDecoration(labelText: 'Subtitle / Description'),
+                  maxLines: 3,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _tagController,
+                  decoration: const InputDecoration(labelText: 'Tag (e.g. SECURITY, EVENT)'),
+                ),
+                const SizedBox(height: 16),
+                if (_type == HubPostType.featured)
+                  TextFormField(
+                    controller: _imageUrlController,
+                    decoration: const InputDecoration(labelText: 'Image URL'),
+                  ),
+                const SizedBox(height: 32),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancel'),
+                    ),
+                    const SizedBox(width: 16),
+                    ElevatedButton(
+                      onPressed: _isSaving ? null : _submit,
+                      child: _isSaving 
+                        ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                        : const Text('Post to Hub'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _isSaving = true);
+    
+    try {
+      final post = HubPost(
+        id: '',
+        title: _titleController.text,
+        subtitle: _subtitleController.text,
+        imageUrl: _imageUrlController.text.isNotEmpty ? _imageUrlController.text : null,
+        tag: _tagController.text,
+        type: _type,
+        createdAt: DateTime.now(),
+      );
+      
+      await SupabaseService.createHubPost(post);
+      widget.onSuccess();
+      if (mounted) Navigator.pop(context);
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  final String title;
+  const _SectionHeader({required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      title.toUpperCase(),
+      style: const TextStyle(
+        color: OTheme.neonPink,
+        fontSize: 12,
+        fontWeight: FontWeight.w900,
+        letterSpacing: 2.0,
+      ),
+    );
+  }
+}
+
+class _FeaturedCard extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final String image;
+  final String tag;
+
+  const _FeaturedCard({
+    required this.title,
+    required this.subtitle,
+    required this.image,
+    required this.tag,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 360,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        image: DecorationImage(
+          image: NetworkImage(image),
+          fit: BoxFit.cover,
+          colorFilter: ColorFilter.mode(
+            Colors.black.withValues(alpha: 0.4),
+            BlendMode.darken,
+          ),
+        ),
+      ),
+      padding: const EdgeInsets.all(40),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: OTheme.neonPink,
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              tag,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            title,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 32,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: 500,
+            child: Text(
+              subtitle,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.8),
+                fontSize: 18,
+                height: 1.5,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _UpdateItem extends StatelessWidget {
+  final String title;
+  final String date;
+  final String description;
+  final IconData icon;
+
+  const _UpdateItem({
+    required this.title,
+    required this.date,
+    required this.description,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 32),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: OTheme.deepCharcoal,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: OTheme.neonPink, size: 24),
+          ),
+          const SizedBox(width: 20),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      date,
+                      style: const TextStyle(
+                        color: Colors.white30,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  description,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.5),
+                    fontSize: 15,
+                    height: 1.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ComingSoonCard extends StatelessWidget {
+  final String title;
+  final String description;
+  final IconData icon;
+
+  const _ComingSoonCard({
+    required this.title,
+    required this.description,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: OTheme.deepCharcoal.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: Colors.white54, size: 32),
+          const SizedBox(height: 20),
+          Text(
+            title,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            description,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.4),
+              fontSize: 14,
+              height: 1.4,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

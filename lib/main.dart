@@ -11,6 +11,7 @@ import 'package:o_web/screens/matchmaker_screen.dart';
 
 import 'package:o_web/screens/onboarding_screen.dart';
 import 'package:o_web/screens/settings_screen.dart';
+import 'package:o_web/screens/hub_screen.dart';
 import 'package:o_web/services/supabase_service.dart';
 
 void main() async {
@@ -20,7 +21,7 @@ void main() async {
 }
 
 final _router = GoRouter(
-  initialLocation: '/discovery',
+  initialLocation: '/hub',
   redirect: (context, state) async {
     final session = SupabaseService.client.auth.currentSession;
     final bool isLoggingIn = state.matchedLocation == '/auth';
@@ -30,18 +31,47 @@ final _router = GoRouter(
     }
 
     // Check if profile is complete
-    final profile = await SupabaseService.getMyProfile();
+    Profile? profile;
+    debugPrint('NAV: Checking profile for user: ${SupabaseService.client.auth.currentUser?.id}');
+    try {
+      profile = await SupabaseService.getMyProfile().timeout(const Duration(seconds: 3));
+      debugPrint('NAV: Profile fetch success: ${profile != null}');
+    } catch (e) {
+      debugPrint('NAV: Profile fetch FAILED: $e');
+    }
+
     final bool isOnboarding = state.matchedLocation == '/onboarding';
 
     if (profile == null || !profile.isComplete) {
       return isOnboarding ? null : '/onboarding';
     }
 
-    if (isLoggingIn || isOnboarding) return '/discovery';
+    // Admin Protection
+    if (state.matchedLocation == '/admin' && !profile.isAdmin) {
+      return '/hub';
+    }
+
+    if (isLoggingIn || isOnboarding) return '/hub';
 
     return null;
   },
   routes: [
+    GoRoute(
+      path: '/',
+      redirect: (_, __) => '/hub',
+    ),
+    GoRoute(
+      path: '/hub',
+      redirect: (_, __) => '/hub',
+    ),
+    GoRoute(
+      path: '/nearby',
+      redirect: (_, __) => '/hub',
+    ),
+    GoRoute(
+      path: '/feed',
+      redirect: (_, __) => '/hub',
+    ),
     GoRoute(
       path: '/auth',
       builder: (context, state) => const AuthScreen(),
@@ -53,6 +83,10 @@ final _router = GoRouter(
     ShellRoute(
       builder: (context, state, child) => AppShell(child: child),
       routes: [
+        GoRoute(
+          path: '/hub',
+          builder: (context, state) => const HubScreen(),
+        ),
         GoRoute(
           path: '/discovery',
           builder: (context, state) => const DiscoveryScreen(),

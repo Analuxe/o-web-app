@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:o_web/theme.dart';
+import 'package:o_web/services/supabase_service.dart';
 
 class AppShell extends StatefulWidget {
   final Widget child;
@@ -13,29 +14,57 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  bool _isAdmin = false;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkAdminStatus();
+  }
+
+  Future<void> _checkAdminStatus() async {
+    debugPrint('NAV: Checking Admin Status in AppShell');
+    try {
+      final profile = await SupabaseService.getMyProfile().timeout(const Duration(seconds: 3));
+      if (mounted) {
+        setState(() {
+          _isAdmin = profile?.isAdmin ?? false;
+          _isLoading = false;
+        });
+        debugPrint('NAV: Admin status: $_isAdmin');
+      }
+    } catch (e) {
+      debugPrint('NAV: Admin check FAILED: $e');
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
     final isDesktop = width > 1024;
-    final isTablet = width > 768 && width <= 1024;
 
     return Scaffold(
       key: _scaffoldKey,
-      drawer: !isDesktop ? const Drawer(
+      drawer: !isDesktop ? Drawer(
         backgroundColor: OTheme.black,
-        child: SideNavBar(isDrawer: true),
+        child: SideNavBar(isDrawer: true, isAdmin: _isAdmin),
       ) : null,
       body: Row(
         children: [
-          if (isDesktop) const SideNavBar(),
+          if (isDesktop) SideNavBar(isAdmin: _isAdmin),
           Expanded(
             child: Column(
               children: [
                 if (!isDesktop) TopNavBar(
                   onMenuPressed: () => _scaffoldKey.currentState?.openDrawer(),
                 ),
-                Expanded(child: widget.child),
+                Expanded(
+                  child: _isLoading 
+                      ? const Center(child: CircularProgressIndicator(color: OTheme.neonPink))
+                      : widget.child,
+                ),
               ],
             ),
           ),
@@ -47,7 +76,8 @@ class _AppShellState extends State<AppShell> {
 
 class SideNavBar extends StatelessWidget {
   final bool isDrawer;
-  const SideNavBar({super.key, this.isDrawer = false});
+  final bool isAdmin;
+  const SideNavBar({super.key, this.isDrawer = false, this.isAdmin = false});
 
   @override
   Widget build(BuildContext context) {
@@ -75,6 +105,13 @@ class SideNavBar extends StatelessWidget {
           ),
           const SizedBox(height: 48),
           _NavButton(
+            icon: Icons.home_outlined,
+            label: 'Hub',
+            path: '/hub',
+            isSelected: GoRouterState.of(context).uri.toString() == '/hub',
+            onTap: isDrawer ? () => Navigator.pop(context) : null,
+          ),
+          _NavButton(
             icon: Icons.explore_outlined,
             label: 'Discovery',
             path: '/discovery',
@@ -95,13 +132,14 @@ class SideNavBar extends StatelessWidget {
             isSelected: GoRouterState.of(context).uri.toString() == '/matchmaker',
             onTap: isDrawer ? () => Navigator.pop(context) : null,
           ),
-          _NavButton(
-            icon: Icons.admin_panel_settings_outlined,
-            label: 'Admin Console',
-            path: '/admin',
-            isSelected: GoRouterState.of(context).uri.toString() == '/admin',
-            onTap: isDrawer ? () => Navigator.pop(context) : null,
-          ),
+          if (isAdmin)
+            _NavButton(
+              icon: Icons.admin_panel_settings_outlined,
+              label: 'Admin Console',
+              path: '/admin',
+              isSelected: GoRouterState.of(context).uri.toString() == '/admin',
+              onTap: isDrawer ? () => Navigator.pop(context) : null,
+            ),
           const Spacer(),
           _NavButton(
             icon: Icons.person_outline,

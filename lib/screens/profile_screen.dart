@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:o_web/theme.dart';
 import 'package:o_web/services/supabase_service.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:typed_data';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -18,6 +20,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _bioController = TextEditingController();
   String? _selectedPronouns;
   List<String> _selectedInterests = [];
+  bool _isUploading = false;
 
   final List<String> _availableInterests = [
     'Art', 'Music', 'Tech', 'Travel', 'Food', 'Fitness', 'Cinema', 'Gaming',
@@ -54,6 +57,41 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
     await _loadProfile();
     setState(() => _isEditing = false);
+  }
+
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final XFile? image = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1024,
+      maxHeight: 1024,
+      imageQuality: 80,
+    );
+
+    if (image != null) {
+      setState(() => _isUploading = true);
+      try {
+        final bytes = await image.readAsBytes();
+        final fileName = '${DateTime.now().millisecondsSinceEpoch}.jpg';
+        final userId = SupabaseService.client.auth.currentUser?.id;
+        
+        if (userId != null) {
+          final url = await SupabaseService.uploadAvatar(userId, bytes, fileName);
+          await SupabaseService.updateProfile({'avatar_url': url});
+          await _loadProfile();
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Upload failed: $e')),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() => _isUploading = false);
+        }
+      }
+    }
   }
 
   @override
@@ -111,15 +149,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ? DecorationImage(image: NetworkImage(_profile!.avatarUrl!), fit: BoxFit.cover)
                           : null,
                     ),
-                    child: _profile?.avatarUrl == null
-                        ? const Icon(Icons.person, size: 80, color: OTheme.neonPink)
-                        : null,
+                    child: _isUploading 
+                        ? const Center(child: CircularProgressIndicator(color: OTheme.neonPink))
+                        : (_profile?.avatarUrl == null
+                            ? Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(40.0),
+                                  child: Image.asset(
+                                    'assets/logo.png',
+                                    color: OTheme.neonPink.withOpacity(0.3),
+                                  ),
+                                ),
+                              )
+                            : null),
                   ),
                   const SizedBox(height: 16),
                   OutlinedButton.icon(
-                    onPressed: () {},
+                    onPressed: _isUploading ? null : _pickImage,
                     icon: const Icon(Icons.upload_file, size: 16),
-                    label: const Text('Upload Photo'),
+                    label: Text(_isUploading ? 'Uploading...' : 'Upload Photo'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: OTheme.neonPink,
                       side: const BorderSide(color: OTheme.neonPink),
@@ -141,6 +189,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           SizedBox(width: 6),
                           Text('Verified', style: TextStyle(color: Colors.green, fontSize: 12)),
                         ],
+                      ),
+                    ),
+                  ] else ...[
+                    const SizedBox(height: 24),
+                    ElevatedButton.icon(
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const VerificationScreen()),
+                      ),
+                      icon: const Icon(Icons.verified_user, size: 16),
+                      label: const Text('Get Verified'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: OTheme.neonPink.withValues(alpha: 0.1),
+                        foregroundColor: OTheme.neonPink,
+                        side: const BorderSide(color: OTheme.neonPink),
                       ),
                     ),
                   ],

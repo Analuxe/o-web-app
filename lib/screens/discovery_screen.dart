@@ -10,6 +10,25 @@ class DiscoveryScreen extends StatefulWidget {
 }
 
 class _DiscoveryScreenState extends State<DiscoveryScreen> {
+  Profile? _myProfile;
+  bool _isLoadingMyProfile = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMyProfile();
+  }
+
+  Future<void> _loadMyProfile() async {
+    final profile = await SupabaseService.getMyProfile();
+    if (mounted) {
+      setState(() {
+        _myProfile = profile;
+        _isLoadingMyProfile = false;
+      });
+    }
+  }
+
   void _showFilterSheet() {
     showModalBottomSheet(
       context: context,
@@ -41,71 +60,81 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> {
     final width = MediaQuery.of(context).size.width;
     final isLargeScreen = width > 1200;
 
-    return Row(
-      children: [
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Nearby Vines',
-                      style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                        fontSize: width < 600 ? 28 : null,
-                      ),
-                    ),
-                    if (!isLargeScreen)
-                      IconButton(
-                        onPressed: _showFilterSheet,
-                        icon: const Icon(Icons.tune, color: OTheme.neonPink),
-                        style: IconButton.styleFrom(
-                          backgroundColor: OTheme.neonPink.withValues(alpha: 0.1),
-                          padding: const EdgeInsets.all(12),
+    return SafeArea(
+      child: Row(
+        children: [
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Nearby Vines',
+                        style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                          fontSize: width < 600 ? 28 : null,
                         ),
                       ),
-                  ],
-                ),
-                const SizedBox(height: 32),
-                Expanded(
-                  child: StreamBuilder<List<Map<String, dynamic>>>(
-                    stream: SupabaseService.getNearbyVines(),
-                    builder: (context, snapshot) {
-                      if (!snapshot.hasData) return const Center(child: CircularProgressIndicator(color: OTheme.neonPink));
-                      
-                      final profiles = snapshot.data!
-                          .map((json) => Profile.fromJson(json))
-                          .where((p) => p.id != SupabaseService.client.auth.currentUser?.id)
-                          .toList();
-
-                      if (profiles.isEmpty) {
-                        return const Center(child: Text('No vines nearby yet.', style: TextStyle(color: Colors.white24)));
-                      }
-
-                      return GridView.builder(
-                        gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                          maxCrossAxisExtent: width < 600 ? 200 : 300,
-                          childAspectRatio: 0.75,
-                          crossAxisSpacing: width < 600 ? 12 : 24,
-                          mainAxisSpacing: width < 600 ? 12 : 24,
+                      if (!isLargeScreen)
+                        IconButton(
+                          onPressed: _showFilterSheet,
+                          icon: const Icon(Icons.tune, color: OTheme.neonPink),
+                          style: IconButton.styleFrom(
+                            backgroundColor: OTheme.neonPink.withValues(alpha: 0.1),
+                            padding: const EdgeInsets.all(12),
+                          ),
                         ),
-                        itemCount: profiles.length,
-                        itemBuilder: (context, index) {
-                          return UserCard(profile: profiles[index]);
-                        },
-                      );
-                    },
+                    ],
                   ),
-                ),
-              ],
+                  const SizedBox(height: 32),
+                  Expanded(
+                    child: StreamBuilder<List<Map<String, dynamic>>>(
+                      stream: SupabaseService.getNearbyVines(),
+                      builder: (context, snapshot) {
+                        if (snapshot.hasError) {
+                          return Center(child: Text('Error loading vines: ${snapshot.error}', style: const TextStyle(color: Colors.white54)));
+                        }
+                        if (!snapshot.hasData) {
+                          return const Center(child: CircularProgressIndicator(color: OTheme.neonPink));
+                        }
+                        
+                        final profiles = snapshot.data!
+                            .map((json) => Profile.fromJson(json))
+                            .where((p) => p.id != SupabaseService.client.auth.currentUser?.id)
+                            .toList();
+    
+                        if (profiles.isEmpty) {
+                          return const Center(child: Text('No vines nearby yet.', style: TextStyle(color: Colors.white24)));
+                        }
+    
+                        return GridView.builder(
+                          gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                            maxCrossAxisExtent: width < 600 ? 200 : 300,
+                            childAspectRatio: 0.75,
+                            crossAxisSpacing: width < 600 ? 12 : 24,
+                            mainAxisSpacing: width < 600 ? 12 : 24,
+                          ),
+                          itemCount: profiles.length,
+                          itemBuilder: (context, index) {
+                            return UserCard(
+                              profile: profiles[index],
+                              isCurrentUserVerified: _myProfile?.isVerified ?? false,
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-        if (isLargeScreen) const FilterSidebar(),
-      ],
+          if (isLargeScreen) const FilterSidebar(),
+        ],
+      ),
     );
   }
 }
@@ -256,7 +285,8 @@ class _FilterChip extends StatelessWidget {
 
 class UserCard extends StatefulWidget {
   final Profile profile;
-  const UserCard({super.key, required this.profile});
+  final bool isCurrentUserVerified;
+  const UserCard({super.key, required this.profile, this.isCurrentUserVerified = false});
 
   @override
   State<UserCard> createState() => _UserCardState();
@@ -319,6 +349,30 @@ class _UserCardState extends State<UserCard> {
           behavior: SnackBarBehavior.floating,
         ),
       );
+    }
+  }
+
+  void _handleThumbsDown() async {
+    if (!widget.isCurrentUserVerified) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Only verified accounts can cast a Thumbs Down.'), backgroundColor: Colors.orangeAccent),
+      );
+      return;
+    }
+
+    try {
+      await SupabaseService.submitThumbsDown(widget.profile.id);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Reputation report submitted.'), backgroundColor: OTheme.neonPink),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('You have already reported this user.'), backgroundColor: Colors.white24),
+        );
+      }
     }
   }
 
@@ -431,6 +485,28 @@ class _UserCardState extends State<UserCard> {
               ),
             ),
           ),
+          // Thumbs Down Button (Only for Verified Users)
+          if (widget.isCurrentUserVerified)
+            Positioned(
+              top: 12,
+              left: 12,
+              child: InkWell(
+                onTap: _handleThumbsDown,
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.6),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white10),
+                  ),
+                  child: const Icon(
+                    Icons.thumb_down_alt_outlined,
+                    color: Colors.white54,
+                    size: 16,
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );

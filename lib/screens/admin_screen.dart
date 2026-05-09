@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:o_web/theme.dart';
 import 'package:o_web/services/supabase_service.dart';
+import 'package:o_web/services/dummy_data_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AdminScreen extends StatefulWidget {
@@ -12,18 +13,23 @@ class AdminScreen extends StatefulWidget {
 
 class _AdminScreenState extends State<AdminScreen> {
   String activeTab = 'analytics';
+  List<Profile> reputationAlerts = [];
+  bool isLoadingReputation = false;
   int totalUsers = 0;
   int verifiedUsers = 0;
   int safetyFlags = 0;
   bool isLoadingStats = true;
   List<Profile> unvalidatedUsers = [];
   bool isLoadingModeration = false;
+  List<Map<String, dynamic>> pendingVerifications = [];
+  bool isLoadingVerifications = false;
 
   @override
   void initState() {
     super.initState();
     _loadStats();
     _loadUnvalidatedUsers();
+    _loadVerifications();
   }
 
   Future<void> _loadStats() async {
@@ -76,6 +82,134 @@ class _AdminScreenState extends State<AdminScreen> {
         .eq('id', userId);
     _loadUnvalidatedUsers();
     _loadStats();
+    _loadReputationAlerts();
+  }
+
+  Future<void> _loadVerifications() async {
+    setState(() => isLoadingVerifications = true);
+    try {
+      final data = await SupabaseService.getPendingVerifications();
+      setState(() => pendingVerifications = data);
+    } catch (e) {
+      debugPrint('Error loading verifications: $e');
+    } finally {
+      setState(() => isLoadingVerifications = false);
+    }
+  }
+
+  Future<void> _processVerification(String id, String status) async {
+    await SupabaseService.updateVerificationStatus(id, status);
+    _loadVerifications();
+    _loadStats();
+  }
+
+  Future<void> _viewId(String path) async {
+    try {
+      final url = await SupabaseService.getVerificationIdUrl(path);
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            backgroundColor: OTheme.deepCharcoal,
+            title: const Text('Government ID', style: TextStyle(color: Colors.white)),
+            content: SizedBox(
+              width: 800,
+              height: 600,
+              child: Image.network(
+                url,
+                fit: BoxFit.contain,
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return const Center(child: CircularProgressIndicator(color: OTheme.neonPink));
+                },
+              ),
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error loading ID: $e')));
+      }
+    }
+  }
+
+  Future<void> _loadReputationAlerts() async {
+    setState(() => isLoadingReputation = true);
+    try {
+      final data = await SupabaseService.getReputationAlerts();
+      setState(() {
+        reputationAlerts = data.map((d) => Profile.fromJson(d)).toList();
+        // Sort by thumbs down count descending
+        reputationAlerts.sort((a, b) => b.thumbsDownCount.compareTo(a.thumbsDownCount));
+      });
+    } catch (e) {
+      debugPrint('Error loading reputation: $e');
+    } finally {
+      setState(() => isLoadingReputation = false);
+    }
+  }
+
+  void _showAddAdminDialog() {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: OTheme.deepCharcoal,
+        title: const Text('Promote to Admin', style: TextStyle(color: Colors.white)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Enter the username of the user you want to promote.', 
+              style: TextStyle(color: Colors.white54, fontSize: 14)),
+            const SizedBox(height: 24),
+            TextField(
+              controller: controller,
+              decoration: const InputDecoration(
+                hintText: 'username',
+                prefixText: '@',
+                hintStyle: TextStyle(color: Colors.white24),
+              ),
+              style: const TextStyle(color: Colors.white),
+              autofocus: true,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final username = controller.text.trim();
+              if (username.isEmpty) return;
+              
+              try {
+                await SupabaseService.promoteToAdmin(username);
+                if (mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('User @$username is now an Admin'), backgroundColor: Colors.green),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(e.toString().replaceAll('Exception: ', '')), backgroundColor: Colors.redAccent),
+                  );
+                }
+              }
+            },
+            child: const Text('Promote'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -111,7 +245,58 @@ class _AdminScreenState extends State<AdminScreen> {
                     isActive: activeTab == 'moderation',
                     onTap: () => setState(() => activeTab = 'moderation'),
                   ),
+                  const SizedBox(width: 12),
+                  _TabButton(
+                    label: 'Reputation',
+                    isActive: activeTab == 'reputation',
+                    onTap: () => setState(() => activeTab = 'reputation'),
+                  ),
+                  const SizedBox(width: 12),
+                  _TabButton(
+                    label: 'Verifications',
+                    isActive: activeTab == 'verifications',
+                    onTap: () => setState(() => activeTab = 'verifications'),
+                  ),
                 ],
+              ),
+              const SizedBox(width: 12),
+              ElevatedButton.icon(
+                onPressed: () async {
+                  try {
+                    await DummyDataService.seedDummyData();
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Dummy Data Seeded Successfully'), backgroundColor: Colors.green),
+                      );
+                      _loadStats();
+                      _loadUnvalidatedUsers();
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Error seeding data: $e'), backgroundColor: Colors.redAccent),
+                      );
+                    }
+                  }
+                },
+                icon: const Icon(Icons.storage, size: 16),
+                label: const Text('Seed UAT Data'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: OTheme.neonPink.withValues(alpha: 0.1),
+                  foregroundColor: OTheme.neonPink,
+                  side: const BorderSide(color: OTheme.neonPink),
+                ),
+              ),
+              const SizedBox(width: 12),
+              ElevatedButton.icon(
+                onPressed: _showAddAdminDialog,
+                icon: const Icon(Icons.admin_panel_settings, size: 16),
+                label: const Text('Add Admin'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white.withValues(alpha: 0.1),
+                  foregroundColor: Colors.white,
+                  side: const BorderSide(color: Colors.white24),
+                ),
               ),
             ],
           ),
@@ -131,6 +316,8 @@ class _AdminScreenState extends State<AdminScreen> {
       case 'analytics': return _buildAnalytics();
       case 'insights': return _buildInsights();
       case 'moderation': return _buildModeration();
+      case 'reputation': return _buildReputation();
+      case 'verifications': return _buildVerifications();
       default: return _buildAnalytics();
     }
   }
@@ -281,6 +468,196 @@ class _AdminScreenState extends State<AdminScreen> {
                     onPressed: () => _validateUser(user.id),
                     style: ElevatedButton.styleFrom(backgroundColor: OTheme.neonPink),
                     child: const Text('Validate', style: TextStyle(color: Colors.black)),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildReputation() {
+    if (isLoadingReputation) {
+      return const Center(child: CircularProgressIndicator(color: OTheme.neonPink));
+    }
+
+    final highRiskUsers = reputationAlerts.where((u) => u.thumbsDownCount > 0).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Reputation Monitor',
+          style: Theme.of(context).textTheme.displaySmall,
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          'Users with "Thumbs Down" reports from verified accounts.',
+          style: TextStyle(color: Colors.white54, fontSize: 14),
+        ),
+        const SizedBox(height: 32),
+        if (highRiskUsers.isEmpty)
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 64),
+              child: Text('No reputation alerts at this time.', style: TextStyle(color: Colors.white24)),
+            ),
+          )
+        else
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: highRiskUsers.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 16),
+            itemBuilder: (context, index) {
+              final user = highRiskUsers[index];
+              return Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: OTheme.deepCharcoal,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: user.thumbsDownCount >= 3 ? Colors.redAccent.withOpacity(0.3) : Colors.white.withOpacity(0.05),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 24,
+                      backgroundImage: user.avatarUrl != null ? NetworkImage(user.avatarUrl!) : null,
+                      backgroundColor: Colors.white10,
+                      child: user.avatarUrl == null ? const Icon(Icons.person, color: Colors.white24) : null,
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            user.displayName ?? 'Unknown',
+                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                          ),
+                          Text('@${user.username}', style: const TextStyle(color: OTheme.neonPink, fontSize: 12)),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: user.thumbsDownCount >= 3 ? Colors.redAccent.withOpacity(0.1) : Colors.white.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: user.thumbsDownCount >= 3 ? Colors.redAccent.withOpacity(0.4) : Colors.white10,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.thumb_down_alt,
+                            size: 14,
+                            color: user.thumbsDownCount >= 3 ? Colors.redAccent : Colors.white54,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '${user.thumbsDownCount} Thumbs Down',
+                            style: TextStyle(
+                              color: user.thumbsDownCount >= 3 ? Colors.redAccent : Colors.white70,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    IconButton(
+                      icon: const Icon(Icons.block, color: Colors.redAccent, size: 20),
+                      onPressed: () async {
+                        await SupabaseService.blockUser(user.id);
+                        _loadReputationAlerts();
+                      },
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+      ],
+    );
+  }
+
+  Widget _buildVerifications() {
+    if (isLoadingVerifications) {
+      return const Center(child: CircularProgressIndicator(color: OTheme.neonPink));
+    }
+
+    if (pendingVerifications.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(48.0),
+          child: Text('No pending ID verifications.', style: TextStyle(color: Colors.white54)),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'ID Verification Requests',
+          style: Theme.of(context).textTheme.displaySmall,
+        ),
+        const SizedBox(height: 24),
+        ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: pendingVerifications.length,
+          itemBuilder: (context, index) {
+            final app = pendingVerifications[index];
+            final profile = app['profiles'];
+            return Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: OTheme.deepCharcoal,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 24,
+                    backgroundImage: profile['avatar_url'] != null ? NetworkImage(profile['avatar_url']) : null,
+                    backgroundColor: Colors.white10,
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(profile['display_name'] ?? 'Unknown', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                        Text('@${profile['username'] ?? 'anon'}', style: const TextStyle(color: OTheme.neonPink, fontSize: 12)),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  OutlinedButton.icon(
+                    onPressed: () => _viewId(app['id_image_url']),
+                    icon: const Icon(Icons.badge, size: 16),
+                    label: const Text('View ID'),
+                    style: OutlinedButton.styleFrom(foregroundColor: Colors.white70),
+                  ),
+                  const SizedBox(width: 12),
+                  ElevatedButton(
+                    onPressed: () => _processVerification(app['id'], 'approved'),
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                    child: const Text('Approve', style: TextStyle(color: Colors.white)),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: () => _processVerification(app['id'], 'rejected'),
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+                    child: const Text('Reject', style: TextStyle(color: Colors.white)),
                   ),
                 ],
               ),
