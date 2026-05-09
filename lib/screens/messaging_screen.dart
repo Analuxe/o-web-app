@@ -11,26 +11,34 @@ class MessagingScreen extends StatefulWidget {
 
 class _MessagingScreenState extends State<MessagingScreen> {
   Profile? _selectedProfile;
+  Profile? _myProfile;
   final _messageController = TextEditingController();
   List<Profile> _chats = [];
   bool _isLoadingChats = true;
+  bool _isLoadingProfile = true;
 
   @override
   void initState() {
     super.initState();
-    _loadChats();
+    _loadProfileAndChats();
   }
 
-  Future<void> _loadChats() async {
+  Future<void> _loadProfileAndChats() async {
     try {
+      final myProfile = await SupabaseService.getMyProfile();
       final data = await SupabaseService.getMyChats();
       setState(() {
+        _myProfile = myProfile;
         _chats = data.map((json) => Profile.fromJson(json)).toList();
         _isLoadingChats = false;
+        _isLoadingProfile = false;
         if (_chats.isNotEmpty) _selectedProfile = _chats.first;
       });
     } catch (e) {
-      setState(() => _isLoadingChats = false);
+      setState(() {
+        _isLoadingChats = false;
+        _isLoadingProfile = false;
+      });
     }
   }
 
@@ -45,6 +53,14 @@ class _MessagingScreenState extends State<MessagingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoadingProfile) {
+      return const Center(child: CircularProgressIndicator(color: OTheme.neonPink));
+    }
+
+    if (_myProfile != null && !_myProfile!.isValidated) {
+      return _buildLockedState();
+    }
+
     return Row(
       children: [
         // Contact List
@@ -223,6 +239,35 @@ class ChatMessage extends StatelessWidget {
         ),
         constraints: const BoxConstraints(maxWidth: 400),
         child: Text(text, style: TextStyle(color: isMe ? Colors.black : Colors.white)),
+      ),
+    );
+  Widget _buildLockedState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.lock_person_outlined, size: 80, color: OTheme.neonPink.withOpacity(0.5)),
+          const SizedBox(height: 24),
+          const Text(
+            'Identity Validation Pending',
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+          ),
+          const SizedBox(height: 12),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 40),
+            child: Text(
+              'O requires a human check before unlocking messaging. You can continue browsing Discovery while we process your photo.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.white54),
+            ),
+          ),
+          const SizedBox(height: 32),
+          ElevatedButton(
+            onPressed: () => _loadProfileAndChats(), // Refresh
+            style: ElevatedButton.styleFrom(backgroundColor: OTheme.neonPink),
+            child: const Text('Check Status', style: TextStyle(color: Colors.black)),
+          ),
+        ],
       ),
     );
   }

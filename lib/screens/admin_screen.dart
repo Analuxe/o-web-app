@@ -16,11 +16,14 @@ class _AdminScreenState extends State<AdminScreen> {
   int verifiedUsers = 0;
   int safetyFlags = 0;
   bool isLoadingStats = true;
+  List<Profile> unvalidatedUsers = [];
+  bool isLoadingModeration = false;
 
   @override
   void initState() {
     super.initState();
     _loadStats();
+    _loadUnvalidatedUsers();
   }
 
   Future<void> _loadStats() async {
@@ -48,6 +51,31 @@ class _AdminScreenState extends State<AdminScreen> {
         isLoadingStats = false;
       });
     }
+  }
+
+  Future<void> _loadUnvalidatedUsers() async {
+    setState(() => isLoadingModeration = true);
+    final client = SupabaseService.client;
+    final res = await client
+        .from('profiles')
+        .select()
+        .eq('is_validated', false);
+    
+    if (mounted) {
+      setState(() {
+        unvalidatedUsers = (res as List).map((json) => Profile.fromJson(json)).toList();
+        isLoadingModeration = false;
+      });
+    }
+  }
+
+  Future<void> _validateUser(String userId) async {
+    await SupabaseService.client
+        .from('profiles')
+        .update({'is_validated': true})
+        .eq('id', userId);
+    _loadUnvalidatedUsers();
+    _loadStats();
   }
 
   @override
@@ -90,12 +118,21 @@ class _AdminScreenState extends State<AdminScreen> {
           const SizedBox(height: 40),
           Expanded(
             child: SingleChildScrollView(
-              child: activeTab == 'analytics' ? _buildAnalytics() : _buildInsights(),
+              child: _buildTabContent(),
             ),
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildTabContent() {
+    switch (activeTab) {
+      case 'analytics': return _buildAnalytics();
+      case 'insights': return _buildInsights();
+      case 'moderation': return _buildModeration();
+      default: return _buildAnalytics();
+    }
   }
 
   Widget _buildAnalytics() {
@@ -156,36 +193,74 @@ class _AdminScreenState extends State<AdminScreen> {
     );
   }
 
-  Widget _buildInsights() {
+  Widget _buildModeration() {
+    if (isLoadingModeration) {
+      return const Center(child: CircularProgressIndicator(color: OTheme.neonPink));
+    }
+    
+    if (unvalidatedUsers.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(48.0),
+          child: Text('No users pending validation.', style: TextStyle(color: Colors.white54)),
+        ),
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Interest Trends',
+          'Pending Validation',
           style: Theme.of(context).textTheme.displaySmall,
         ),
         const SizedBox(height: 24),
-        Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: OTheme.deepCharcoal,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Column(
-            children: [
-              _TrendRow(name: 'Techno', users: 128, growth: '+24%', isPositive: true),
-              const Divider(color: Colors.white10, height: 32),
-              _TrendRow(name: 'Kink', users: 94, growth: '+18%', isPositive: true),
-              const Divider(color: Colors.white10, height: 32),
-              _TrendRow(name: 'Digital Art', users: 156, growth: '+12%', isPositive: true),
-              const Divider(color: Colors.white10, height: 32),
-              _TrendRow(name: 'Travel', users: 210, growth: '-5%', isPositive: false),
-            ],
-          ),
+        ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: unvalidatedUsers.length,
+          itemBuilder: (context, index) {
+            final user = unvalidatedUsers[index];
+            return Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: OTheme.deepCharcoal,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 30,
+                    backgroundImage: user.avatarUrl != null ? NetworkImage(user.avatarUrl!) : null,
+                    backgroundColor: Colors.white10,
+                    child: user.avatarUrl == null ? const Icon(Icons.person, color: OTheme.neonPink) : null,
+                  ),
+                  const SizedBox(width: 20),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(user.displayName ?? 'Unknown', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                        Text('@${user.username ?? 'anon'}', style: const TextStyle(color: OTheme.neonPink, fontSize: 14)),
+                      ],
+                    ),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => _validateUser(user.id),
+                    style: ElevatedButton.styleFrom(backgroundColor: OTheme.neonPink),
+                    child: const Text('Validate', style: TextStyle(color: Colors.black)),
+                  ),
+                ],
+              ),
+            );
+          },
         ),
       ],
     );
   }
+
+  Widget _buildInsights() {
 
   Widget _buildHubDensity() {
     return Column(

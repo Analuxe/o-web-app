@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:o_web/theme.dart';
 import 'package:o_web/services/supabase_service.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -14,23 +15,34 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   int _currentStep = 0;
   final _formKey = GlobalKey<FormState>();
   
+  final _usernameController = TextEditingController();
   final _nameController = TextEditingController();
   final _ageController = TextEditingController();
   final _bioController = TextEditingController();
   String? _selectedPronouns;
   final List<String> _selectedInterests = [];
-  bool _isVerifying = false;
+  bool _isSaving = false;
+  XFile? _pickedFile;
 
   final List<String> _availableInterests = [
-    'Art', 'Music', 'Tech', 'Travel', 'Food', 'Fitness', 'Cinema', 'Gaming'
+    'Art', 'Music', 'Tech', 'Travel', 'Food', 'Fitness', 'Cinema', 'Gaming',
+    'Techno', 'Design', 'Coffee', 'Outdoors', 'Books', 'Film',
   ];
 
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final image = await picker.pickImage(source: ImageSource.gallery);
+    if (image != null) {
+      setState(() => _pickedFile = image);
+    }
+  }
+
   void _nextStep() {
-    if (_currentStep == 3 && !_isPhotoUploaded) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please upload a document to continue')),
-      );
-      return;
+    if (_currentStep == 0) {
+      if (_usernameController.text.isEmpty || _nameController.text.isEmpty || _ageController.text.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please fill in all essential fields')));
+        return;
+      }
     }
     
     if (_currentStep < 3) {
@@ -41,18 +53,29 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Future<void> _completeOnboarding() async {
-    setState(() => _isVerifying = true);
+    setState(() => _isSaving = true);
     
-    // Simulate ID validation flow
-    await Future.delayed(const Duration(seconds: 2));
+    String? photoUrl;
+    if (_pickedFile != null) {
+      try {
+        final bytes = await _pickedFile!.readAsBytes();
+        final ext = _pickedFile!.name.split('.').last;
+        photoUrl = await SupabaseService.uploadValidationPhoto(bytes, ext);
+      } catch (e) {
+        debugPrint('Upload failed: $e');
+      }
+    }
 
     await SupabaseService.updateProfile({
+      'username': _usernameController.text,
       'display_name': _nameController.text,
       'age': int.tryParse(_ageController.text),
       'bio': _bioController.text,
       'pronouns': _selectedPronouns,
       'interests': _selectedInterests,
-      'is_verified': false, // Set to false for manual admin review
+      'avatar_url': photoUrl,
+      'is_validated': false, // Human check pending
+      'is_verified': false,  // ID check pending
     });
 
     if (mounted) {
@@ -91,12 +114,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               ),
               const SizedBox(height: 40),
               
-              if (_isVerifying)
+              if (_isSaving)
                 const Column(
                   children: [
                     CircularProgressIndicator(color: OTheme.neonPink),
                     SizedBox(height: 24),
-                    Text('Validating Identity Encryption...', style: TextStyle(color: Colors.white70)),
+                    Text('Securing your frequency...', style: TextStyle(color: Colors.white70)),
                   ],
                 )
               else
@@ -106,12 +129,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     _buildIdentityStep(),
                     _buildDetailsStep(),
                     _buildInterestsStep(),
-                    _buildVerificationStep(),
+                    _buildValidationStep(),
                   ],
                 ),
               
               const SizedBox(height: 40),
-              if (!_isVerifying)
+              if (!_isSaving)
                 ElevatedButton(
                   onPressed: _nextStep,
                   style: ElevatedButton.styleFrom(
@@ -130,10 +153,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('The Essentials', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white)),
+        const Text('Identity', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white)),
         const SizedBox(height: 12),
-        const Text('How should the community recognize you?', style: TextStyle(color: Colors.white54)),
+        const Text('Set your unique handle and display name.', style: TextStyle(color: Colors.white54)),
         const SizedBox(height: 32),
+        _buildField('Username', _usernameController, 'e.g. alex_vines'),
+        const SizedBox(height: 20),
         _buildField('Display Name', _nameController, 'e.g. Alex'),
         const SizedBox(height: 20),
         _buildField('Age', _ageController, 'e.g. 28', isNumber: true),
@@ -171,7 +196,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       children: [
         const Text('Interests', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white)),
         const SizedBox(height: 12),
-        const Text('Select at least 3 to find your match.', style: TextStyle(color: Colors.white54)),
+        const Text('Select what moves you.', style: TextStyle(color: Colors.white54)),
         const SizedBox(height: 32),
         Wrap(
           spacing: 12,
@@ -198,29 +223,27 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
-  bool _isPhotoUploaded = false;
-
-  Widget _buildVerificationStep() {
+  Widget _buildValidationStep() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Verification', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white)),
+        const Text('Validation', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white)),
         const SizedBox(height: 12),
-        const Text('O requires mandatory identity validation.', style: TextStyle(color: Colors.white54)),
+        const Text('Confirm you are human to unlock messaging.', style: TextStyle(color: Colors.white54)),
         const SizedBox(height: 32),
         Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.05),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: _isPhotoUploaded ? OTheme.neonPink : Colors.white10),
+            border: Border.all(color: _pickedFile != null ? OTheme.neonPink : Colors.white10),
           ),
           child: Column(
             children: [
               Row(
                 children: [
                   Icon(
-                    _isPhotoUploaded ? Icons.check_circle_outline : Icons.shield_outlined, 
+                    _pickedFile != null ? Icons.check_circle_outline : Icons.face_retouching_natural_outlined, 
                     color: OTheme.neonPink, 
                     size: 40
                   ),
@@ -229,19 +252,27 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Secure Validation', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        Text('Human Check', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                         SizedBox(height: 4),
-                        Text('Upload a government ID or selfie to verify your frequency.', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                        Text('Upload a selfie to validate your account. Messaging is disabled until approved.', style: TextStyle(color: Colors.white54, fontSize: 12)),
                       ],
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 24),
+              if (_pickedFile != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: const Text('Photo Selected ✅', style: TextStyle(color: OTheme.neonPink)),
+                  ),
+                ),
               OutlinedButton.icon(
-                onPressed: () => setState(() => _isPhotoUploaded = true),
-                icon: const Icon(Icons.upload_file),
-                label: Text(_isPhotoUploaded ? 'Photo Uploaded' : 'Select Document'),
+                onPressed: _pickImage,
+                icon: const Icon(Icons.photo_library),
+                label: Text(_pickedFile != null ? 'Change Photo' : 'Upload Selfie'),
                 style: OutlinedButton.styleFrom(
                   minimumSize: const Size(double.infinity, 50),
                   side: const BorderSide(color: OTheme.neonPink),

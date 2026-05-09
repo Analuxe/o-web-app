@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'dart:typed_data';
 
 class Profile {
   final String id;
@@ -14,6 +15,7 @@ class Profile {
   final double? longitude;
   final bool isAdmin;
   final bool isVerified;
+  final bool isValidated;
   final bool isVip;
   final String? activePathway;
 
@@ -31,6 +33,7 @@ class Profile {
     this.longitude,
     this.isAdmin = false,
     this.isVerified = false,
+    this.isValidated = false,
     this.isVip = false,
     this.activePathway,
   });
@@ -50,6 +53,7 @@ class Profile {
       longitude: json['longitude']?.toDouble(),
       isAdmin: json['is_admin'] ?? false,
       isVerified: json['is_verified'] ?? false,
+      isValidated: json['is_validated'] ?? false,
       isVip: json['is_vip'] ?? false,
       activePathway: json['active_pathway'],
     );
@@ -68,11 +72,14 @@ class Profile {
       'latitude': latitude,
       'longitude': longitude,
       'active_pathway': activePathway,
+      'is_validated': isValidated,
+      'is_verified': isVerified,
     };
   }
 
   bool get isComplete {
-    return displayName != null && 
+    return username != null &&
+           displayName != null && 
            age != null && 
            pronouns != null && 
            (interests != null && interests!.isNotEmpty);
@@ -237,14 +244,24 @@ class SupabaseService {
       'updated_at': DateTime.now().toIso8601String(),
     });
   }
-
   static Future<List<Profile>> findMatchmakerCandidates(int maxDistance, List<String> intents) async {
     final response = await client.rpc('find_matchmaker_candidates', params: {
       'p_max_distance': maxDistance,
       'p_intents': intents.isEmpty ? null : intents,
       'p_limit': 20,
     });
-    
     return (response as List).map((json) => Profile.fromJson(json)).toList();
+  }
+
+  // Storage Logic
+  static Future<String> uploadValidationPhoto(List<int> bytes, String extension) async {
+    final user = client.auth.currentUser;
+    if (user == null) throw Exception('Not authenticated');
+
+    final path = '${user.id}/validation_${DateTime.now().millisecondsSinceEpoch}.$extension';
+    
+    await client.storage.from('validation').uploadBinary(path, Uint8List.fromList(bytes));
+    
+    return client.storage.from('validation').getPublicUrl(path);
   }
 }
