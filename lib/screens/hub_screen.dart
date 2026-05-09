@@ -603,7 +603,7 @@ class _FeaturedCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(24),
           image: DecorationImage(
             image: NetworkImage(image),
-            fit: BoxFit.cover,
+            fit: BoxFit.contain,
             colorFilter: ColorFilter.mode(
               Colors.black.withOpacity(0.4),
               BlendMode.darken,
@@ -754,15 +754,12 @@ class _UpdateItem extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 if (imageUrl != null) ...[
-                  AspectRatio(
-                    aspectRatio: 4 / 3,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Image.network(
-                        imageUrl!,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                      ),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.network(
+                      imageUrl!,
+                      width: double.infinity,
+                      fit: BoxFit.contain,
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -833,7 +830,7 @@ class _ComingSoonCard extends StatelessWidget {
                 child: Image.network(
                   imageUrl!,
                   width: double.infinity,
-                  fit: BoxFit.cover,
+                  fit: BoxFit.contain,
                 ),
               ),
             ),
