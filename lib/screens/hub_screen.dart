@@ -364,112 +364,110 @@ class _CreatePostDialogState extends State<_CreatePostDialog> {
               style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 24),
-                DropdownButtonFormField<HubPostType>(
-                  value: _type,
-                  dropdownColor: OTheme.deepCharcoal,
-                  decoration: const InputDecoration(labelText: 'Post Type'),
-                  items: HubPostType.values.map((t) => DropdownMenuItem(
-                    value: t,
-                    child: Text(t.name.toUpperCase()),
-                  )).toList(),
-                  onChanged: (v) => setState(() => _type = v!),
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _titleController,
-                  decoration: const InputDecoration(labelText: 'Title'),
-                  validator: (v) => v!.isEmpty ? 'Required' : null,
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _subtitleController,
-                  decoration: const InputDecoration(labelText: 'Subtitle / Description'),
-                  maxLines: 3,
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _tagController,
-                  decoration: const InputDecoration(labelText: 'Tag (e.g. SECURITY, EVENT)'),
-                ),
-                const SizedBox(height: 24),
-                const Text('Media Content', style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _imageUrlController,
-                        decoration: const InputDecoration(
-                          labelText: 'Image URL',
-                          hintText: 'Paste a URL or upload from device',
-                        ),
-                        readOnly: _selectedFileBytes != null,
-                      ),
+            DropdownButtonFormField<HubPostType>(
+              value: _type,
+              dropdownColor: OTheme.deepCharcoal,
+              decoration: const InputDecoration(labelText: 'Post Type'),
+              items: HubPostType.values.map((t) => DropdownMenuItem(
+                value: t,
+                child: Text(t.name.toUpperCase()),
+              )).toList(),
+              onChanged: (v) => setState(() => _type = v!),
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _titleController,
+              decoration: const InputDecoration(labelText: 'Title'),
+              validator: (v) => v!.isEmpty ? 'Required' : null,
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _subtitleController,
+              decoration: const InputDecoration(labelText: 'Subtitle / Description'),
+              maxLines: 3,
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _tagController,
+              decoration: const InputDecoration(labelText: 'Tag (e.g. SECURITY, EVENT)'),
+            ),
+            const SizedBox(height: 24),
+            const Text('Media Content', style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _imageUrlController,
+                    decoration: const InputDecoration(
+                      labelText: 'Image URL',
+                      hintText: 'Paste a URL or upload from device',
                     ),
-                    const SizedBox(width: 16),
-                    ElevatedButton.icon(
-                      onPressed: _pickImage,
-                      icon: const Icon(Icons.upload),
-                      label: const Text('Upload'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: OTheme.deepCharcoal,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                      ),
-                    ),
-                  ],
-                ),
-                if (_selectedFileBytes != null) ...[
-                  const SizedBox(height: 12),
-                  Container(
-                    height: 100,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      image: DecorationImage(
-                        image: MemoryImage(_selectedFileBytes!),
-                        fit: BoxFit.cover,
-                      ),
-                      border: Border.all(color: OTheme.neonPink.withOpacity(0.3)),
-                    ),
+                    readOnly: _selectedFileBytes != null,
                   ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      const Icon(Icons.check_circle, color: OTheme.neonPink, size: 16),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Image Cropped: $_selectedFileName',
-                        style: const TextStyle(color: OTheme.neonPink, fontSize: 12),
-                      ),
-                      const Spacer(),
-                      TextButton(
-                        onPressed: _pickImage,
-                        child: const Text('Change', style: TextStyle(fontSize: 12)),
-                      ),
-                    ],
+                ),
+                const SizedBox(width: 16),
+                ElevatedButton.icon(
+                  onPressed: _pickImage,
+                  icon: const Icon(Icons.upload),
+                  label: const Text('Upload'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: OTheme.deepCharcoal,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                   ),
-                ],
-                const SizedBox(height: 32),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Cancel'),
-                    ),
-                    const SizedBox(width: 16),
-                    ElevatedButton(
-                      onPressed: _isSaving ? null : _submit,
-                      child: _isSaving 
-                        ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                        : Text(widget.post == null ? 'Post to Hub' : 'Update Post'),
-                    ),
-                  ],
                 ),
               ],
             ),
-          ),
+            if (_selectedFileBytes != null) ...[
+              const SizedBox(height: 12),
+              Container(
+                height: 100,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  image: DecorationImage(
+                    image: MemoryImage(_selectedFileBytes!),
+                    fit: BoxFit.cover,
+                  ),
+                  border: Border.all(color: OTheme.neonPink.withOpacity(0.3)),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  const Icon(Icons.check_circle, color: OTheme.neonPink, size: 16),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Image Cropped: $_selectedFileName',
+                    style: const TextStyle(color: OTheme.neonPink, fontSize: 12),
+                  ),
+                  const Spacer(),
+                  TextButton(
+                    onPressed: _pickImage,
+                    child: const Text('Change', style: TextStyle(fontSize: 12)),
+                  ),
+                ],
+              ),
+            ],
+            const SizedBox(height: 32),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+                const SizedBox(width: 16),
+                ElevatedButton(
+                  onPressed: _isSaving ? null : _submit,
+                  child: _isSaving 
+                    ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                    : Text(widget.post == null ? 'Post to Hub' : 'Update Post'),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
