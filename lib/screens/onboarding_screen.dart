@@ -26,6 +26,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   ];
 
   void _nextStep() {
+    if (_currentStep == 3 && !_isPhotoUploaded) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please upload a document to continue')),
+      );
+      return;
+    }
+    
     if (_currentStep < 3) {
       setState(() => _currentStep++);
     } else {
@@ -45,7 +52,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       'bio': _bioController.text,
       'pronouns': _selectedPronouns,
       'interests': _selectedInterests,
-      'is_verified': true, // Auto-verify for demo, in prod this would be gated
+      'is_verified': false, // Set to false for manual admin review
     });
 
     if (mounted) {
@@ -191,33 +198,54 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
+  bool _isPhotoUploaded = false;
+
   Widget _buildVerificationStep() {
-    return const Column(
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Verification', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white)),
+        const Text('Verification', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white)),
         const SizedBox(height: 12),
-        Text('O requires mandatory identity validation.', style: TextStyle(color: Colors.white54)),
+        const Text('O requires mandatory identity validation.', style: TextStyle(color: Colors.white54)),
         const SizedBox(height: 32),
         Container(
-          padding: EdgeInsets.all(24),
+          padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
             color: Colors.white05,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white10),
+            border: Border.all(color: _isPhotoUploaded ? OTheme.neonPink : Colors.white10),
           ),
-          child: Row(
+          child: Column(
             children: [
-              Icon(Icons.shield_outlined, color: OTheme.neonPink, size: 40),
-              SizedBox(width: 20),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Secure Validation', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                    SizedBox(height: 4),
-                    Text('Your data is encrypted and never shared.', style: TextStyle(color: Colors.white54, fontSize: 12)),
-                  ],
+              Row(
+                children: [
+                  Icon(
+                    _isPhotoUploaded ? Icons.check_circle_outline : Icons.shield_outlined, 
+                    color: OTheme.neonPink, 
+                    size: 40
+                  ),
+                  const SizedBox(width: 20),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Secure Validation', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        SizedBox(height: 4),
+                        Text('Upload a government ID or selfie to verify your frequency.', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              OutlinedButton.icon(
+                onPressed: () => setState(() => _isPhotoUploaded = true),
+                icon: const Icon(Icons.upload_file),
+                label: Text(_isPhotoUploaded ? 'Photo Uploaded' : 'Select Document'),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 50),
+                  side: const BorderSide(color: OTheme.neonPink),
+                  foregroundColor: OTheme.neonPink,
                 ),
               ),
             ],

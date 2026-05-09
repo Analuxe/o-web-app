@@ -186,6 +186,17 @@ class SupabaseService {
     });
   }
 
+  static Future<void> savePushToken(String token) async {
+    final user = client.auth.currentUser;
+    if (user == null) return;
+    
+    await client.from('user_push_tokens').upsert({
+      'user_id': user.id,
+      'token': token,
+      'device_type': 'web',
+    });
+  }
+
   static Stream<List<Map<String, dynamic>>> getNearbyVines() {
     // In production, this would use a PostGIS RPC call like the mobile app
     return client
