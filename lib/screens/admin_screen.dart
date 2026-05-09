@@ -623,7 +623,7 @@ class _AdminScreenState extends State<AdminScreen> {
           itemCount: pendingVerifications.length,
           itemBuilder: (context, index) {
             final app = pendingVerifications[index];
-            final profile = app['profiles'];
+            final profile = app['profiles'] as Map<String, dynamic>;
             return Container(
               margin: const EdgeInsets.only(bottom: 16),
               padding: const EdgeInsets.all(20),
@@ -635,7 +635,7 @@ class _AdminScreenState extends State<AdminScreen> {
                 children: [
                   CircleAvatar(
                     radius: 24,
-                    backgroundImage: profile['avatar_url'] != null ? NetworkImage(profile['avatar_url']) : null,
+                    backgroundImage: profile['avatar_url'] != null ? NetworkImage(profile['avatar_url'] as String) : null,
                     backgroundColor: Colors.white10,
                   ),
                   const SizedBox(width: 16),
