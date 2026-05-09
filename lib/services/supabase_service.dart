@@ -69,6 +69,8 @@ class Profile {
       'longitude': longitude,
       'active_pathway': activePathway,
     };
+  }
+
   bool get isComplete {
     return displayName != null && 
            age != null && 

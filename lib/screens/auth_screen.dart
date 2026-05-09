@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:o_web/theme.dart';
 import 'package:go_router/go_router.dart';
+import 'package:o_web/services/supabase_service.dart';
 
 class AuthScreen extends StatefulWidget {
   final bool isSignUp;
@@ -35,7 +36,7 @@ class _AuthScreenState extends State<AuthScreen> {
       } else {
         await SupabaseService.signIn(_emailController.text, _passwordController.text);
       }
-      if (mounted) context.go('/discovery');
+      if (mounted) context.go('/onboarding');
     } catch (e) {
       setState(() => _error = e.toString());
     } finally {
