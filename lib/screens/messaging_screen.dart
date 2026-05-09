@@ -152,7 +152,20 @@ class _MessagingScreenState extends State<MessagingScreen> {
             ],
           ),
           const Spacer(),
-          const Icon(Icons.more_vert, color: Colors.white54),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert, color: Colors.white54),
+            color: OTheme.deepCharcoal,
+            onSelected: (value) {
+              if (value == 'block') {
+                SupabaseService.blockUser(_selectedProfile!.id);
+                setState(() => _selectedProfile = null);
+                _loadChats(); // Refresh the list
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(value: 'block', child: Text('Block User', style: TextStyle(color: Colors.redAccent))),
+            ],
+          ),
         ],
       ),
     );

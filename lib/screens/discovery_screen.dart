@@ -210,6 +210,49 @@ class UserCard extends StatefulWidget {
 class _UserCardState extends State<UserCard> {
   bool _isExtended = false;
 
+  void _handleBlock() async {
+    await SupabaseService.blockUser(widget.profile.id);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('User Blocked'), backgroundColor: Colors.redAccent),
+      );
+    }
+  }
+
+  void _showReportDialog() {
+    final reasonController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: OTheme.deepCharcoal,
+        title: const Text('Report Profile', style: TextStyle(color: Colors.white)),
+        content: TextField(
+          controller: reasonController,
+          decoration: const InputDecoration(
+            hintText: 'Reason for reporting...',
+            hintStyle: TextStyle(color: Colors.white24),
+          ),
+          style: const TextStyle(color: Colors.white),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () async {
+              await SupabaseService.reportUser(widget.profile.id, reasonController.text, '');
+              if (mounted) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Report Submitted'), backgroundColor: OTheme.neonPink),
+                );
+              }
+            },
+            child: const Text('Submit'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _handleExtend() async {
     setState(() => _isExtended = true);
     await SupabaseService.extendVine(widget.profile.id);
@@ -273,18 +316,34 @@ class _UserCardState extends State<UserCard> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          '${widget.profile.displayName}, ${widget.profile.age}',
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                        Expanded(
+                          child: Text(
+                            '${widget.profile.displayName}, ${widget.profile.age}',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        if (widget.profile.isVerified)
-                          const Icon(Icons.verified, color: OTheme.neonPink, size: 16),
+                        PopupMenuButton<String>(
+                          icon: const Icon(Icons.more_horiz, color: Colors.white54, size: 20),
+                          color: OTheme.deepCharcoal,
+                          onSelected: (value) {
+                            if (value == 'block') {
+                              _handleBlock();
+                            } else if (value == 'report') {
+                              _showReportDialog();
+                            }
+                          },
+                          itemBuilder: (context) => [
+                            const PopupMenuItem(value: 'report', child: Text('Report Profile', style: TextStyle(color: Colors.white))),
+                            const PopupMenuItem(value: 'block', child: Text('Block User', style: TextStyle(color: Colors.redAccent))),
+                          ],
+                        ),
                       ],
                     ),
                     const SizedBox(height: 4),

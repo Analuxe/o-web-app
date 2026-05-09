@@ -167,6 +167,25 @@ class SupabaseService {
         .order('created_at', ascending: false);
   }
 
+  // Safety Logic
+  static Future<void> blockUser(String targetUserId) async {
+    final myId = client.auth.currentUser!.id;
+    await client.from('blocked_users').insert({
+      'blocker_id': myId,
+      'blocked_id': targetUserId,
+    });
+  }
+
+  static Future<void> reportUser(String targetUserId, String reason, String details) async {
+    final myId = client.auth.currentUser!.id;
+    await client.from('reports').insert({
+      'reporter_id': myId,
+      'reported_id': targetUserId,
+      'reason': reason,
+      'details': details,
+    });
+  }
+
   static Stream<List<Map<String, dynamic>>> getNearbyVines() {
     // In production, this would use a PostGIS RPC call like the mobile app
     return client
