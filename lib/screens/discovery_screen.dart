@@ -10,8 +10,37 @@ class DiscoveryScreen extends StatefulWidget {
 }
 
 class _DiscoveryScreenState extends State<DiscoveryScreen> {
+  void _showFilterSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.7,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        builder: (_, controller) => Container(
+          decoration: const BoxDecoration(
+            color: OTheme.black,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+          ),
+          child: ListView(
+            controller: controller,
+            padding: const EdgeInsets.all(24),
+            children: const [
+              FilterSidebar(isDrawer: true),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    final isLargeScreen = width > 1200;
+
     return Row(
       children: [
         Expanded(
@@ -25,8 +54,19 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> {
                   children: [
                     Text(
                       'Nearby Vines',
-                      style: Theme.of(context).textTheme.displayLarge,
+                      style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                        fontSize: width < 600 ? 28 : null,
+                      ),
                     ),
+                    if (!isLargeScreen)
+                      IconButton(
+                        onPressed: _showFilterSheet,
+                        icon: const Icon(Icons.tune, color: OTheme.neonPink),
+                        style: IconButton.styleFrom(
+                          backgroundColor: OTheme.neonPink.withValues(alpha: 0.1),
+                          padding: const EdgeInsets.all(12),
+                        ),
+                      ),
                   ],
                 ),
                 const SizedBox(height: 32),
@@ -46,11 +86,11 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> {
                       }
 
                       return GridView.builder(
-                        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                          maxCrossAxisExtent: 300,
+                        gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                          maxCrossAxisExtent: width < 600 ? 200 : 300,
                           childAspectRatio: 0.75,
-                          crossAxisSpacing: 24,
-                          mainAxisSpacing: 24,
+                          crossAxisSpacing: width < 600 ? 12 : 24,
+                          mainAxisSpacing: width < 600 ? 12 : 24,
                         ),
                         itemCount: profiles.length,
                         itemBuilder: (context, index) {
@@ -64,32 +104,43 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> {
             ),
           ),
         ),
-        const FilterSidebar(),
+        if (isLargeScreen) const FilterSidebar(),
       ],
     );
   }
 }
 
 class FilterSidebar extends StatelessWidget {
-  const FilterSidebar({super.key});
+  final bool isDrawer;
+  const FilterSidebar({super.key, this.isDrawer = false});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 320,
+      width: isDrawer ? null : 320,
       decoration: BoxDecoration(
         color: OTheme.black,
-        border: Border(
-          left: BorderSide(color: Colors.white.withOpacity(0.05)),
+        border: isDrawer ? null : Border(
+          left: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
         ),
       ),
-      padding: const EdgeInsets.all(24),
+      padding: isDrawer ? EdgeInsets.zero : const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Filters',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Filters',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              if (isDrawer)
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close, color: Colors.white54),
+                ),
+            ],
           ),
           const SizedBox(height: 32),
           const _FilterLabel(label: 'Distance'),
@@ -120,7 +171,7 @@ class FilterSidebar extends StatelessWidget {
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: [
+            children: const [
               _FilterChip(label: 'Gay', isSelected: true),
               _FilterChip(label: 'Bi', isSelected: false),
               _FilterChip(label: 'Trans', isSelected: false),
@@ -128,11 +179,14 @@ class FilterSidebar extends StatelessWidget {
               _FilterChip(label: 'Non-binary', isSelected: false),
             ],
           ),
-          const Spacer(),
+          const SizedBox(height: 48),
           ElevatedButton(
-            onPressed: () {},
+            onPressed: () {
+              if (isDrawer) Navigator.pop(context);
+            },
             style: ElevatedButton.styleFrom(
-              minimumSize: const Size(double.infinity, 50),
+              minimumSize: const Size(double.infinity, 56),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             ),
             child: const Text('Apply Filters'),
           ),
@@ -150,6 +204,7 @@ class FilterSidebar extends StatelessWidget {
     );
   }
 }
+
 
 class _FilterLabel extends StatelessWidget {
   final String label;
