@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:o_web/theme.dart';
 import 'package:o_web/services/supabase_service.dart';
 import 'package:intl/intl.dart';
+import 'package:file_picker/file_picker.dart';
+import 'dart:typed_data';
 
 class HubScreen extends StatefulWidget {
   const HubScreen({super.key});
@@ -38,10 +40,10 @@ class _HubScreenState extends State<HubScreen> {
     }
   }
 
-  void _showCreatePostDialog() {
+  void _showCreatePostDialog([HubPost? post]) {
     showDialog(
       context: context,
-      builder: (context) => _CreatePostDialog(onSuccess: _loadData),
+      builder: (context) => _CreatePostDialog(onSuccess: _loadData, post: post),
     );
   }
 
@@ -118,6 +120,7 @@ class _HubScreenState extends State<HubScreen> {
                     subtitle: post.subtitle ?? '',
                     image: post.imageUrl ?? 'https://images.unsplash.com/photo-1614850523296-d8c1af93d400?auto=format&fit=crop&q=80&w=1000',
                     tag: post.tag,
+                    onEdit: _isAdmin ? () => _showCreatePostDialog(post) : null,
                   ),
                 )),
                 const SizedBox(height: 24),
@@ -141,6 +144,8 @@ class _HubScreenState extends State<HubScreen> {
                             date: DateFormat('MMM dd, yyyy').format(post.createdAt),
                             description: post.subtitle ?? '',
                             icon: _getIconForTag(post.tag),
+                            imageUrl: post.imageUrl,
+                            onEdit: _isAdmin ? () => _showCreatePostDialog(post) : null,
                           )),
                       ],
                     ),
@@ -161,6 +166,8 @@ class _HubScreenState extends State<HubScreen> {
                               title: post.title,
                               description: post.subtitle ?? '',
                               icon: _getIconForTag(post.tag),
+                              imageUrl: post.imageUrl,
+                              onEdit: _isAdmin ? () => _showCreatePostDialog(post) : null,
                             ),
                           )),
                       ],
@@ -225,7 +232,8 @@ class _HubScreenState extends State<HubScreen> {
 
 class _CreatePostDialog extends StatefulWidget {
   final VoidCallback onSuccess;
-  const _CreatePostDialog({required this.onSuccess});
+  final HubPost? post;
+  const _CreatePostDialog({required this.onSuccess, this.post});
 
   @override
   State<_CreatePostDialog> createState() => _CreatePostDialogState();
@@ -233,12 +241,39 @@ class _CreatePostDialog extends StatefulWidget {
 
 class _CreatePostDialogState extends State<_CreatePostDialog> {
   final _formKey = GlobalKey<FormState>();
-  final _titleController = TextEditingController();
-  final _subtitleController = TextEditingController();
-  final _imageUrlController = TextEditingController();
-  final _tagController = TextEditingController(text: 'UPDATE');
-  HubPostType _type = HubPostType.update;
+  late final TextEditingController _titleController;
+  late final TextEditingController _subtitleController;
+  late final TextEditingController _imageUrlController;
+  late final TextEditingController _tagController;
+  late HubPostType _type;
   bool _isSaving = false;
+  Uint8List? _selectedFileBytes;
+  String? _selectedFileName;
+
+  @override
+  void initState() {
+    super.initState();
+    _titleController = TextEditingController(text: widget.post?.title);
+    _subtitleController = TextEditingController(text: widget.post?.subtitle);
+    _imageUrlController = TextEditingController(text: widget.post?.imageUrl);
+    _tagController = TextEditingController(text: widget.post?.tag ?? 'UPDATE');
+    _type = widget.post?.type ?? HubPostType.update;
+  }
+
+  Future<void> _pickImage() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.image,
+      withData: true,
+    );
+
+    if (result != null && result.files.first.bytes != null) {
+      setState(() {
+        _selectedFileBytes = result.files.first.bytes;
+        _selectedFileName = result.files.first.name;
+        _imageUrlController.text = 'Pending upload...';
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -287,12 +322,41 @@ class _CreatePostDialogState extends State<_CreatePostDialog> {
                   controller: _tagController,
                   decoration: const InputDecoration(labelText: 'Tag (e.g. SECURITY, EVENT)'),
                 ),
-                const SizedBox(height: 16),
-                if (_type == HubPostType.featured)
-                  TextFormField(
-                    controller: _imageUrlController,
-                    decoration: const InputDecoration(labelText: 'Image URL'),
+                const SizedBox(height: 24),
+                const Text('Media Content', style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: _imageUrlController,
+                        decoration: const InputDecoration(
+                          labelText: 'Image URL',
+                          hintText: 'Paste a URL or upload from device',
+                        ),
+                        readOnly: _selectedFileBytes != null,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    ElevatedButton.icon(
+                      onPressed: _pickImage,
+                      icon: const Icon(Icons.upload),
+                      label: const Text('Upload'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: OTheme.deepCharcoal,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                      ),
+                    ),
+                  ],
+                ),
+                if (_selectedFileBytes != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    'Selected: $_selectedFileName',
+                    style: const TextStyle(color: OTheme.neonPink, fontSize: 12),
                   ),
+                ],
                 const SizedBox(height: 32),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
@@ -306,7 +370,7 @@ class _CreatePostDialogState extends State<_CreatePostDialog> {
                       onPressed: _isSaving ? null : _submit,
                       child: _isSaving 
                         ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                        : const Text('Post to Hub'),
+                        : Text(widget.post == null ? 'Post to Hub' : 'Update Post'),
                     ),
                   ],
                 ),
@@ -323,17 +387,35 @@ class _CreatePostDialogState extends State<_CreatePostDialog> {
     setState(() => _isSaving = true);
     
     try {
-      final post = HubPost(
-        id: '',
-        title: _titleController.text,
-        subtitle: _subtitleController.text,
-        imageUrl: _imageUrlController.text.isNotEmpty ? _imageUrlController.text : null,
-        tag: _tagController.text,
-        type: _type,
-        createdAt: DateTime.now(),
-      );
+      String? imageUrl = _imageUrlController.text.isNotEmpty ? _imageUrlController.text : null;
       
-      await SupabaseService.createHubPost(post);
+      // Handle file upload if a new file was selected
+      if (_selectedFileBytes != null && _selectedFileName != null) {
+        imageUrl = await SupabaseService.uploadHubMedia(_selectedFileBytes!, _selectedFileName!);
+      }
+
+      if (widget.post != null) {
+        final updatedPost = widget.post!.copyWith(
+          title: _titleController.text,
+          subtitle: _subtitleController.text,
+          imageUrl: imageUrl,
+          tag: _tagController.text,
+          type: _type,
+        );
+        await SupabaseService.updateHubPost(updatedPost);
+      } else {
+        final post = HubPost(
+          id: '',
+          title: _titleController.text,
+          subtitle: _subtitleController.text,
+          imageUrl: imageUrl,
+          tag: _tagController.text,
+          type: _type,
+          createdAt: DateTime.now(),
+        );
+        await SupabaseService.createHubPost(post);
+      }
+      
       widget.onSuccess();
       if (mounted) Navigator.pop(context);
     } catch (e) {
@@ -367,12 +449,14 @@ class _FeaturedCard extends StatelessWidget {
   final String subtitle;
   final String image;
   final String tag;
+  final VoidCallback? onEdit;
 
   const _FeaturedCard({
     required this.title,
     required this.subtitle,
     required this.image,
     required this.tag,
+    this.onEdit,
   });
 
   @override
@@ -402,14 +486,28 @@ class _FeaturedCard extends StatelessWidget {
               color: OTheme.neonPink,
               borderRadius: BorderRadius.circular(4),
             ),
-            child: Text(
-              tag,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1,
-              ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  tag,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1,
+                  ),
+                ),
+                if (onEdit != null) ...[
+                  const SizedBox(width: 8),
+                  const SizedBox(height: 12, child: VerticalDivider(color: Colors.white24, width: 1)),
+                  const SizedBox(width: 8),
+                  InkWell(
+                    onTap: onEdit,
+                    child: const Icon(Icons.edit, color: Colors.white, size: 14),
+                  ),
+                ],
+              ],
             ),
           ),
           const SizedBox(height: 16),
@@ -443,13 +541,17 @@ class _UpdateItem extends StatelessWidget {
   final String title;
   final String date;
   final String description;
+  final String? imageUrl;
   final IconData icon;
+  final VoidCallback? onEdit;
 
   const _UpdateItem({
     required this.title,
     required this.date,
     required this.description,
     required this.icon,
+    this.imageUrl,
+    this.onEdit,
   });
 
   @override
@@ -490,9 +592,30 @@ class _UpdateItem extends StatelessWidget {
                         fontSize: 14,
                       ),
                     ),
+                    if (onEdit != null) ...[
+                      const SizedBox(width: 12),
+                      IconButton(
+                        onPressed: onEdit,
+                        icon: const Icon(Icons.edit, color: OTheme.neonPink, size: 16),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                    ],
                   ],
                 ),
                 const SizedBox(height: 8),
+                if (imageUrl != null) ...[
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.network(
+                      imageUrl!,
+                      height: 120,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
                 Text(
                   description,
                   style: TextStyle(
@@ -513,12 +636,16 @@ class _UpdateItem extends StatelessWidget {
 class _ComingSoonCard extends StatelessWidget {
   final String title;
   final String description;
+  final String? imageUrl;
   final IconData icon;
+  final VoidCallback? onEdit;
 
   const _ComingSoonCard({
     required this.title,
     required this.description,
     required this.icon,
+    this.imageUrl,
+    this.onEdit,
   });
 
   @override
@@ -533,8 +660,32 @@ class _ComingSoonCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: Colors.white54, size: 32),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Icon(icon, color: Colors.white54, size: 32),
+              if (onEdit != null)
+                IconButton(
+                  onPressed: onEdit,
+                  icon: const Icon(Icons.edit, color: Colors.white38, size: 18),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+            ],
+          ),
           const SizedBox(height: 20),
+          if (imageUrl != null) ...[
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.network(
+                imageUrl!,
+                height: 100,
+                width: double.infinity,
+                fit: BoxFit.cover,
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
           Text(
             title,
             style: const TextStyle(

@@ -303,6 +303,28 @@ class SupabaseService {
     await client.from('hub_posts').insert(post.toJson());
   }
 
+  static Future<void> updateHubPost(HubPost post) async {
+    await client.from('hub_posts').update(post.toJson()).eq('id', post.id);
+  }
+
+  static Future<void> deleteHubPost(String id) async {
+    await client.from('hub_posts').delete().eq('id', id);
+  }
+
+  static Future<String> uploadHubMedia(Uint8List bytes, String fileName) async {
+    final path = 'hub/${DateTime.now().millisecondsSinceEpoch}_$fileName';
+    
+    // We'll use the 'avatars' bucket as a fallback if 'hub' doesn't exist, 
+    // but ideally there's a dedicated bucket. Let's use 'avatars' for now to be safe.
+    await client.storage
+        .from('avatars')
+        .uploadBinary(path, bytes);
+
+    return client.storage
+        .from('avatars')
+        .getPublicUrl(path);
+  }
+
   // Verification Flow Logic
   static Future<void> submitVerification(Uint8List bytes, String fileName) async {
     final user = client.auth.currentUser;

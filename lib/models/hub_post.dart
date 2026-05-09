@@ -53,4 +53,26 @@ class HubPost {
       'created_at': createdAt.toIso8601String(),
     };
   }
+
+  HubPost copyWith({
+    String? id,
+    String? title,
+    String? subtitle,
+    String? content,
+    String? imageUrl,
+    String? tag,
+    HubPostType? type,
+    DateTime? createdAt,
+  }) {
+    return HubPost(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      subtitle: subtitle ?? this.subtitle,
+      content: content ?? this.content,
+      imageUrl: imageUrl ?? this.imageUrl,
+      tag: tag ?? this.tag,
+      type: type ?? this.type,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
 }
