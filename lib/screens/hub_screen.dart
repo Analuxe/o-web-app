@@ -504,7 +504,20 @@ class _FeaturedCard extends StatelessWidget {
                   const SizedBox(width: 8),
                   InkWell(
                     onTap: onEdit,
-                    child: const Icon(Icons.edit, color: Colors.white, size: 14),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.edit, color: Colors.white, size: 16),
+                        SizedBox(width: 4),
+                        Text(
+                          'EDIT',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ],
@@ -596,7 +609,7 @@ class _UpdateItem extends StatelessWidget {
                       const SizedBox(width: 12),
                       IconButton(
                         onPressed: onEdit,
-                        icon: const Icon(Icons.edit, color: OTheme.neonPink, size: 16),
+                        icon: const Icon(Icons.edit, color: OTheme.neonPink, size: 20),
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
                       ),
@@ -667,7 +680,7 @@ class _ComingSoonCard extends StatelessWidget {
               if (onEdit != null)
                 IconButton(
                   onPressed: onEdit,
-                  icon: const Icon(Icons.edit, color: Colors.white38, size: 18),
+                  icon: const Icon(Icons.edit, color: Colors.white, size: 20),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
                 ),
