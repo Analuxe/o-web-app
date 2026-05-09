@@ -43,8 +43,7 @@ class SideNavBar extends StatelessWidget {
         children: [
           Image.asset(
             'assets/logo.png',
-            height: 48,
-            color: OTheme.neonPink,
+            height: 64,
           ),
           const SizedBox(height: 48),
           _NavButton(
@@ -153,8 +152,7 @@ class TopNavBar extends StatelessWidget {
         children: [
           Image.asset(
             'assets/logo.png',
-            height: 32,
-            color: OTheme.neonPink,
+            height: 40,
           ),
           const Spacer(),
           IconButton(

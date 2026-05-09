@@ -9,7 +9,7 @@ import 'package:o_web/screens/profile_screen.dart';
 import 'package:o_web/screens/auth_screen.dart';
 import 'package:o_web/screens/matchmaker_screen.dart';
 
-import 'package:o_web/services/supabase_service.dart';
+import 'package:o_web/screens/onboarding_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,11 +18,35 @@ void main() async {
 }
 
 final _router = GoRouter(
-  initialLocation: '/auth',
+  initialLocation: '/discovery',
+  redirect: (context, state) async {
+    final session = SupabaseService.client.auth.currentSession;
+    final bool isLoggingIn = state.matchedLocation == '/auth';
+
+    if (session == null) {
+      return isLoggingIn ? null : '/auth';
+    }
+
+    // Check if profile is complete
+    final profile = await SupabaseService.getMyProfile();
+    final bool isOnboarding = state.matchedLocation == '/onboarding';
+
+    if (profile == null || !profile.isComplete) {
+      return isOnboarding ? null : '/onboarding';
+    }
+
+    if (isLoggingIn || isOnboarding) return '/discovery';
+
+    return null;
+  },
   routes: [
     GoRoute(
       path: '/auth',
       builder: (context, state) => const AuthScreen(),
+    ),
+    GoRoute(
+      path: '/onboarding',
+      builder: (context, state) => const OnboardingScreen(),
     ),
     ShellRoute(
       builder: (context, state, child) => AppShell(child: child),

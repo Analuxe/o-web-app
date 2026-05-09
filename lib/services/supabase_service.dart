@@ -69,6 +69,11 @@ class Profile {
       'longitude': longitude,
       'active_pathway': activePathway,
     };
+  bool get isComplete {
+    return displayName != null && 
+           age != null && 
+           pronouns != null && 
+           (interests != null && interests!.isNotEmpty);
   }
 }
 
@@ -81,6 +86,19 @@ class SupabaseService {
   }
 
   static SupabaseClient get client => Supabase.instance.client;
+
+  // Auth Logic
+  static Future<AuthResponse> signIn(String email, String password) async {
+    return await client.auth.signInWithPassword(email: email, password: password);
+  }
+
+  static Future<AuthResponse> signUp(String email, String password) async {
+    return await client.auth.signUp(email: email, password: password);
+  }
+
+  static Future<void> signOut() async {
+    await client.auth.signOut();
+  }
 
   // Shared Logic Methods
   static Future<Profile?> getMyProfile() async {
@@ -100,10 +118,11 @@ class SupabaseService {
     final user = client.auth.currentUser;
     if (user == null) return;
 
+    final fullUpdates = {...updates, 'id': user.id};
+
     await client
         .from('profiles')
-        .update(updates)
-        .eq('id', user.id);
+        .upsert(fullUpdates);
   }
 
   static Stream<List<Map<String, dynamic>>> getNearbyVines() {

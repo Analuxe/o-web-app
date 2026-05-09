@@ -12,11 +12,35 @@ class AuthScreen extends StatefulWidget {
 
 class _AuthScreenState extends State<AuthScreen> {
   late bool isSignUp;
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _isLoading = false;
+  String? _error;
 
   @override
   void initState() {
     super.initState();
     isSignUp = widget.isSignUp;
+  }
+
+  Future<void> _handleAuth() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      if (isSignUp) {
+        await SupabaseService.signUp(_emailController.text, _passwordController.text);
+      } else {
+        await SupabaseService.signIn(_emailController.text, _passwordController.text);
+      }
+      if (mounted) context.go('/discovery');
+    } catch (e) {
+      setState(() => _error = e.toString());
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -43,7 +67,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Image.asset('assets/logo.png', height: 120, color: Colors.white),
+                    Image.asset('assets/logo.png', height: 160),
                     const SizedBox(height: 24),
                     const Text(
                       'Link in. Branch out.',
@@ -79,21 +103,26 @@ class _AuthScreenState extends State<AuthScreen> {
                       : 'Step back into the warm, moody space.',
                     style: const TextStyle(color: Colors.white54, fontSize: 16),
                   ),
-                  const SizedBox(height: 48),
-                  const _AuthField(label: 'Email Address', hint: 'name@example.com'),
+                  if (_error != null) ...[
+                    Text(_error!, style: const TextStyle(color: Colors.redAccent)),
+                    const SizedBox(height: 24),
+                  ],
+                  _AuthField(label: 'Email Address', hint: 'name@example.com', controller: _emailController),
                   const SizedBox(height: 24),
-                  const _AuthField(label: 'Password', hint: '••••••••', isPassword: true),
+                  _AuthField(label: 'Password', hint: '••••••••', isPassword: true, controller: _passwordController),
                   if (isSignUp) ...[
                     const SizedBox(height: 24),
                     const _AuthField(label: 'Confirm Password', hint: '••••••••', isPassword: true),
                   ],
                   const SizedBox(height: 40),
                   ElevatedButton(
-                    onPressed: () => context.go('/discovery'),
+                    onPressed: _isLoading ? null : _handleAuth,
                     style: ElevatedButton.styleFrom(
                       minimumSize: const Size(double.infinity, 60),
                     ),
-                    child: Text(isSignUp ? 'Sign Up' : 'Sign In'),
+                    child: _isLoading 
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : Text(isSignUp ? 'Sign Up' : 'Sign In'),
                   ),
                   const SizedBox(height: 24),
                   Row(
@@ -126,11 +155,13 @@ class _AuthField extends StatelessWidget {
   final String label;
   final String hint;
   final bool isPassword;
+  final TextEditingController? controller;
 
   const _AuthField({
     required this.label,
     required this.hint,
     this.isPassword = false,
+    this.controller,
   });
 
   @override
@@ -148,6 +179,7 @@ class _AuthField extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         TextField(
+          controller: controller,
           obscureText: isPassword,
           decoration: InputDecoration(
             hintText: hint,
