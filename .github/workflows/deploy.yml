@@ -7,9 +7,6 @@ on:
 permissions:
   contents: write
 
-env:
-  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
-
 # This workflow builds and deploys the Flutter web app to GitHub Pages
 jobs:
   build-and-deploy:

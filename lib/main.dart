@@ -61,18 +61,6 @@ final _router = GoRouter(
       redirect: (_, __) => '/hub',
     ),
     GoRoute(
-      path: '/hub',
-      redirect: (_, __) => '/hub',
-    ),
-    GoRoute(
-      path: '/nearby',
-      redirect: (_, __) => '/hub',
-    ),
-    GoRoute(
-      path: '/feed',
-      redirect: (_, __) => '/hub',
-    ),
-    GoRoute(
       path: '/auth',
       builder: (context, state) => const AuthScreen(),
     ),
