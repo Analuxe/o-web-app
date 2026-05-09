@@ -213,7 +213,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             selectedColor: OTheme.neonPink.withOpacity(0.2),
                             checkmarkColor: OTheme.neonPink,
                             labelStyle: TextStyle(color: isSelected ? OTheme.neonPink : Colors.white70),
-                            backgroundColor: Colors.white05,
+                            backgroundColor: Colors.white.withOpacity(0.05),
                           );
                         }).toList(),
                       )
@@ -288,7 +288,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   InputDecoration _inputDecoration() {
     return InputDecoration(
       filled: true,
-      fillColor: Colors.white05,
+      fillColor: Colors.white.withOpacity(0.05),
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
       contentPadding: const EdgeInsets.all(16),
     );

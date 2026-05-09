@@ -66,7 +66,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       backgroundColor: OTheme.black,
       body: Center(
         child: Container(
-          maxWidth: 600,
+          constraints: const BoxConstraints(maxWidth: 600),
           padding: const EdgeInsets.all(40),
           decoration: BoxDecoration(
             color: OTheme.deepCharcoal,
@@ -190,7 +190,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               selectedColor: OTheme.neonPink.withOpacity(0.2),
               checkmarkColor: OTheme.neonPink,
               labelStyle: TextStyle(color: isSelected ? OTheme.neonPink : Colors.white70),
-              backgroundColor: Colors.white05,
+              backgroundColor: Colors.white.withOpacity(0.05),
             );
           }).toList(),
         ),
@@ -211,7 +211,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: Colors.white05,
+            color: Colors.white.withOpacity(0.05),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: _isPhotoUploaded ? OTheme.neonPink : Colors.white10),
           ),
@@ -270,7 +270,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       labelText: label,
       labelStyle: const TextStyle(color: Colors.white54),
       filled: true,
-      fillColor: Colors.white05,
+      fillColor: Colors.white.withOpacity(0.05),
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
       contentPadding: const EdgeInsets.all(20),
     );

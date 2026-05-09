@@ -11,6 +11,7 @@ import 'package:o_web/screens/matchmaker_screen.dart';
 
 import 'package:o_web/screens/onboarding_screen.dart';
 import 'package:o_web/screens/settings_screen.dart';
+import 'package:o_web/services/supabase_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
