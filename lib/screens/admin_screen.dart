@@ -69,7 +69,7 @@ class _AdminScreenState extends State<AdminScreen> {
     
     if (mounted) {
       setState(() {
-        unvalidatedUsers = (res as List).map((json) => Profile.fromJson(json)).toList();
+        unvalidatedUsers = (res as List).map<Profile>((json) => Profile.fromJson(json as Map<String, dynamic>)).toList();
         isLoadingModeration = false;
       });
     }
@@ -142,7 +142,7 @@ class _AdminScreenState extends State<AdminScreen> {
     try {
       final data = await SupabaseService.getReputationAlerts();
       setState(() {
-        reputationAlerts = data.map((d) => Profile.fromJson(d)).toList();
+        reputationAlerts = (data as List).map<Profile>((d) => Profile.fromJson(d as Map<String, dynamic>)).toList();
         // Sort by thumbs down count descending
         reputationAlerts.sort((a, b) => b.thumbsDownCount.compareTo(a.thumbsDownCount));
       });

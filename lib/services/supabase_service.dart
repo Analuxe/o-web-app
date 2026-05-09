@@ -228,7 +228,7 @@ class SupabaseService {
         'p_intents': intents.isEmpty ? null : intents,
         'p_limit': 20,
       });
-      return (response as List).map((json) => Profile.fromJson(json)).toList();
+      return (response as List).map<Profile>((json) => Profile.fromJson(json as Map<String, dynamic>)).toList();
     } catch (e) {
       // Fallback: Just fetch some validated profiles if RPC fails
       // In a real app, this would be a more complex geo-query
@@ -238,7 +238,7 @@ class SupabaseService {
           .eq('is_validated', true)
           .limit(10);
       
-      final candidates = (response as List).map((json) => Profile.fromJson(json)).toList();
+      final candidates = (response as List).map<Profile>((json) => Profile.fromJson(json as Map<String, dynamic>)).toList();
       // Filter out self
       final myId = client.auth.currentUser?.id;
       return candidates.where((p) => p.id != myId).toList();
