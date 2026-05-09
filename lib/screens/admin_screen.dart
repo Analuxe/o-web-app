@@ -28,20 +28,23 @@ class _AdminScreenState extends State<AdminScreen> {
 
     final usersRes = await client
         .from('profiles')
-        .select('*', const FetchOptions(count: CountOption.exact));
+        .select()
+        .count(CountOption.exact);
     final verifiedRes = await client
         .from('profiles')
-        .select('*', const FetchOptions(count: CountOption.exact))
-        .eq('is_verified', true);
+        .select()
+        .eq('is_verified', true)
+        .count(CountOption.exact);
     final reportsRes = await client
         .from('reports')
-        .select('*', const FetchOptions(count: CountOption.exact));
+        .select()
+        .count(CountOption.exact);
 
     if (mounted) {
       setState(() {
-        totalUsers = usersRes.count ?? 0;
-        verifiedUsers = verifiedRes.count ?? 0;
-        safetyFlags = reportsRes.count ?? 0;
+        totalUsers = usersRes.count;
+        verifiedUsers = verifiedRes.count;
+        safetyFlags = reportsRes.count;
         isLoadingStats = false;
       });
     }
