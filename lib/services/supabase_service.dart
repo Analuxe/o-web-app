@@ -125,6 +125,16 @@ class SupabaseService {
     await client.auth.signOut();
   }
 
+  static Future<bool> isUsernameAvailable(String username) async {
+    final response = await client
+        .from('profiles')
+        .select('id')
+        .eq('username', username.trim())
+        .maybeSingle();
+    
+    return response == null;
+  }
+
   // Shared Logic Methods
   static Future<Profile?> getMyProfile() async {
     final user = client.auth.currentUser;

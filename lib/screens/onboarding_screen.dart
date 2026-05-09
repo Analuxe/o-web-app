@@ -49,10 +49,29 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     }
   }
 
-  void _nextStep() {
+  bool _isCheckingUsername = false;
+
+  Future<void> _nextStep() async {
     if (_currentStep == 0) {
-      if (_usernameController.text.isEmpty || _nameController.text.isEmpty || _ageController.text.isEmpty) {
+      final username = _usernameController.text.trim();
+      if (username.isEmpty || _nameController.text.isEmpty || _ageController.text.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please fill in all essential fields')));
+        return;
+      }
+
+      setState(() => _isCheckingUsername = true);
+      final isAvailable = await SupabaseService.isUsernameAvailable(username);
+      setState(() => _isCheckingUsername = false);
+
+      if (!isAvailable) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Username is already taken. Please choose another.'),
+              backgroundColor: Colors.orangeAccent,
+            ),
+          );
+        }
         return;
       }
     }
@@ -180,11 +199,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 const SizedBox(height: 40),
                 if (!_isSaving)
                   ElevatedButton(
-                    onPressed: _nextStep,
+                    onPressed: (_isSaving || _isCheckingUsername) ? null : _nextStep,
                     style: ElevatedButton.styleFrom(
                       minimumSize: const Size(double.infinity, 60),
                     ),
-                    child: Text(_currentStep == 3 ? 'Complete Setup' : 'Continue'),
+                    child: _isCheckingUsername 
+                      ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
+                      : Text(_currentStep == 3 ? 'Complete Setup' : 'Continue'),
                   ),
               ],
             ),
