@@ -95,82 +95,85 @@ class _VerificationScreenState extends State<VerificationScreen> {
         title: const Text('Identity Verification'),
       ),
       body: Center(
-        child: Container(
-          maxWidth: 600,
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              const Icon(Icons.verified_user, size: 80, color: OTheme.neonPink),
-              const SizedBox(height: 24),
-              const Text(
-                'Get Verified',
-                style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'To maintain a safe and premium community, we require users to verify their identity with a government-issued ID. Your ID will be stored securely and automatically deleted within 7 days of approval.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white54, fontSize: 16, height: 1.5),
-              ),
-              const SizedBox(height: 48),
-              if (_existingApplication != null) ...[
-                _buildStatusCard(_existingApplication!['status']),
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 600),
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const Icon(Icons.verified_user, size: 80, color: OTheme.neonPink),
                 const SizedBox(height: 24),
-                if (_existingApplication!['status'] == 'rejected')
-                  ElevatedButton(
-                    onPressed: () => setState(() => _existingApplication = null),
-                    child: const Text('Try Again'),
-                  ),
-              ] else ...[
-                if (_selectedImageBytes != null)
-                  Container(
-                    height: 200,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: OTheme.neonPink.withOpacity(0.5)),
-                      image: DecorationImage(
-                        image: MemoryImage(_selectedImageBytes!),
-                        fit: BoxFit.contain,
-                      ),
+                const Text(
+                  'Get Verified',
+                  style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'To maintain a safe and premium community, we require users to verify their identity with a government-issued ID. Your ID will be stored securely and automatically deleted within 7 days of approval.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.white54, fontSize: 16, height: 1.5),
+                ),
+                const SizedBox(height: 48),
+                if (_existingApplication != null) ...[
+                  _buildStatusCard(_existingApplication!['status']),
+                  const SizedBox(height: 24),
+                  if (_existingApplication!['status'] == 'rejected')
+                    ElevatedButton(
+                      onPressed: () => setState(() => _existingApplication = null),
+                      child: const Text('Try Again'),
                     ),
-                  )
-                else
-                  InkWell(
-                    onTap: _pickImage,
-                    child: Container(
+                ] else ...[
+                  if (_selectedImageBytes != null)
+                    Container(
                       height: 200,
                       width: double.infinity,
                       decoration: BoxDecoration(
-                        color: OTheme.deepCharcoal,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.white10),
+                        border: Border.all(color: OTheme.neonPink.withOpacity(0.5)),
+                        image: DecorationImage(
+                          image: MemoryImage(_selectedImageBytes!),
+                          fit: BoxFit.contain,
+                        ),
                       ),
-                      child: const Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.add_a_photo, size: 48, color: Colors.white24),
-                          SizedBox(height: 12),
-                          Text('Upload Government ID', style: TextStyle(color: Colors.white54)),
-                          Text('(Passport, Driver License, etc.)', style: TextStyle(color: Colors.white24, fontSize: 12)),
-                        ],
+                    )
+                  else
+                    InkWell(
+                      onTap: _pickImage,
+                      child: Container(
+                        height: 200,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: OTheme.deepCharcoal,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.white10),
+                        ),
+                        child: const Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.add_a_photo, size: 48, color: Colors.white24),
+                            SizedBox(height: 12),
+                            Text('Upload Government ID', style: TextStyle(color: Colors.white54)),
+                            Text('(Passport, Driver License, etc.)', style: TextStyle(color: Colors.white24, fontSize: 12)),
+                          ],
+                        ),
                       ),
                     ),
+                  const SizedBox(height: 32),
+                  ElevatedButton(
+                    onPressed: (_selectedImageBytes == null || _isUploading) ? null : _submit,
+                    style: ElevatedButton.styleFrom(
+                      minimumSize: const Size(double.infinity, 56),
+                    ),
+                    child: _isUploading 
+                        ? const CircularProgressIndicator(color: Colors.black)
+                        : const Text('Submit for Review'),
                   ),
-                const SizedBox(height: 32),
-                ElevatedButton(
-                  onPressed: (_selectedImageBytes == null || _isUploading) ? null : _submit,
-                  style: ElevatedButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 56),
-                  ),
-                  child: _isUploading 
-                      ? const CircularProgressIndicator(color: Colors.black)
-                      : const Text('Submit for Review'),
-                ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),

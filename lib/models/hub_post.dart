@@ -41,4 +41,16 @@ class HubPost {
       createdAt: DateTime.parse(json['created_at']),
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'title': title,
+      'subtitle': subtitle,
+      'content': content,
+      'image_url': imageUrl,
+      'tag': tag,
+      'type': type.name,
+      'created_at': createdAt.toIso8601String(),
+    };
+  }
 }
