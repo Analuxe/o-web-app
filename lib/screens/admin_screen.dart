@@ -219,14 +219,18 @@ class _AdminScreenState extends State<AdminScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               Text(
                 'Admin Console',
                 style: Theme.of(context).textTheme.displayLarge,
               ),
               Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   _TabButton(
                     label: 'Analytics',
@@ -259,44 +263,48 @@ class _AdminScreenState extends State<AdminScreen> {
                   ),
                 ],
               ),
-              const SizedBox(width: 12),
-              ElevatedButton.icon(
-                onPressed: () async {
-                  try {
-                    await DummyDataService.seedDummyData();
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Dummy Data Seeded Successfully'), backgroundColor: Colors.green),
-                      );
-                      _loadStats();
-                      _loadUnvalidatedUsers();
-                    }
-                  } catch (e) {
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Error seeding data: $e'), backgroundColor: Colors.redAccent),
-                      );
-                    }
-                  }
-                },
-                icon: const Icon(Icons.storage, size: 16),
-                label: const Text('Seed UAT Data'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: OTheme.neonPink.withOpacity(0.1),
-                  foregroundColor: OTheme.neonPink,
-                  side: const BorderSide(color: OTheme.neonPink),
-                ),
-              ),
-              const SizedBox(width: 12),
-              ElevatedButton.icon(
-                onPressed: _showAddAdminDialog,
-                icon: const Icon(Icons.admin_panel_settings, size: 16),
-                label: const Text('Add Admin'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white.withOpacity(0.1),
-                  foregroundColor: Colors.white,
-                  side: const BorderSide(color: Colors.white24),
-                ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: () async {
+                      try {
+                        await DummyDataService.seedDummyData();
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Dummy Data Seeded Successfully'), backgroundColor: Colors.green),
+                          );
+                          _loadStats();
+                          _loadUnvalidatedUsers();
+                        }
+                      } catch (e) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Error seeding data: $e'), backgroundColor: Colors.redAccent),
+                          );
+                        }
+                      }
+                    },
+                    icon: const Icon(Icons.storage, size: 16),
+                    label: const Text('Seed UAT Data'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: OTheme.neonPink.withOpacity(0.1),
+                      foregroundColor: OTheme.neonPink,
+                      side: const BorderSide(color: OTheme.neonPink),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  ElevatedButton.icon(
+                    onPressed: _showAddAdminDialog,
+                    icon: const Icon(Icons.admin_panel_settings, size: 16),
+                    label: const Text('Add Admin'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white.withOpacity(0.1),
+                      foregroundColor: Colors.white,
+                      side: const BorderSide(color: Colors.white24),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
