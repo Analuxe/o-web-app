@@ -81,7 +81,7 @@ class _AuthScreenState extends State<AuthScreen> {
                     ),
                     const SizedBox(height: 8),
                     const Text(
-                      'Find your O.',
+                      'Let loose.',
                       style: TextStyle(
                         fontSize: 18,
                         color: Colors.white54,
