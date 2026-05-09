@@ -92,7 +92,7 @@ class _MessagingScreenState extends State<MessagingScreen> {
       width: isMobile ? double.infinity : 320,
       decoration: BoxDecoration(
         border: Border(
-          right: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
+          right: BorderSide(color: Colors.white.withOpacity(0.05)),
         ),
       ),
       child: Column(
@@ -115,7 +115,7 @@ class _MessagingScreenState extends State<MessagingScreen> {
                   final profile = _chats[index];
                   return ListTile(
                     selected: _selectedProfile?.id == profile.id,
-                    selectedTileColor: OTheme.neonPink.withValues(alpha: 0.1),
+                    selectedTileColor: OTheme.neonPink.withOpacity(0.1),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
                     leading: CircleAvatar(
                       backgroundImage: profile.avatarUrl != null ? NetworkImage(profile.avatarUrl!) : null,
@@ -176,7 +176,7 @@ class _MessagingScreenState extends State<MessagingScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: Colors.white.withValues(alpha: 0.05))),
+        border: Border(bottom: BorderSide(color: Colors.white.withOpacity(0.05))),
       ),
       child: Row(
         children: [
@@ -252,7 +252,7 @@ class _MessagingScreenState extends State<MessagingScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.lock_person_outlined, size: 80, color: OTheme.neonPink.withValues(alpha: 0.5)),
+          Icon(Icons.lock_person_outlined, size: 80, color: OTheme.neonPink.withOpacity(0.5)),
           const SizedBox(height: 24),
           const Text(
             'Identity Validation Pending',

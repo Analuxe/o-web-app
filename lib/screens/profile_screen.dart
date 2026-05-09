@@ -202,7 +202,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       icon: const Icon(Icons.verified_user, size: 16),
                       label: const Text('Get Verified'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: OTheme.neonPink.withValues(alpha: 0.1),
+                        backgroundColor: OTheme.neonPink.withOpacity(0.1),
                         foregroundColor: OTheme.neonPink,
                         side: const BorderSide(color: OTheme.neonPink),
                       ),

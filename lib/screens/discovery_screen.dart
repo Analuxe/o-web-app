@@ -83,7 +83,7 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> {
                           onPressed: _showFilterSheet,
                           icon: const Icon(Icons.tune, color: OTheme.neonPink),
                           style: IconButton.styleFrom(
-                            backgroundColor: OTheme.neonPink.withValues(alpha: 0.1),
+                            backgroundColor: OTheme.neonPink.withOpacity(0.1),
                             padding: const EdgeInsets.all(12),
                           ),
                         ),
@@ -150,7 +150,7 @@ class FilterSidebar extends StatelessWidget {
       decoration: BoxDecoration(
         color: OTheme.black,
         border: isDrawer ? null : Border(
-          left: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
+          left: BorderSide(color: Colors.white.withOpacity(0.05)),
         ),
       ),
       padding: isDrawer ? EdgeInsets.zero : const EdgeInsets.all(24),

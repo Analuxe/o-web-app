@@ -215,7 +215,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             decoration: BoxDecoration(
               color: OTheme.deepCharcoal,
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+              border: Border.all(color: Colors.white.withOpacity(0.1)),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -227,7 +227,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       height: 4,
                       margin: const EdgeInsets.symmetric(horizontal: 4),
                       decoration: BoxDecoration(
-                        color: index <= _currentStep ? OTheme.neonPink : Colors.white.withValues(alpha: 0.1),
+                        color: index <= _currentStep ? OTheme.neonPink : Colors.white.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -368,7 +368,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           child: Container(
             padding: const EdgeInsets.all(32),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.05),
+              color: Colors.white.withOpacity(0.05),
               borderRadius: BorderRadius.circular(24),
               border: Border.all(
                 color: _isHumanVerified ? OTheme.neonPink : Colors.white10,
@@ -393,7 +393,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           border: Border.all(color: const Color(0xFFD3D3D3)),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.1),
+                              color: Colors.black.withOpacity(0.1),
                               blurRadius: 4,
                               offset: const Offset(0, 2),
                             ),

@@ -386,7 +386,7 @@ class _FeaturedCard extends StatelessWidget {
           image: NetworkImage(image),
           fit: BoxFit.cover,
           colorFilter: ColorFilter.mode(
-            Colors.black.withValues(alpha: 0.4),
+            Colors.black.withOpacity(0.4),
             BlendMode.darken,
           ),
         ),
@@ -427,7 +427,7 @@ class _FeaturedCard extends StatelessWidget {
             child: Text(
               subtitle,
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.8),
+                color: Colors.white.withOpacity(0.8),
                 fontSize: 18,
                 height: 1.5,
               ),
@@ -496,7 +496,7 @@ class _UpdateItem extends StatelessWidget {
                 Text(
                   description,
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.5),
+                    color: Colors.white.withOpacity(0.5),
                     fontSize: 15,
                     height: 1.5,
                   ),
@@ -526,9 +526,9 @@ class _ComingSoonCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: OTheme.deepCharcoal.withValues(alpha: 0.5),
+        color: OTheme.deepCharcoal.withOpacity(0.5),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -547,7 +547,7 @@ class _ComingSoonCard extends StatelessWidget {
           Text(
             description,
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.4),
+              color: Colors.white.withOpacity(0.4),
               fontSize: 14,
               height: 1.4,
             ),

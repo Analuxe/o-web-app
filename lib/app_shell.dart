@@ -189,7 +189,7 @@ class _NavButton extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
           decoration: BoxDecoration(
-            color: isSelected ? OTheme.neonPink.withValues(alpha: 0.1) : Colors.transparent,
+            color: isSelected ? OTheme.neonPink.withOpacity(0.1) : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
@@ -228,7 +228,7 @@ class TopNavBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: OTheme.black,
         border: Border(
-          bottom: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
+          bottom: BorderSide(color: Colors.white.withOpacity(0.05)),
         ),
       ),
       child: Row(

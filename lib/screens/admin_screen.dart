@@ -282,7 +282,7 @@ class _AdminScreenState extends State<AdminScreen> {
                 icon: const Icon(Icons.storage, size: 16),
                 label: const Text('Seed UAT Data'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: OTheme.neonPink.withValues(alpha: 0.1),
+                  backgroundColor: OTheme.neonPink.withOpacity(0.1),
                   foregroundColor: OTheme.neonPink,
                   side: const BorderSide(color: OTheme.neonPink),
                 ),
@@ -293,7 +293,7 @@ class _AdminScreenState extends State<AdminScreen> {
                 icon: const Icon(Icons.admin_panel_settings, size: 16),
                 label: const Text('Add Admin'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white.withValues(alpha: 0.1),
+                  backgroundColor: Colors.white.withOpacity(0.1),
                   foregroundColor: Colors.white,
                   side: const BorderSide(color: Colors.white24),
                 ),
