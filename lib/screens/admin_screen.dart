@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:o_web/theme.dart';
+import 'package:o_web/services/supabase_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AdminScreen extends StatefulWidget {
   const AdminScreen({super.key});
@@ -23,10 +25,17 @@ class _AdminScreenState extends State<AdminScreen> {
 
   Future<void> _loadStats() async {
     final client = SupabaseService.client;
-    
-    final usersRes = await client.from('profiles').select('*', count: CountOption.exact);
-    final verifiedRes = await client.from('profiles').select('*', count: CountOption.exact).eq('is_verified', true);
-    final reportsRes = await client.from('reports').select('*', count: CountOption.exact);
+
+    final usersRes = await client
+        .from('profiles')
+        .select('*', const FetchOptions(count: CountOption.exact));
+    final verifiedRes = await client
+        .from('profiles')
+        .select('*', const FetchOptions(count: CountOption.exact))
+        .eq('is_verified', true);
+    final reportsRes = await client
+        .from('reports')
+        .select('*', const FetchOptions(count: CountOption.exact));
 
     if (mounted) {
       setState(() {
