@@ -4,6 +4,7 @@ import 'package:o_web/services/supabase_service.dart';
 import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:typed_data';
+import 'package:crop_your_image/crop_your_image.dart';
 
 class HubScreen extends StatefulWidget {
   const HubScreen({super.key});
@@ -249,6 +250,8 @@ class _CreatePostDialogState extends State<_CreatePostDialog> {
   bool _isSaving = false;
   Uint8List? _selectedFileBytes;
   String? _selectedFileName;
+  bool _isCropping = false;
+  final _cropController = CropController();
 
   @override
   void initState() {
@@ -270,7 +273,7 @@ class _CreatePostDialogState extends State<_CreatePostDialog> {
       setState(() {
         _selectedFileBytes = result.files.first.bytes;
         _selectedFileName = result.files.first.name;
-        _imageUrlController.text = 'Pending upload...';
+        _isCropping = true;
       });
     }
   }
@@ -281,20 +284,86 @@ class _CreatePostDialogState extends State<_CreatePostDialog> {
       backgroundColor: OTheme.deepCharcoal,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       child: Container(
-        width: 500,
+        width: 600,
+        height: _isCropping ? 700 : null,
         padding: const EdgeInsets.all(32),
-        child: Form(
-          key: _formKey,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Create New Hub Post',
-                  style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 24),
+        child: _isCropping ? _buildCropper() : _buildForm(),
+      ),
+    );
+  }
+
+  Widget _buildCropper() {
+    return Column(
+      children: [
+        const Text(
+          'Adjust Image Visibility',
+          style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          'Select the area you want to be visible in the post.',
+          style: TextStyle(color: Colors.white70, fontSize: 14),
+        ),
+        const SizedBox(height: 24),
+        Expanded(
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white10),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Crop(
+              image: _selectedFileBytes!,
+              controller: _cropController,
+              onCropped: (image) {
+                setState(() {
+                  _selectedFileBytes = image;
+                  _isCropping = false;
+                  _imageUrlController.text = 'Cropped & Ready';
+                });
+              },
+              aspectRatio: _type == HubPostType.featured ? 16 / 9 : 4 / 3,
+              initialSize: 0.8,
+            ),
+          ),
+        ),
+        const SizedBox(height: 24),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            TextButton(
+              onPressed: () => setState(() => _isCropping = false),
+              child: const Text('Cancel'),
+            ),
+            const SizedBox(width: 16),
+            ElevatedButton.icon(
+              onPressed: () => _cropController.crop(),
+              icon: const Icon(Icons.check),
+              label: const Text('Apply Crop'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: OTheme.neonPink,
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildForm() {
+    return Form(
+      key: _formKey,
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              widget.post == null ? 'Create New Hub Post' : 'Edit Hub Post',
+              style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 24),
                 DropdownButtonFormField<HubPostType>(
                   value: _type,
                   dropdownColor: OTheme.deepCharcoal,
@@ -351,10 +420,34 @@ class _CreatePostDialogState extends State<_CreatePostDialog> {
                   ],
                 ),
                 if (_selectedFileBytes != null) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    height: 100,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      image: DecorationImage(
+                        image: MemoryImage(_selectedFileBytes!),
+                        fit: BoxFit.cover,
+                      ),
+                      border: Border.all(color: OTheme.neonPink.withOpacity(0.3)),
+                    ),
+                  ),
                   const SizedBox(height: 8),
-                  Text(
-                    'Selected: $_selectedFileName',
-                    style: const TextStyle(color: OTheme.neonPink, fontSize: 12),
+                  Row(
+                    children: [
+                      const Icon(Icons.check_circle, color: OTheme.neonPink, size: 16),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Image Cropped: $_selectedFileName',
+                        style: const TextStyle(color: OTheme.neonPink, fontSize: 12),
+                      ),
+                      const Spacer(),
+                      TextButton(
+                        onPressed: _pickImage,
+                        child: const Text('Change', style: TextStyle(fontSize: 12)),
+                      ),
+                    ],
                   ),
                 ],
                 const SizedBox(height: 32),
