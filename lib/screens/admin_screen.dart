@@ -193,6 +193,37 @@ class _AdminScreenState extends State<AdminScreen> {
     );
   }
 
+  Widget _buildInsights() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Interest Trends',
+          style: Theme.of(context).textTheme.displaySmall,
+        ),
+        const SizedBox(height: 24),
+        Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: OTheme.deepCharcoal,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(
+            children: [
+              const _TrendRow(name: 'Techno', users: 128, growth: '+24%', isPositive: true),
+              const Divider(color: Colors.white10, height: 32),
+              const _TrendRow(name: 'Kink', users: 94, growth: '+18%', isPositive: true),
+              const Divider(color: Colors.white10, height: 32),
+              const _TrendRow(name: 'Digital Art', users: 156, growth: '+12%', isPositive: true),
+              const Divider(color: Colors.white10, height: 32),
+              const _TrendRow(name: 'Travel', users: 210, growth: '-5%', isPositive: false),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildModeration() {
     if (isLoadingModeration) {
       return const Center(child: CircularProgressIndicator(color: OTheme.neonPink));
@@ -260,8 +291,6 @@ class _AdminScreenState extends State<AdminScreen> {
     );
   }
 
-  Widget _buildInsights() {
-
   Widget _buildHubDensity() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -271,9 +300,9 @@ class _AdminScreenState extends State<AdminScreen> {
           style: Theme.of(context).textTheme.displaySmall,
         ),
         const SizedBox(height: 24),
-        _HubRow(name: 'London Soho', count: 142, percentage: 0.8),
-        _HubRow(name: 'Berlin Mitte', count: 89, percentage: 0.5),
-        _HubRow(name: 'NYC Chelsea', count: 156, percentage: 0.9),
+        const _HubRow(name: 'London Soho', count: 142, percentage: 0.8),
+        const _HubRow(name: 'Berlin Mitte', count: 89, percentage: 0.5),
+        const _HubRow(name: 'NYC Chelsea', count: 156, percentage: 0.9),
       ],
     );
   }

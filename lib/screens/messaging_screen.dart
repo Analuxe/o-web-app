@@ -160,11 +160,11 @@ class _MessagingScreenState extends State<MessagingScreen> {
             child: _selectedProfile?.avatarUrl == null ? const Icon(Icons.person, color: OTheme.neonPink) : null,
           ),
           const SizedBox(width: 16),
-          Column(
+          const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(_selectedProfile?.displayName ?? 'User', style: const TextStyle(fontWeight: FontWeight.bold)),
-              const Text('Online', style: TextStyle(fontSize: 12, color: Colors.green)),
+              Text('User', style: TextStyle(fontWeight: FontWeight.bold)),
+              Text('Online', style: TextStyle(fontSize: 12, color: Colors.green)),
             ],
           ),
           const Spacer(),
@@ -175,7 +175,7 @@ class _MessagingScreenState extends State<MessagingScreen> {
               if (value == 'block') {
                 SupabaseService.blockUser(_selectedProfile!.id);
                 setState(() => _selectedProfile = null);
-                _loadChats(); // Refresh the list
+                _loadProfileAndChats(); // Refresh the list
               }
             },
             itemBuilder: (context) => [
@@ -215,32 +215,7 @@ class _MessagingScreenState extends State<MessagingScreen> {
       ),
     );
   }
-}
 
-class ChatMessage extends StatelessWidget {
-  final String text;
-  final bool isMe;
-
-  const ChatMessage({super.key, required this.text, required this.isMe});
-
-  @override
-  Widget build(BuildContext context) {
-    return Align(
-      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: isMe ? OTheme.neonPink : OTheme.deepCharcoal,
-          borderRadius: BorderRadius.circular(16).copyWith(
-            bottomRight: isMe ? const Radius.circular(0) : const Radius.circular(16),
-            bottomLeft: isMe ? const Radius.circular(16) : const Radius.circular(0),
-          ),
-        ),
-        constraints: const BoxConstraints(maxWidth: 400),
-        child: Text(text, style: TextStyle(color: isMe ? Colors.black : Colors.white)),
-      ),
-    );
   Widget _buildLockedState() {
     return Center(
       child: Column(
@@ -268,6 +243,33 @@ class ChatMessage extends StatelessWidget {
             child: const Text('Check Status', style: TextStyle(color: Colors.black)),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class ChatMessage extends StatelessWidget {
+  final String text;
+  final bool isMe;
+
+  const ChatMessage({super.key, required this.text, required this.isMe});
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: isMe ? OTheme.neonPink : OTheme.deepCharcoal,
+          borderRadius: BorderRadius.circular(16).copyWith(
+            bottomRight: isMe ? const Radius.circular(0) : const Radius.circular(16),
+            bottomLeft: isMe ? const Radius.circular(16) : const Radius.circular(0),
+          ),
+        ),
+        constraints: const BoxConstraints(maxWidth: 400),
+        child: Text(text, style: TextStyle(color: isMe ? Colors.black : Colors.white)),
       ),
     );
   }
