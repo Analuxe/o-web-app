@@ -46,26 +46,46 @@ class _MessagingScreenState extends State<MessagingScreen> {
           .eq('receiver_id', SupabaseService.client.auth.currentUser!.id)
           .eq('status', 'pending');
 
+      final chats = chatData.map((json) => Profile.fromJson(json)).toList();
+      Profile? selectedProfile;
+      bool showRequests = _showRequests;
+
+      if (widget.initialProfileId != null) {
+        showRequests = false;
+        final existing = chats.where((c) => c.id == widget.initialProfileId);
+        if (existing.isNotEmpty) {
+          selectedProfile = existing.first;
+        } else if (myProfile?.canMessageAnyone ?? false) {
+          // Fetch the profile if it's not in chats but allowed
+          try {
+            final data = await SupabaseService.client
+                .from('profiles')
+                .select()
+                .eq('id', widget.initialProfileId!)
+                .single();
+            final profile = Profile.fromJson(data);
+            selectedProfile = profile;
+            if (!chats.any((c) => c.id == profile.id)) {
+              chats.insert(0, profile);
+            }
+          } catch (e) {
+            debugPrint('Error fetching initial profile: $e');
+          }
+        }
+      } else if (chats.isNotEmpty && _selectedProfile == null) {
+        selectedProfile = chats.first;
+      } else {
+        selectedProfile = _selectedProfile;
+      }
+
       setState(() {
         _myProfile = myProfile;
-        _chats = chatData.map((json) => Profile.fromJson(json)).toList();
+        _chats = chats;
+        _selectedProfile = selectedProfile;
         _matchRequests = List<Map<String, dynamic>>.from(requestData);
+        _showRequests = showRequests;
         _isLoadingChats = false;
         _isLoadingProfile = false;
-        
-        if (widget.initialProfileId != null) {
-          _showRequests = false;
-          // Find if the profile is already in chats
-          final existing = _chats.where((c) => c.id == widget.initialProfileId);
-          if (existing.isNotEmpty) {
-            _selectedProfile = existing.first;
-          } else if (_myProfile?.canMessageAnyone ?? false) {
-            // If premium/admin/mod, we can fetch the profile and add it temporarily
-            _fetchAndSetInitialProfile(widget.initialProfileId!);
-          }
-        } else if (_chats.isNotEmpty && _selectedProfile == null) {
-          _selectedProfile = _chats.first;
-        }
       });
     } catch (e) {
       setState(() {
@@ -78,25 +98,6 @@ class _MessagingScreenState extends State<MessagingScreen> {
   void _handleRequest(String requestId, String status) async {
     await SupabaseService.respondToMatchRequest(requestId, status);
     _loadProfileAndChats(); // Refresh
-  }
-
-  Future<void> _fetchAndSetInitialProfile(String profileId) async {
-    try {
-      final data = await SupabaseService.client
-          .from('profiles')
-          .select()
-          .eq('id', profileId)
-          .single();
-      final profile = Profile.fromJson(data);
-      setState(() {
-        _selectedProfile = profile;
-        if (!_chats.any((c) => c.id == profile.id)) {
-          _chats.insert(0, profile);
-        }
-      });
-    } catch (e) {
-      debugPrint('Error fetching initial profile: $e');
-    }
   }
 
   void _sendMessage() async {
