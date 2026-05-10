@@ -1,11 +1,11 @@
 {
-    "name": "o_web",
-    "short_name": "o_web",
+    "name": "O",
+    "short_name": "O",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#000000",
+    "theme_color": "#FF2D55",
+    "description": "Premium High-End Social Networking.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
