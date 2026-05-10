@@ -7,9 +7,12 @@ import 'dart:typed_data';
 import 'package:o_web/widgets/tag_selector.dart';
 import 'package:o_web/models/tags.dart';
 import 'package:o_web/models/profile.dart';
+import 'package:o_web/widgets/report_dialog.dart';
+import 'package:go_router/go_router.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  final String? userId;
+  const ProfileScreen({super.key, this.userId});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -35,18 +38,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _loadProfile() async {
-    final profile = await SupabaseService.getMyProfile();
-    setState(() {
-      _profile = profile;
-      _isLoading = false;
-      if (profile != null) {
-        _displayNameController.text = profile.displayName ?? '';
-        _bioController.text = profile.bio ?? '';
-        _zipcodeController.text = profile.zipcode ?? '';
-        _selectedPronouns = profile.pronouns;
-        _selectedInterests = List.from(profile.interests ?? []);
-      }
-    });
+    final String? myId = SupabaseService.client.auth.currentUser?.id;
+    final bool isMe = widget.userId == null || widget.userId == myId;
+
+    final profile = isMe 
+        ? await SupabaseService.getMyProfile() 
+        : await SupabaseService.getProfile(widget.userId!);
+
+    if (mounted) {
+      setState(() {
+        _profile = profile;
+        _isLoading = false;
+        if (profile != null && isMe) {
+          _displayNameController.text = profile.displayName ?? '';
+          _bioController.text = profile.bio ?? '';
+          _zipcodeController.text = profile.zipcode ?? '';
+          _selectedPronouns = profile.pronouns;
+          _selectedInterests = List.from(profile.interests ?? []);
+        }
+      });
+    }
   }
 
   Future<void> _saveProfile() async {
@@ -108,8 +119,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return const Center(child: CircularProgressIndicator(color: OTheme.neonPink));
     }
 
-    final width = MediaQuery.of(context).size.width;
-    final isMobile = width < 700;
+    final String? myId = SupabaseService.client.auth.currentUser?.id;
+    final bool isMe = widget.userId == null || widget.userId == myId;
 
     return SingleChildScrollView(
       padding: EdgeInsets.all(isMobile ? 20 : 32),
@@ -121,35 +132,61 @@ class _ProfileScreenState extends State<ProfileScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: isMobile ? CrossAxisAlignment.start : CrossAxisAlignment.center,
             children: [
-              Text('My Profile', style: Theme.of(context).textTheme.displayLarge?.copyWith(fontSize: isMobile ? 28 : 32)),
-              if (!_isEditing)
-                Padding(
-                  padding: EdgeInsets.only(top: isMobile ? 16 : 0),
-                  child: ElevatedButton.icon(
-                    onPressed: () => setState(() => _isEditing = true),
-                    icon: const Icon(Icons.edit, size: 18),
-                    label: const Text('Edit Profile'),
+              Text(
+                isMe ? 'My Profile' : (_profile?.displayName ?? 'Profile'), 
+                style: Theme.of(context).textTheme.displayLarge?.copyWith(fontSize: isMobile ? 28 : 32)
+              ),
+              if (isMe) ...[
+                if (!_isEditing)
+                  Padding(
+                    padding: EdgeInsets.only(top: isMobile ? 16 : 0),
+                    child: ElevatedButton.icon(
+                      onPressed: () => setState(() => _isEditing = true),
+                      icon: const Icon(Icons.edit, size: 18),
+                      label: const Text('Edit Profile'),
+                    ),
+                  )
+                else
+                  Padding(
+                    padding: EdgeInsets.only(top: isMobile ? 16 : 0),
+                    child: Row(
+                      mainAxisSize: isMobile ? MainAxisSize.max : MainAxisSize.min,
+                      children: [
+                        if (isMobile) const Spacer(),
+                        TextButton(
+                          onPressed: () => setState(() => _isEditing = false),
+                          child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+                        ),
+                        const SizedBox(width: 12),
+                        ElevatedButton(
+                          onPressed: _saveProfile,
+                          child: const Text('Save Changes'),
+                        ),
+                      ],
+                    ),
                   ),
-                )
-              else
-                Padding(
-                  padding: EdgeInsets.only(top: isMobile ? 16 : 0),
-                  child: Row(
-                    mainAxisSize: isMobile ? MainAxisSize.max : MainAxisSize.min,
-                    children: [
-                      if (isMobile) const Spacer(),
-                      TextButton(
-                        onPressed: () => setState(() => _isEditing = false),
-                        child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+              ] else ...[
+                // Actions for other user's profile
+                Row(
+                  children: [
+                    IconButton(
+                      onPressed: () => showReportDialog(context, reportedUserId: widget.userId!),
+                      icon: const Icon(Icons.report_problem_outlined, color: Colors.white24),
+                      tooltip: 'Report User',
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton.icon(
+                      onPressed: () => context.go('/messaging?id=${widget.userId}'),
+                      icon: const Icon(Icons.chat_bubble_outline, size: 18),
+                      label: const Text('Message'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: OTheme.neonPink,
+                        foregroundColor: Colors.black,
                       ),
-                      const SizedBox(width: 12),
-                      ElevatedButton(
-                        onPressed: _saveProfile,
-                        child: const Text('Save Changes'),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
+              ],
             ],
           ),
           const SizedBox(height: 40),
@@ -186,16 +223,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 )
                               : null),
                     ),
-                    const SizedBox(height: 16),
-                    OutlinedButton.icon(
-                      onPressed: _isUploading ? null : _pickImage,
-                      icon: const Icon(Icons.upload_file, size: 16),
-                      label: Text(_isUploading ? 'Uploading...' : 'Upload Photo'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: OTheme.neonPink,
-                        side: const BorderSide(color: OTheme.neonPink),
+                    if (isMe) ...[
+                      const SizedBox(height: 16),
+                      OutlinedButton.icon(
+                        onPressed: _isUploading ? null : _pickImage,
+                        icon: const Icon(Icons.upload_file, size: 16),
+                        label: Text(_isUploading ? 'Uploading...' : 'Upload Photo'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: OTheme.neonPink,
+                          side: const BorderSide(color: OTheme.neonPink),
+                        ),
                       ),
-                    ),
+                    ],
                     if (_profile?.isVerified == true) ...[
                       const SizedBox(height: 12),
                       Container(
@@ -214,7 +253,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ],
                         ),
                       ),
-                    ] else ...[
+                    ] else if (isMe) ...[
                       const SizedBox(height: 24),
                       ElevatedButton.icon(
                         onPressed: () => Navigator.push(
@@ -313,7 +352,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(color: OTheme.neonPink.withOpacity(0.3)),
                           ),
-                          child: Text(i, style: const TextStyle(color: OTheme.neonPink, fontSize: 13)),
+                          child: Text(UserTag.format(i), style: const TextStyle(color: OTheme.neonPink, fontSize: 13)),
                         )).toList(),
                       )
                     else

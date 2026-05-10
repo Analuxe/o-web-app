@@ -4,6 +4,9 @@ import 'package:o_web/services/supabase_service.dart';
 import 'package:o_web/screens/discovery_swipe_tab.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
+import 'package:o_web/widgets/report_dialog.dart';
+import 'package:o_web/models/tags.dart';
+import 'package:o_web/models/profile.dart';
 
 class DiscoveryScreen extends StatefulWidget {
   const DiscoveryScreen({super.key});
@@ -438,38 +441,12 @@ class _UserCardState extends State<UserCard> {
     }
   }
 
-  void _showReportDialog() {
-    final reasonController = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: OTheme.deepCharcoal,
-        title: const Text('Report Profile', style: TextStyle(color: Colors.white)),
-        content: TextField(
-          controller: reasonController,
-          decoration: const InputDecoration(
-            hintText: 'Reason for reporting...',
-            hintStyle: TextStyle(color: Colors.white24),
-          ),
-          style: const TextStyle(color: Colors.white),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () async {
-              await SupabaseService.reportUser(widget.profile.id, reasonController.text, '');
-              if (mounted) {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Report Submitted'), backgroundColor: OTheme.neonPink),
-                );
-              }
-            },
-            child: const Text('Submit'),
-          ),
-        ],
-      ),
-    );
+  void _handleReport() {
+    showReportDialog(context, reportedUserId: widget.profile.id);
+  }
+
+  void _handleProfile() {
+    context.go('/profile?id=${widget.profile.id}');
   }
 
   void _handleMessage() {
@@ -528,141 +505,145 @@ class _UserCardState extends State<UserCard> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: OTheme.deepCharcoal,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: _isExtended ? OTheme.neonPink.withOpacity(0.5) : Colors.white.withOpacity(0.05),
-          width: _isExtended ? 2 : 1,
+    return InkWell(
+      onTap: _handleProfile,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        decoration: BoxDecoration(
+          color: OTheme.deepCharcoal,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: _isExtended ? OTheme.neonPink.withOpacity(0.5) : Colors.white.withOpacity(0.05),
+            width: _isExtended ? 2 : 1,
+          ),
+          boxShadow: _isExtended ? [
+            BoxShadow(color: OTheme.neonPink.withOpacity(0.2), blurRadius: 20, spreadRadius: -5),
+          ] : null,
         ),
-        boxShadow: _isExtended ? [
-          BoxShadow(color: OTheme.neonPink.withOpacity(0.2), blurRadius: 20, spreadRadius: -5),
-        ] : null,
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Stack(
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Container(
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    image: widget.profile.avatarUrl != null 
-                      ? DecorationImage(image: NetworkImage(widget.profile.avatarUrl!), fit: BoxFit.cover)
-                      : null,
-                    gradient: widget.profile.avatarUrl == null ? LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        OTheme.neonPink.withOpacity(0.2),
-                        OTheme.black.withOpacity(0.8),
-                      ],
+        clipBehavior: Clip.antiAlias,
+        child: Stack(
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      image: widget.profile.avatarUrl != null 
+                        ? DecorationImage(image: NetworkImage(widget.profile.avatarUrl!), fit: BoxFit.cover)
+                        : null,
+                      gradient: widget.profile.avatarUrl == null ? LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          OTheme.neonPink.withOpacity(0.2),
+                          OTheme.black.withOpacity(0.8),
+                        ],
+                      ) : null,
+                    ),
+                    child: widget.profile.avatarUrl == null ? const Icon(
+                      Icons.person,
+                      size: 64,
+                      color: OTheme.neonPink,
                     ) : null,
                   ),
-                  child: widget.profile.avatarUrl == null ? const Icon(
-                    Icons.person,
-                    size: 64,
-                    color: OTheme.neonPink,
-                  ) : null,
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            '${widget.profile.displayName}, ${widget.profile.age}',
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              '${widget.profile.displayName}, ${widget.profile.age}',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            overflow: TextOverflow.ellipsis,
                           ),
-                        ),
-                        PopupMenuButton<String>(
-                          icon: const Icon(Icons.more_horiz, color: Colors.white54, size: 20),
-                          color: OTheme.deepCharcoal,
-                          onSelected: (value) {
-                            if (value == 'block') {
-                              _handleBlock();
-                            } else if (value == 'report') {
-                              _showReportDialog();
-                            }
-                          },
-                          itemBuilder: (context) => [
-                            const PopupMenuItem(value: 'report', child: Text('Report Profile', style: TextStyle(color: Colors.white))),
-                            const PopupMenuItem(value: 'block', child: Text('Block User', style: TextStyle(color: Colors.redAccent))),
-                          ],
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${widget.profile.pronouns} • Nearby',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.white54,
+                          PopupMenuButton<String>(
+                            icon: const Icon(Icons.more_horiz, color: Colors.white54, size: 20),
+                            color: OTheme.deepCharcoal,
+                            onSelected: (value) {
+                              if (value == 'block') {
+                                _handleBlock();
+                              } else if (value == 'report') {
+                                _handleReport();
+                              }
+                            },
+                            itemBuilder: (context) => [
+                              const PopupMenuItem(value: 'report', child: Text('Report Profile', style: TextStyle(color: Colors.white))),
+                              const PopupMenuItem(value: 'block', child: Text('Block User', style: TextStyle(color: Colors.redAccent))),
+                            ],
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 8,
-                      children: (widget.profile.interests ?? []).take(2).map((i) => _Tag(label: i)).toList(),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          Positioned(
-            right: 12,
-            bottom: 12,
-            child: widget.canMessageAnyone 
-              ? FloatingActionButton.small(
-                  onPressed: _handleMessage,
-                  backgroundColor: OTheme.neonPink,
-                  child: const Icon(Icons.message, color: Colors.black),
-                )
-              : FloatingActionButton.small(
-                  onPressed: _isExtended ? null : _handleExtend,
-                  backgroundColor: _isExtended ? Colors.grey : OTheme.neonPink,
-                  child: Icon(
-                    _isExtended ? Icons.check : Icons.add,
-                    color: Colors.black,
+                      const SizedBox(height: 4),
+                      Text(
+                        '${widget.profile.pronouns} • Nearby',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.white54,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 8,
+                        children: (widget.profile.interests ?? []).take(2).map((i) => _Tag(label: UserTag.format(i))).toList(),
+                      ),
+                    ],
                   ),
                 ),
-          ),
-          if (widget.isCurrentUserVerified)
-            Positioned(
-              top: 12,
-              left: 12,
-              child: InkWell(
-                onTap: _handleThumbsDown,
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.6),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white10),
-                  ),
-                  child: const Icon(
-                    Icons.thumb_down_alt_outlined,
-                    color: Colors.white54,
-                    size: 16,
-                  ),
-                ),
-              ),
+              ],
             ),
-        ],
+            Positioned(
+              right: 12,
+              bottom: 12,
+              child: widget.canMessageAnyone 
+                ? FloatingActionButton.small(
+                    onPressed: _handleMessage,
+                    backgroundColor: OTheme.neonPink,
+                    child: const Icon(Icons.message, color: Colors.black),
+                  )
+                : FloatingActionButton.small(
+                    onPressed: _isExtended ? null : _handleExtend,
+                    backgroundColor: _isExtended ? Colors.grey : OTheme.neonPink,
+                    child: Icon(
+                      _isExtended ? Icons.check : Icons.add,
+                      color: Colors.black,
+                    ),
+                  ),
+            ),
+            if (widget.isCurrentUserVerified)
+              Positioned(
+                top: 12,
+                left: 12,
+                child: InkWell(
+                  onTap: _handleThumbsDown,
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.6),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white10),
+                    ),
+                    child: const Icon(
+                      Icons.thumb_down_alt_outlined,
+                      color: Colors.white54,
+                      size: 16,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

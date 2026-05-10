@@ -97,7 +97,13 @@ final _router = GoRouter(
         ),
         GoRoute(
           path: '/profile',
-          builder: (context, state) => const ProfileScreen(),
+          builder: (context, state) {
+            final id = state.uri.queryParameters['id'];
+            return ProfileScreen(
+              key: id != null ? ValueKey(id) : null,
+              userId: id,
+            );
+          },
         ),
         GoRoute(
           path: '/settings',

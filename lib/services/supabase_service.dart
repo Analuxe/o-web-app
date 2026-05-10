@@ -78,6 +78,22 @@ class SupabaseService {
     }
   }
 
+  static Future<Profile?> getProfile(String id) async {
+    try {
+      final data = await client
+          .from('profiles')
+          .select()
+          .eq('id', id)
+          .maybeSingle();
+      
+      if (data == null) return null;
+      return Profile.fromJson(data);
+    } catch (e) {
+      debugPrint('Error fetching profile $id: $e');
+      return null;
+    }
+  }
+
   static Future<void> updateProfile(Map<String, dynamic> updates) async {
     final user = client.auth.currentUser;
     if (user == null) return;

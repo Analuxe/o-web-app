@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:o_web/theme.dart';
 import 'package:o_web/services/supabase_service.dart';
 import 'package:o_web/models/profile.dart';
+import 'package:o_web/widgets/report_dialog.dart';
 
 class MessagingScreen extends StatefulWidget {
   final String? initialProfileId;
@@ -472,6 +473,16 @@ class _MessagingScreenState extends State<MessagingScreen> {
             Text(_selectedProfile?.displayName ?? 'User', style: const TextStyle(fontWeight: FontWeight.bold)),
             const Text('Live', style: TextStyle(fontSize: 12, color: Colors.green)),
           ]),
+          const Spacer(),
+          IconButton(
+            icon: const Icon(Icons.report_problem_outlined, color: Colors.white24, size: 20),
+            onPressed: () {
+              if (_selectedProfile != null) {
+                showReportDialog(context, reportedUserId: _selectedProfile!.id);
+              }
+            },
+            tooltip: 'Report User',
+          ),
         ],
       ),
     );

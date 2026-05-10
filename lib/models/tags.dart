@@ -4,6 +4,21 @@ class UserTag {
   final String category;
 
   const UserTag(this.label, this.category);
+
+  bool get isSlidingSexualTag {
+    if (category != TagCategories.sexual) return false;
+    final excluded = ['Leather', 'Rubber/Latex', 'Uniforms', 'Jockstrap'];
+    return !excluded.contains(label);
+  }
+
+  static String format(String tag) {
+    final parts = tag.split(':');
+    if (parts.length < 2) return tag;
+    final label = parts[0];
+    final pref = int.tryParse(parts[1]) ?? 1;
+    final prefStr = pref == 0 ? 'Bottom' : (pref == 1 ? 'Versatile' : 'Top');
+    return '$label: $prefStr';
+  }
 }
 
 class TagCategories {

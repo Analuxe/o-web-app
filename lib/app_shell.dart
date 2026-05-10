@@ -40,6 +40,22 @@ class _AppShellState extends State<AppShell> {
     }
   }
 
+  Future<void> _handleSignOut() async {
+    try {
+      await Supabase.instance.client.auth.signOut();
+      if (mounted) {
+        context.go('/login');
+      }
+    } catch (e) {
+      debugPrint('Sign-out error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error signing out: $e'), backgroundColor: Colors.redAccent),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
@@ -49,16 +65,18 @@ class _AppShellState extends State<AppShell> {
       key: _scaffoldKey,
       drawer: !isDesktop ? Drawer(
         backgroundColor: OTheme.black,
-        child: SideNavBar(isDrawer: true, isAdmin: _isAdmin),
+        child: SideNavBar(isDrawer: true, isAdmin: _isAdmin, onSignOut: _handleSignOut),
       ) : null,
       body: Row(
         children: [
-          if (isDesktop) SideNavBar(isAdmin: _isAdmin),
+          if (isDesktop) SideNavBar(isAdmin: _isAdmin, onSignOut: _handleSignOut),
           Expanded(
             child: Column(
               children: [
-                if (!isDesktop) TopNavBar(
+                TopNavBar(
+                  isDesktop: isDesktop,
                   onMenuPressed: () => _scaffoldKey.currentState?.openDrawer(),
+                  onSignOut: _handleSignOut,
                 ),
                 Expanded(
                   child: _isLoading 
@@ -77,7 +95,8 @@ class _AppShellState extends State<AppShell> {
 class SideNavBar extends StatelessWidget {
   final bool isDrawer;
   final bool isAdmin;
-  const SideNavBar({super.key, this.isDrawer = false, this.isAdmin = false});
+  final VoidCallback onSignOut;
+  const SideNavBar({super.key, this.isDrawer = false, this.isAdmin = false, required this.onSignOut});
 
   @override
   Widget build(BuildContext context) {
@@ -155,6 +174,14 @@ class SideNavBar extends StatelessWidget {
             isSelected: GoRouterState.of(context).uri.path == '/settings',
             onTap: isDrawer ? () => Navigator.pop(context) : null,
           ),
+          const SizedBox(height: 16),
+          _NavButton(
+            icon: Icons.logout_rounded,
+            label: 'Sign Out',
+            path: '/login', // Path won't be used as we override onTap
+            isSelected: false,
+            onTap: onSignOut,
+          ),
         ],
       ),
     );
@@ -218,13 +245,20 @@ class _NavButton extends StatelessWidget {
 
 class TopNavBar extends StatelessWidget {
   final VoidCallback onMenuPressed;
-  const TopNavBar({super.key, required this.onMenuPressed});
+  final VoidCallback onSignOut;
+  final bool isDesktop;
+  const TopNavBar({
+    super.key, 
+    required this.onMenuPressed, 
+    required this.onSignOut,
+    this.isDesktop = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       height: 72,
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 24),
       decoration: BoxDecoration(
         color: OTheme.black,
         border: Border(
@@ -233,16 +267,25 @@ class TopNavBar extends StatelessWidget {
       ),
       child: Row(
         children: [
-          IconButton(
-            icon: const Icon(Icons.menu, color: Colors.white70),
-            onPressed: onMenuPressed,
-          ),
-          const SizedBox(width: 12),
-          Image.asset(
-            'assets/logo.png',
-            height: 32,
-          ),
+          if (!isDesktop) ...[
+            IconButton(
+              icon: const Icon(Icons.menu, color: Colors.white70),
+              onPressed: onMenuPressed,
+            ),
+            const SizedBox(width: 12),
+          ],
+          if (!isDesktop)
+            Image.asset(
+              'assets/logo.png',
+              height: 32,
+            ),
           const Spacer(),
+          IconButton(
+            icon: const Icon(Icons.logout_rounded, color: OTheme.neonPink, size: 24),
+            tooltip: 'Sign Out',
+            onPressed: onSignOut,
+          ),
+          const SizedBox(width: 16),
           const CircleAvatar(
             radius: 18,
             backgroundColor: OTheme.deepCharcoal,
