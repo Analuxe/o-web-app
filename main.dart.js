@@ -112947,8 +112947,8 @@ K(a){var s,r,q=this
 if(q.y)return B.bd
 s=q.e
 r=!1
-if(s!=null)if(!s.at)s=!(s.CW||s.ay||s.ch)
-else s=r
+if(s!=null)if(!s.at){s=s.CW||s.ay||s.ch
+s=!s}else s=r
 else s=r
 if(s)return q.agr()
 if(A.ba(a,null,t.w).w.a.a<800)if(q.d!=null)return q.U2(!0)
