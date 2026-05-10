@@ -6,6 +6,79 @@ import 'package:go_router/go_router.dart';
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
+  void _showExportDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: OTheme.deepCharcoal,
+        title: const Text('Export Data', style: TextStyle(color: Colors.white)),
+        content: const Text(
+          'A summary of your profile, connections, and activity counts will be prepared for download. Proceed?',
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              try {
+                final data = await SupabaseService.exportUserData();
+                // In a real web app, we'd trigger a file download here.
+                // For now, we'll show a success message with a data summary.
+                if (context.mounted) {
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      backgroundColor: OTheme.deepCharcoal,
+                      title: const Text('Data Ready', style: TextStyle(color: Colors.white)),
+                      content: SingleChildScrollView(
+                        child: Text(data.toString(), style: const TextStyle(color: Colors.white60, fontSize: 12)),
+                      ),
+                      actions: [
+                        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
+                      ],
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Export failed: $e')));
+                }
+              }
+            },
+            child: const Text('Export'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteConfirmation(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: OTheme.deepCharcoal,
+        title: const Text('Delete Account?', style: TextStyle(color: Colors.redAccent)),
+        content: const Text(
+          'This action is permanent. All your profile data, messages, and connections will be erased. You cannot undo this.',
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+            onPressed: () async {
+              Navigator.pop(context);
+              await SupabaseService.deleteAccount();
+              if (context.mounted) context.go('/auth');
+            },
+            child: const Text('Delete Everything', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -25,9 +98,15 @@ class SettingsScreen extends StatelessWidget {
                 onTap: () {},
               ),
               _buildSettingTile(
-                icon: Icons.notifications_none,
-                title: 'Notifications',
-                onTap: () {},
+                icon: Icons.download_outlined,
+                title: 'Export My Data',
+                onTap: () => _showExportDialog(context),
+              ),
+              _buildSettingTile(
+                icon: Icons.delete_outline,
+                title: 'Delete Account',
+                onTap: () => _showDeleteConfirmation(context),
+                titleColor: Colors.redAccent.withOpacity(0.8),
               ),
             ]),
             
@@ -80,10 +159,15 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSettingTile({required IconData icon, required String title, required VoidCallback onTap}) {
+  Widget _buildSettingTile({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+    Color titleColor = Colors.white,
+  }) {
     return ListTile(
       leading: Icon(icon, color: Colors.white70),
-      title: Text(title, style: const TextStyle(color: Colors.white)),
+      title: Text(title, style: TextStyle(color: titleColor)),
       trailing: const Icon(Icons.chevron_right, color: Colors.white24),
       onTap: onTap,
     );

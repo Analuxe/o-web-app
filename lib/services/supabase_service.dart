@@ -395,4 +395,36 @@ class SupabaseService {
     
     return response;
   }
+
+  // Privacy & Legal Logic
+  static Future<void> deleteAccount() async {
+    final user = client.auth.currentUser;
+    if (user == null) return;
+
+    // Supabase RLS and cascading deletes should handle most of this, 
+    // but we explicitly clean up major tables to be safe.
+    await client.from('messages').delete().or('sender_id.eq.${user.id},receiver_id.eq.${user.id}');
+    await client.from('connections').delete().or('user1_id.eq.${user.id},user2_id.eq.${user.id}');
+    await client.from('hub_posts').delete().eq('id', user.id); // If user is an admin
+    await client.from('profiles').delete().eq('id', user.id);
+    
+    await client.auth.signOut();
+  }
+
+  static Future<Map<String, dynamic>> exportUserData() async {
+    final user = client.auth.currentUser;
+    if (user == null) throw Exception('Not authenticated');
+
+    final profile = await getMyProfile();
+    final connections = await client.from('connections').select().or('user1_id.eq.${user.id},user2_id.eq.${user.id}');
+    final messages = await client.from('messages').select().or('sender_id.eq.${user.id},receiver_id.eq.${user.id}');
+
+    return {
+      'export_date': DateTime.now().toIso8601String(),
+      'profile': profile?.toJson(),
+      'connections_count': connections.length,
+      'messages_count': messages.length,
+      'notice': 'This export contains your primary profile data and activity counts. For a full message log, contact support.',
+    };
+  }
 }

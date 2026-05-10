@@ -24,6 +24,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   bool _isHumanVerified = false;
   bool _isVerifyingHuman = false;
   bool _isLoadingProfile = true;
+  bool _hasAgreedToLegal = false;
 
   @override
   void initState() {
@@ -99,6 +100,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       final username = _usernameController.text.trim();
       if (username.isEmpty || _nameController.text.isEmpty || _ageController.text.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please fill in all essential fields')));
+        return;
+      }
+
+      if (!_hasAgreedToLegal) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('You must agree to the Terms and Privacy Policy to continue.'),
+            backgroundColor: Colors.orangeAccent,
+          ),
+        );
         return;
       }
 
@@ -295,6 +306,39 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         _buildField('Display Name', _nameController, 'e.g. Alex'),
         const SizedBox(height: 20),
         _buildField('Age', _ageController, 'e.g. 28', isNumber: true),
+        const SizedBox(height: 32),
+        Row(
+          children: [
+            Checkbox(
+              value: _hasAgreedToLegal,
+              onChanged: (val) => setState(() => _hasAgreedToLegal = val ?? false),
+              activeColor: OTheme.neonPink,
+              side: const BorderSide(color: Colors.white24),
+            ),
+            Expanded(
+              child: GestureDetector(
+                onTap: () => setState(() => _hasAgreedToLegal = !_hasAgreedToLegal),
+                child: Text.rich(
+                  TextSpan(
+                    text: 'I agree to the ',
+                    style: const TextStyle(color: Colors.white70, fontSize: 13),
+                    children: [
+                      TextSpan(
+                        text: 'Terms of Service',
+                        style: TextStyle(color: OTheme.neonPink.withOpacity(0.8), decoration: TextDecoration.underline),
+                      ),
+                      const TextSpan(text: ' and '),
+                      TextSpan(
+                        text: 'Privacy Policy',
+                        style: TextStyle(color: OTheme.neonPink.withOpacity(0.8), decoration: TextDecoration.underline),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ],
     );
   }
