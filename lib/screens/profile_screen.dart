@@ -121,6 +121,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     final String? myId = SupabaseService.client.auth.currentUser?.id;
     final bool isMe = widget.userId == null || widget.userId == myId;
+    final bool isMobile = MediaQuery.of(context).size.width < 600;
 
     return SingleChildScrollView(
       padding: EdgeInsets.all(isMobile ? 20 : 32),
