@@ -229,21 +229,50 @@ class _MessagingScreenState extends State<MessagingScreen> {
     return Column(
       children: [
         Container(
-          padding: const EdgeInsets.all(16),
-          margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+          padding: const EdgeInsets.all(20),
+          margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           decoration: BoxDecoration(
-            color: OTheme.neonPink.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: OTheme.neonPink.withOpacity(0.2)),
+            gradient: LinearGradient(
+              colors: [
+                OTheme.neonPink.withOpacity(0.15),
+                OTheme.softRose.withOpacity(0.05),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: OTheme.neonPink.withOpacity(0.3)),
+            boxShadow: [
+              BoxShadow(
+                color: OTheme.neonPink.withOpacity(0.05),
+                blurRadius: 10,
+                spreadRadius: 2,
+              ),
+            ],
           ),
-          child: const Row(
+          child: Row(
             children: [
-              Icon(Icons.info_outline, color: OTheme.neonPink, size: 20),
-              SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'Only allow match requests if you are genuinely interested in the requester.',
-                  style: TextStyle(color: OTheme.softRose, fontSize: 12, fontWeight: FontWeight.w500),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: OTheme.neonPink.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.star_outline_rounded, color: OTheme.neonPink, size: 20),
+              ),
+              const SizedBox(width: 16),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Match Guidance',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'Please only allow requests if you are genuinely interested in connecting with the requester.',
+                      style: TextStyle(color: Colors.white70, fontSize: 11, height: 1.4),
+                    ),
+                  ],
                 ),
               ),
             ],
