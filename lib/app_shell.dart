@@ -182,7 +182,7 @@ class _NavButton extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 16),
       child: InkWell(
         onTap: () {
-          context.go(path);
+          GoRouter.of(context).go(path);
           if (onTap != null) onTap!();
         },
         borderRadius: BorderRadius.circular(12),

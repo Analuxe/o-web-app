@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:o_web/theme.dart';
 import 'package:o_web/services/supabase_service.dart';
 import 'package:o_web/services/dummy_data_service.dart';
@@ -228,6 +229,11 @@ class _AdminScreenState extends State<AdminScreen> {
     );
   }
 
+  void _navigateBasedOnAuth() {
+    final isAuthenticated = SupabaseService.client.auth.currentUser != null;
+    GoRouter.of(context).go(isAuthenticated ? '/hub' : '/auth');
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isCheckingAccess) {
@@ -252,7 +258,7 @@ class _AdminScreenState extends State<AdminScreen> {
             ),
             const SizedBox(height: 32),
             ElevatedButton(
-              onPressed: () => SupabaseService.client.auth.currentUser != null ? context.go('/hub') : context.go('/auth'),
+              onPressed: _navigateBasedOnAuth,
               child: const Text('Return to Safety'),
             ),
           ],

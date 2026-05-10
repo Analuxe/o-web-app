@@ -175,7 +175,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       });
 
       if (mounted) {
-        context.go('/discovery');
+        GoRouter.of(context).go('/discovery');
       }
     } catch (e) {
       debugPrint('Onboarding failed: $e');
@@ -210,7 +210,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           TextButton.icon(
             onPressed: () async {
               await SupabaseService.signOut();
-              if (mounted) context.go('/auth');
+              if (mounted) GoRouter.of(context).go('/auth');
             },
             icon: const Icon(Icons.logout, color: Colors.white54, size: 16),
             label: const Text('Sign Out', style: TextStyle(color: Colors.white54, fontSize: 12)),

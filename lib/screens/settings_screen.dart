@@ -70,7 +70,7 @@ class SettingsScreen extends StatelessWidget {
             onPressed: () async {
               Navigator.pop(context);
               await SupabaseService.deleteAccount();
-              if (context.mounted) context.go('/auth');
+              if (context.mounted) GoRouter.of(context).go('/auth');
             },
             child: const Text('Delete Everything', style: TextStyle(color: Colors.white)),
           ),
@@ -129,7 +129,7 @@ class SettingsScreen extends StatelessWidget {
               child: TextButton.icon(
                 onPressed: () async {
                   await SupabaseService.signOut();
-                  if (context.mounted) context.go('/auth');
+                  if (context.mounted) GoRouter.of(context).go('/auth');
                 },
                 icon: const Icon(Icons.logout, color: Colors.redAccent),
                 label: const Text('Log Out', style: TextStyle(color: Colors.redAccent)),
