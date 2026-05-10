@@ -26,6 +26,14 @@ class _MessagingScreenState extends State<MessagingScreen> {
     _loadProfileAndChats();
   }
 
+  @override
+  void didUpdateWidget(MessagingScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialProfileId != oldWidget.initialProfileId && widget.initialProfileId != null) {
+      _loadProfileAndChats();
+    }
+  }
+
   Future<void> _loadProfileAndChats() async {
     try {
       final myProfile = await SupabaseService.getMyProfile();
@@ -46,6 +54,7 @@ class _MessagingScreenState extends State<MessagingScreen> {
         _isLoadingProfile = false;
         
         if (widget.initialProfileId != null) {
+          _showRequests = false;
           // Find if the profile is already in chats
           final existing = _chats.where((c) => c.id == widget.initialProfileId);
           if (existing.isNotEmpty) {
