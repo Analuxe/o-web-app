@@ -19,6 +19,7 @@ class _MessagingScreenState extends State<MessagingScreen> {
   bool _isLoadingChats = true;
   bool _isLoadingProfile = true;
   bool _showRequests = false;
+  bool _isFetchingInitialProfile = false;
 
   @override
   void initState() {
@@ -36,6 +37,10 @@ class _MessagingScreenState extends State<MessagingScreen> {
 
   Future<void> _loadProfileAndChats() async {
     try {
+      if (widget.initialProfileId != null) {
+        setState(() => _isFetchingInitialProfile = true);
+      }
+
       final myProfile = await SupabaseService.getMyProfile();
       final chatData = await SupabaseService.getMyChats();
       
@@ -72,11 +77,10 @@ class _MessagingScreenState extends State<MessagingScreen> {
             debugPrint('Error fetching initial profile: $e');
           }
         }
-      } else if (chats.isNotEmpty && _selectedProfile == null) {
-        selectedProfile = chats.first;
-      } else {
-        selectedProfile = _selectedProfile;
-      }
+      } 
+      
+      // Fallback: if no specific selection, use current or first available
+      selectedProfile ??= _selectedProfile ?? (chats.isNotEmpty ? chats.first : null);
 
       setState(() {
         _myProfile = myProfile;
@@ -86,11 +90,13 @@ class _MessagingScreenState extends State<MessagingScreen> {
         _showRequests = showRequests;
         _isLoadingChats = false;
         _isLoadingProfile = false;
+        _isFetchingInitialProfile = false;
       });
     } catch (e) {
       setState(() {
         _isLoadingChats = false;
         _isLoadingProfile = false;
+        _isFetchingInitialProfile = false;
       });
     }
   }
@@ -137,9 +143,11 @@ class _MessagingScreenState extends State<MessagingScreen> {
       children: [
         _buildContactList(isMobile: false),
         Expanded(
-          child: _selectedProfile == null 
-            ? const Center(child: Text('Select a conversation to start chatting', style: TextStyle(color: Colors.white24)))
-            : _buildChatWindow(isMobile: false),
+          child: _isFetchingInitialProfile 
+            ? const Center(child: CircularProgressIndicator(color: OTheme.neonPink))
+            : (_selectedProfile == null 
+                ? const Center(child: Text('Select a conversation to start chatting', style: TextStyle(color: Colors.white24)))
+                : _buildChatWindow(isMobile: false)),
         ),
       ],
     );
