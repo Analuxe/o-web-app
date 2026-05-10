@@ -164,6 +164,18 @@ class SupabaseService {
 
   static Future<void> submitThumbsDown(String targetUserId) async {
     final myId = client.auth.currentUser!.id;
+    
+    // Check if report already exists to prevent duplicates
+    final existing = await client.from('reputation_reports')
+        .select()
+        .eq('reporter_id', myId)
+        .eq('target_id', targetUserId)
+        .maybeSingle();
+
+    if (existing != null) {
+      throw Exception('You have already reported this user.');
+    }
+
     await client.from('reputation_reports').insert({
       'reporter_id': myId,
       'target_id': targetUserId,

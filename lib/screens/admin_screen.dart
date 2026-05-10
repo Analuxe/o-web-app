@@ -23,13 +23,29 @@ class _AdminScreenState extends State<AdminScreen> {
   bool isLoadingModeration = false;
   List<Map<String, dynamic>> pendingVerifications = [];
   bool isLoadingVerifications = false;
+  bool _isAdmin = false;
+  bool _isCheckingAccess = true;
 
   @override
   void initState() {
     super.initState();
-    _loadStats();
-    _loadUnvalidatedUsers();
-    _loadVerifications();
+    _checkAccess();
+  }
+
+  Future<void> _checkAccess() async {
+    final profile = await SupabaseService.getMyProfile();
+    if (mounted) {
+      setState(() {
+        _isAdmin = profile?.isAdmin ?? false;
+        _isCheckingAccess = false;
+      });
+      
+      if (_isAdmin) {
+        _loadStats();
+        _loadUnvalidatedUsers();
+        _loadVerifications();
+      }
+    }
   }
 
   Future<void> _loadStats() async {
@@ -214,6 +230,36 @@ class _AdminScreenState extends State<AdminScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isCheckingAccess) {
+      return const Center(child: CircularProgressIndicator(color: OTheme.neonPink));
+    }
+
+    if (!_isAdmin) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.lock_outline, color: Colors.redAccent, size: 64),
+            const SizedBox(height: 24),
+            const Text(
+              'Access Denied',
+              style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'You do not have the clearance to access the Admin Console.',
+              style: TextStyle(color: Colors.white54, fontSize: 16),
+            ),
+            const SizedBox(height: 32),
+            ElevatedButton(
+              onPressed: () => SupabaseService.client.auth.currentUser != null ? context.go('/hub') : context.go('/auth'),
+              child: const Text('Return to Safety'),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.all(32.0),
       child: Column(
