@@ -124,6 +124,17 @@ class _MessagingScreenState extends State<MessagingScreen> {
     _loadProfileAndChats(); // Refresh
   }
 
+  void _openChat(Profile profile) {
+    debugPrint('MSG: Opening chat with ${profile.displayName}');
+    setState(() {
+      _selectedProfile = profile;
+      // Add to chats list if not already there
+      if (!_chats.any((c) => c.id == profile.id)) {
+        _chats.insert(0, profile);
+      }
+    });
+  }
+
   void _sendMessage() async {
     if (_messageController.text.isEmpty || _selectedProfile == null) return;
     
@@ -250,12 +261,7 @@ class _MessagingScreenState extends State<MessagingScreen> {
           ),
           title: Text(profile.displayName ?? 'Unknown', style: const TextStyle(color: Colors.white)),
           subtitle: const Text('New message...', style: TextStyle(color: Colors.white54, fontSize: 12)),
-          onTap: () => setState(() {
-            _selectedProfile = profile;
-            if (MediaQuery.of(context).size.width < 800) {
-              // Navigation handled in build
-            }
-          }),
+          onTap: () => _openChat(profile),
         );
       },
     );
