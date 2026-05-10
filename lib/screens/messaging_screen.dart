@@ -191,7 +191,7 @@ class _MessagingScreenState extends State<MessagingScreen> {
       if (_selectedProfile != null) {
         return _buildChatWindow(isMobile: true);
       } else {
-        return _buildContactList(isMobile: true);
+        return _buildSearchAndTabs(isMobile: true);
       }
     }
 
