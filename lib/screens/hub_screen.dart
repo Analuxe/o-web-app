@@ -600,21 +600,38 @@ class _FeaturedCard extends StatelessWidget {
       child: Container(
         width: double.infinity,
         decoration: BoxDecoration(
+          color: Colors.black,
           borderRadius: BorderRadius.circular(24),
-          image: DecorationImage(
-            image: NetworkImage(image),
-            fit: BoxFit.contain,
-            colorFilter: ColorFilter.mode(
-              Colors.black.withOpacity(0.4),
-              BlendMode.darken,
+        ),
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: Image.network(
+              image,
+              fit: BoxFit.contain,
             ),
           ),
-        ),
-        padding: const EdgeInsets.all(40),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withOpacity(0.2),
+                    Colors.black.withOpacity(0.6),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(40),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
@@ -679,8 +696,9 @@ class _FeaturedCard extends StatelessWidget {
                 ),
               ),
             ),
-          ],
-        ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -754,12 +772,18 @@ class _UpdateItem extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 if (imageUrl != null) ...[
+                  const SizedBox(height: 12),
                   ClipRRect(
                     borderRadius: BorderRadius.circular(12),
-                    child: Image.network(
-                      imageUrl!,
+                    child: Container(
+                      color: Colors.black12,
+                      constraints: const BoxConstraints(maxHeight: 300),
                       width: double.infinity,
-                      fit: BoxFit.contain,
+                      child: Image.network(
+                        imageUrl!,
+                        fit: BoxFit.contain,
+                        alignment: Alignment.centerLeft,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -823,14 +847,17 @@ class _ComingSoonCard extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           if (imageUrl != null) ...[
-            AspectRatio(
-              aspectRatio: 4 / 3,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
+            const SizedBox(height: 16),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                color: Colors.black12,
+                constraints: const BoxConstraints(maxHeight: 200),
+                width: double.infinity,
                 child: Image.network(
                   imageUrl!,
-                  width: double.infinity,
                   fit: BoxFit.contain,
+                  alignment: Alignment.center,
                 ),
               ),
             ),
