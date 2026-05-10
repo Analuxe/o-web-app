@@ -109,118 +109,135 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return const Center(child: CircularProgressIndicator(color: OTheme.neonPink));
     }
 
+    final width = MediaQuery.of(context).size.width;
+    final isMobile = width < 700;
+
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(32),
+      padding: EdgeInsets.all(isMobile ? 20 : 32),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          Flex(
+            direction: isMobile ? Axis.vertical : Axis.horizontal,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: isMobile ? CrossAxisAlignment.start : CrossAxisAlignment.center,
             children: [
-              Text('My Profile', style: Theme.of(context).textTheme.displayLarge),
+              Text('My Profile', style: Theme.of(context).textTheme.displayLarge?.copyWith(fontSize: isMobile ? 28 : 32)),
               if (!_isEditing)
-                ElevatedButton.icon(
-                  onPressed: () => setState(() => _isEditing = true),
-                  icon: const Icon(Icons.edit, size: 18),
-                  label: const Text('Edit Profile'),
+                Padding(
+                  padding: EdgeInsets.only(top: isMobile ? 16 : 0),
+                  child: ElevatedButton.icon(
+                    onPressed: () => setState(() => _isEditing = true),
+                    icon: const Icon(Icons.edit, size: 18),
+                    label: const Text('Edit Profile'),
+                  ),
                 )
               else
-                Row(
-                  children: [
-                    TextButton(
-                      onPressed: () => setState(() => _isEditing = false),
-                      child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
-                    ),
-                    const SizedBox(width: 12),
-                    ElevatedButton(
-                      onPressed: _saveProfile,
-                      child: const Text('Save Changes'),
-                    ),
-                  ],
+                Padding(
+                  padding: EdgeInsets.only(top: isMobile ? 16 : 0),
+                  child: Row(
+                    mainAxisSize: isMobile ? MainAxisSize.max : MainAxisSize.min,
+                    children: [
+                      if (isMobile) const Spacer(),
+                      TextButton(
+                        onPressed: () => setState(() => _isEditing = false),
+                        child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+                      ),
+                      const SizedBox(width: 12),
+                      ElevatedButton(
+                        onPressed: _saveProfile,
+                        child: const Text('Save Changes'),
+                      ),
+                    ],
+                  ),
                 ),
             ],
           ),
           const SizedBox(height: 40),
-          Row(
+          Flex(
+            direction: isMobile ? Axis.vertical : Axis.horizontal,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Avatar Column
-              Column(
-                children: [
-                  Container(
-                    width: 180,
-                    height: 180,
-                    decoration: BoxDecoration(
-                      color: OTheme.deepCharcoal,
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: Colors.white10),
-                      image: _profile?.avatarUrl != null
-                          ? DecorationImage(image: NetworkImage(_profile!.avatarUrl!), fit: BoxFit.cover)
-                          : null,
-                    ),
-                    child: _isUploading 
-                        ? const Center(child: CircularProgressIndicator(color: OTheme.neonPink))
-                        : (_profile?.avatarUrl == null
-                            ? Center(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(40.0),
-                                  child: Image.asset(
-                                    'assets/logo.png',
-                                    color: OTheme.neonPink.withOpacity(0.3),
-                                  ),
-                                ),
-                              )
-                            : null),
-                  ),
-                  const SizedBox(height: 16),
-                  OutlinedButton.icon(
-                    onPressed: _isUploading ? null : _pickImage,
-                    icon: const Icon(Icons.upload_file, size: 16),
-                    label: Text(_isUploading ? 'Uploading...' : 'Upload Photo'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: OTheme.neonPink,
-                      side: const BorderSide(color: OTheme.neonPink),
-                    ),
-                  ),
-                  if (_profile?.isVerified == true) ...[
-                    const SizedBox(height: 12),
+              Center(
+                child: Column(
+                  children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      width: isMobile ? 140 : 180,
+                      height: isMobile ? 140 : 180,
                       decoration: BoxDecoration(
-                        color: Colors.green.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.green.withOpacity(0.4)),
+                        color: OTheme.deepCharcoal,
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(color: Colors.white10),
+                        image: _profile?.avatarUrl != null
+                            ? DecorationImage(image: NetworkImage(_profile!.avatarUrl!), fit: BoxFit.cover)
+                            : null,
                       ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.verified, color: Colors.green, size: 14),
-                          SizedBox(width: 6),
-                          Text('Verified', style: TextStyle(color: Colors.green, fontSize: 12)),
-                        ],
-                      ),
+                      child: _isUploading 
+                          ? const Center(child: CircularProgressIndicator(color: OTheme.neonPink))
+                          : (_profile?.avatarUrl == null
+                              ? Center(
+                                  child: Padding(
+                                    padding: EdgeInsets.all(isMobile ? 30 : 40.0),
+                                    child: Image.asset(
+                                      'assets/logo.png',
+                                      color: OTheme.neonPink.withOpacity(0.3),
+                                    ),
+                                  ),
+                                )
+                              : null),
                     ),
-                  ] else ...[
-                    const SizedBox(height: 24),
-                    ElevatedButton.icon(
-                      onPressed: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const VerificationScreen()),
-                      ),
-                      icon: const Icon(Icons.verified_user, size: 16),
-                      label: const Text('Get Verified'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: OTheme.neonPink.withOpacity(0.1),
+                    const SizedBox(height: 16),
+                    OutlinedButton.icon(
+                      onPressed: _isUploading ? null : _pickImage,
+                      icon: const Icon(Icons.upload_file, size: 16),
+                      label: Text(_isUploading ? 'Uploading...' : 'Upload Photo'),
+                      style: OutlinedButton.styleFrom(
                         foregroundColor: OTheme.neonPink,
                         side: const BorderSide(color: OTheme.neonPink),
                       ),
                     ),
+                    if (_profile?.isVerified == true) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: Colors.green.withOpacity(0.4)),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.verified, color: Colors.green, size: 14),
+                            SizedBox(width: 6),
+                            Text('Verified', style: TextStyle(color: Colors.green, fontSize: 12)),
+                          ],
+                        ),
+                      ),
+                    ] else ...[
+                      const SizedBox(height: 24),
+                      ElevatedButton.icon(
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const VerificationScreen()),
+                        ),
+                        icon: const Icon(Icons.verified_user, size: 16),
+                        label: const Text('Get Verified'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: OTheme.neonPink.withOpacity(0.1),
+                          foregroundColor: OTheme.neonPink,
+                          side: const BorderSide(color: OTheme.neonPink),
+                        ),
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
-              const SizedBox(width: 48),
+              if (!isMobile) const SizedBox(width: 48) else const SizedBox(height: 48),
               // Info Column
               Expanded(
+                flex: isMobile ? 0 : 1,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -232,7 +249,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       isEditing: _isEditing,
                     ),
                     const SizedBox(height: 24),
-
+    
                     // Zipcode
                     _buildField(
                       label: 'Zipcode',
@@ -242,7 +259,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       hint: 'Required for matching',
                     ),
                     const SizedBox(height: 24),
-
+    
                     // Pronouns
                     _buildLabel('Pronouns'),
                     if (_isEditing)
@@ -264,7 +281,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ),
                     const SizedBox(height: 24),
-
+    
                     // Bio
                     _buildField(
                       label: 'Bio',
@@ -274,7 +291,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       maxLines: 3,
                     ),
                     const SizedBox(height: 24),
-
+    
                     // Interests
                     _buildLabel('Interests'),
                     if (_isEditing)

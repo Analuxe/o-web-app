@@ -90,18 +90,21 @@ class _MatchmakerScreenState extends State<MatchmakerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    final isMobile = width < 600;
+
     return SingleChildScrollView(
       child: Center(
         child: Container(
           constraints: const BoxConstraints(maxWidth: 800),
-          padding: const EdgeInsets.all(48),
+          padding: EdgeInsets.all(isMobile ? 24 : 48),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               if (isLoadingSettings) const Center(child: CircularProgressIndicator(color: OTheme.neonPink)),
-              if (!isLoadingSettings && !isSearching && matchedProfile == null) _buildInitialState(),
+              if (!isLoadingSettings && !isSearching && matchedProfile == null) _buildInitialState(isMobile),
               if (isSearching) _buildSearchingState(),
-              if (matchedProfile != null) _buildMatchFoundState(),
+              if (matchedProfile != null) _buildMatchFoundState(isMobile),
             ],
           ),
         ),
@@ -109,7 +112,7 @@ class _MatchmakerScreenState extends State<MatchmakerScreen> {
     );
   }
 
-  Widget _buildInitialState() {
+  Widget _buildInitialState(bool isMobile) {
     return Column(
       children: [
         const Icon(Icons.auto_awesome, size: 80, color: OTheme.neonPink),
@@ -181,7 +184,7 @@ class _MatchmakerScreenState extends State<MatchmakerScreen> {
         ElevatedButton(
           onPressed: startSearch,
           style: ElevatedButton.styleFrom(
-            minimumSize: const Size(300, 60),
+            minimumSize: Size(isMobile ? double.infinity : 300, 60),
           ),
           child: const Text('Find My Vibe'),
         ),
@@ -207,7 +210,7 @@ class _MatchmakerScreenState extends State<MatchmakerScreen> {
     );
   }
 
-  Widget _buildMatchFoundState() {
+  Widget _buildMatchFoundState(bool isMobile) {
     return Column(
       children: [
         const Text(
@@ -218,12 +221,18 @@ class _MatchmakerScreenState extends State<MatchmakerScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const _UserCircle(url: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&q=80'),
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 24),
-              child: const Icon(Icons.favorite, color: OTheme.neonPink, size: 48),
+            _UserCircle(
+              url: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&q=80',
+              size: isMobile ? 80 : 120,
             ),
-            _UserCircle(url: matchedProfile?.avatarUrl ?? 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&q=80'),
+            Container(
+              margin: EdgeInsets.symmetric(horizontal: isMobile ? 12 : 24),
+              child: Icon(Icons.favorite, color: OTheme.neonPink, size: isMobile ? 32 : 48),
+            ),
+            _UserCircle(
+              url: matchedProfile?.avatarUrl ?? 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&q=80',
+              size: isMobile ? 80 : 120,
+            ),
           ],
         ),
         const SizedBox(height: 40),
@@ -259,17 +268,24 @@ class _MatchmakerScreenState extends State<MatchmakerScreen> {
           ),
         ),
         const SizedBox(height: 48),
-        Row(
+        Flex(
+          direction: isMobile ? Axis.vertical : Axis.horizontal,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             ElevatedButton(
               onPressed: () {},
+              style: ElevatedButton.styleFrom(
+                minimumSize: Size(isMobile ? double.infinity : 200, 56),
+              ),
               child: const Text('Confirm Date'),
             ),
-            const SizedBox(width: 24),
+            if (isMobile) const SizedBox(height: 12) else const SizedBox(width: 24),
             OutlinedButton(
               onPressed: () => setState(() => matchedProfile = null),
-              style: OutlinedButton.styleFrom(foregroundColor: Colors.white54),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.white54,
+                minimumSize: Size(isMobile ? double.infinity : 200, 56),
+              ),
               child: const Text('Maybe Later'),
             ),
           ],
@@ -305,13 +321,14 @@ class _Chip extends StatelessWidget {
 
 class _UserCircle extends StatelessWidget {
   final String url;
-  const _UserCircle({required this.url});
+  final double size;
+  const _UserCircle({required this.url, this.size = 120});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 120,
-      height: 120,
+      width: size,
+      height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         border: Border.all(color: OTheme.neonPink, width: 3),

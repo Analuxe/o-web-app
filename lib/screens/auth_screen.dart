@@ -52,122 +52,256 @@ class _AuthScreenState extends State<AuthScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final isMobile = size.width < 800;
+
     return Scaffold(
-      body: Row(
-        children: [
-          // Left side: Brand Image/Gradient
-          Expanded(
-            flex: 1,
-            child: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    OTheme.neonPink,
-                    OTheme.electricRedPink,
-                    OTheme.black,
-                  ],
-                ),
-              ),
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Image.asset('assets/logo.png', height: 160),
-                    const SizedBox(height: 24),
-                    const Text(
-                      'Open up.',
-                      style: TextStyle(
-                        fontSize: 40,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        letterSpacing: -1,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Let loose.',
-                      style: TextStyle(
-                        fontSize: 18,
-                        color: Colors.white54,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+      backgroundColor: OTheme.black,
+      body: isMobile 
+        ? _buildMobileLayout(context)
+        : _buildDesktopLayout(context),
+    );
+  }
+
+  Widget _buildDesktopLayout(BuildContext context) {
+    return Row(
+      children: [
+        // Left side: Brand Image/Gradient
+        Expanded(
+          flex: 1,
+          child: _BrandSection(),
+        ),
+        // Right side: Form
+        Expanded(
+          flex: 1,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 100),
+            child: _AuthForm(
+              isSignUp: isSignUp,
+              isLoading: _isLoading,
+              error: _error,
+              emailController: _emailController,
+              passwordController: _passwordController,
+              onAuth: _handleAuth,
+              onToggleAuth: () => setState(() => isSignUp = !isSignUp),
             ),
           ),
-          // Right side: Form
-          Expanded(
-            flex: 1,
-            child: Container(
-              color: OTheme.black,
-              padding: const EdgeInsets.symmetric(horizontal: 100),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    isSignUp ? 'Create Account' : 'Welcome Back',
-                    style: Theme.of(context).textTheme.displayLarge,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    isSignUp 
-                      ? 'Come as you are. No judgment here.' 
-                      : 'Welcome back. We missed you.',
-                    style: const TextStyle(color: Colors.white54, fontSize: 16),
-                  ),
-                  if (_error != null) ...[
-                    Text(_error!, style: const TextStyle(color: Colors.redAccent)),
-                    const SizedBox(height: 24),
-                  ],
-                  _AuthField(
-                    label: isSignUp ? 'Email Address' : 'Email or Username', 
-                    hint: isSignUp ? 'name@example.com' : 'email or username', 
-                    controller: _emailController
-                  ),
-                  const SizedBox(height: 24),
-                  _AuthField(label: 'Password', hint: '••••••••', isPassword: true, controller: _passwordController),
-                  if (isSignUp) ...[
-                    const SizedBox(height: 24),
-                    const _AuthField(label: 'Confirm Password', hint: '••••••••', isPassword: true),
-                  ],
-                  const SizedBox(height: 40),
-                  ElevatedButton(
-                    onPressed: _isLoading ? null : _handleAuth,
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: const Size(double.infinity, 60),
-                    ),
-                    child: _isLoading 
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : Text(isSignUp ? 'Sign Up' : 'Sign In'),
-                  ),
-                  const SizedBox(height: 24),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        isSignUp ? 'Already have an account? ' : "Don't have an account? ",
-                        style: const TextStyle(color: Colors.white38),
-                      ),
-                      TextButton(
-                        onPressed: () => setState(() => isSignUp = !isSignUp),
-                        child: Text(
-                          isSignUp ? 'Sign In' : 'Sign Up',
-                          style: const TextStyle(color: OTheme.neonPink, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ],
-                  ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMobileLayout(BuildContext context) {
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          Container(
+            height: 240,
+            width: double.infinity,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  OTheme.neonPink,
+                  OTheme.electricRedPink,
+                  OTheme.black,
                 ],
               ),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Image.asset('assets/logo.png', height: 80),
+                const SizedBox(height: 16),
+                const Text(
+                  'Open up.',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    letterSpacing: -1,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(32),
+            child: _AuthForm(
+              isSignUp: isSignUp,
+              isLoading: _isLoading,
+              error: _error,
+              emailController: _emailController,
+              passwordController: _passwordController,
+              onAuth: _handleAuth,
+              onToggleAuth: () => setState(() => isSignUp = !isSignUp),
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _BrandSection extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            OTheme.neonPink,
+            OTheme.electricRedPink,
+            OTheme.black,
+          ],
+        ),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Image.asset('assets/logo.png', height: 160),
+            const SizedBox(height: 24),
+            const Text(
+              'Open up.',
+              style: TextStyle(
+                fontSize: 40,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+                letterSpacing: -1,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Let loose.',
+              style: TextStyle(
+                fontSize: 18,
+                color: Colors.white54,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AuthForm extends StatelessWidget {
+  final bool isSignUp;
+  final bool isLoading;
+  final String? error;
+  final TextEditingController emailController;
+  final TextEditingController passwordController;
+  final VoidCallback onAuth;
+  final VoidCallback onToggleAuth;
+
+  const _AuthForm({
+    required this.isSignUp,
+    required this.isLoading,
+    this.error,
+    required this.emailController,
+    required this.passwordController,
+    required this.onAuth,
+    required this.onToggleAuth,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          isSignUp ? 'Create Account' : 'Welcome Back',
+          style: Theme.of(context).textTheme.displayLarge,
+        ),
+        const SizedBox(height: 12),
+        Text(
+          isSignUp 
+            ? 'Come as you are. No judgment here.' 
+            : 'Welcome back. We missed you.',
+          style: const TextStyle(color: Colors.white54, fontSize: 16),
+        ),
+        if (error != null) ...[
+          const SizedBox(height: 24),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.redAccent.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.redAccent.withOpacity(0.3)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.redAccent, size: 20),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    error!, 
+                    style: const TextStyle(color: Colors.redAccent, fontSize: 14),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+        const SizedBox(height: 32),
+        _AuthField(
+          label: isSignUp ? 'Email Address' : 'Email or Username', 
+          hint: isSignUp ? 'name@example.com' : 'email or username', 
+          controller: emailController
+        ),
+        const SizedBox(height: 24),
+        _AuthField(
+          label: 'Password', 
+          hint: '••••••••', 
+          isPassword: true, 
+          controller: passwordController
+        ),
+        if (isSignUp) ...[
+          const SizedBox(height: 24),
+          const _AuthField(
+            label: 'Confirm Password', 
+            hint: '••••••••', 
+            isPassword: true
+          ),
+        ],
+        const SizedBox(height: 40),
+        ElevatedButton(
+          onPressed: isLoading ? null : onAuth,
+          style: ElevatedButton.styleFrom(
+            minimumSize: const Size(double.infinity, 60),
+          ),
+          child: isLoading 
+            ? const SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(color: OTheme.neonPink, strokeWidth: 2),
+              )
+            : Text(isSignUp ? 'Sign Up' : 'Sign In'),
+        ),
+        const SizedBox(height: 24),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              isSignUp ? 'Already have an account? ' : "Don't have an account? ",
+              style: const TextStyle(color: Colors.white38),
+            ),
+            TextButton(
+              onPressed: onToggleAuth,
+              child: Text(
+                isSignUp ? 'Sign In' : 'Sign Up',
+                style: const TextStyle(color: OTheme.neonPink, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }

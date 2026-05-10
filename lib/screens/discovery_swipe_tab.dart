@@ -110,11 +110,16 @@ class _DiscoverySwipeTabState extends State<DiscoverySwipeTab> {
       );
     }
 
+    final isMobile = MediaQuery.of(context).size.width < 600;
+
     return Column(
       children: [
         Expanded(
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            padding: EdgeInsets.symmetric(
+              horizontal: isMobile ? 12 : 24, 
+              vertical: isMobile ? 8 : 12,
+            ),
             child: SwipeCards(
               matchEngine: _matchEngine!,
               itemBuilder: (BuildContext context, int index) {
@@ -135,7 +140,7 @@ class _DiscoverySwipeTabState extends State<DiscoverySwipeTab> {
           ),
         ),
         Padding(
-          padding: const EdgeInsets.all(32.0),
+          padding: EdgeInsets.all(isMobile ? 16.0 : 32.0),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [

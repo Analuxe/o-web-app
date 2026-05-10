@@ -30,6 +30,7 @@ class _MessagingScreenState extends State<MessagingScreen> {
   @override
   void didUpdateWidget(MessagingScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
+    debugPrint('MSG: didUpdateWidget. Old ID: ${oldWidget.initialProfileId}, New ID: ${widget.initialProfileId}');
     if (widget.initialProfileId != oldWidget.initialProfileId && widget.initialProfileId != null) {
       _loadProfileAndChats();
     }
@@ -64,9 +65,9 @@ class _MessagingScreenState extends State<MessagingScreen> {
         if (existing.isNotEmpty) {
           debugPrint('MSG: Found in existing chats');
           selectedProfile = existing.first;
-        } else if (myProfile?.canMessageAnyone ?? false) {
+        } else {
           debugPrint('MSG: Not in existing, fetching from profiles table...');
-          // Fetch the profile if it's not in chats but allowed
+          // Fetch the profile if it's not in chats
           try {
             final data = await SupabaseService.client
                 .from('profiles')
@@ -82,13 +83,9 @@ class _MessagingScreenState extends State<MessagingScreen> {
           } catch (e) {
             debugPrint('MSG: Error fetching initial profile: $e');
           }
-        } else {
-          debugPrint('MSG: Cannot message anyone and not in existing chats.');
         }
-      } 
-      
-      // Fallback logic
-      if (selectedProfile == null) {
+      } else {
+        // Only apply fallback logic if no specific initialProfileId is provided
         if (_selectedProfile != null) {
           selectedProfile = _selectedProfile;
           debugPrint('MSG: Keeping currently selected profile: ${selectedProfile?.displayName}');

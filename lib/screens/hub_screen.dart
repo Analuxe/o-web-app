@@ -83,6 +83,9 @@ class _HubScreenState extends State<HubScreen> {
     final updatePosts = _posts.where((p) => p.type == HubPostType.update).toList();
     final comingSoonPosts = _posts.where((p) => p.type == HubPostType.comingSoon).toList();
 
+    final width = MediaQuery.of(context).size.width;
+    final isMobile = width < 800;
+
     return Scaffold(
       backgroundColor: Colors.transparent,
       floatingActionButton: _isAdmin
@@ -97,27 +100,29 @@ class _HubScreenState extends State<HubScreen> {
         onRefresh: _loadData,
         color: OTheme.neonPink,
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(32),
+          padding: EdgeInsets.all(isMobile ? 20 : 32),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
+              Flex(
+                direction: isMobile ? Axis.vertical : Axis.horizontal,
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: isMobile ? CrossAxisAlignment.start : CrossAxisAlignment.center,
                 children: [
-                  const Column(
+                  Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         'Good Afternoon, Explorer',
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: 32,
+                          fontSize: isMobile ? 24 : 32,
                           fontWeight: FontWeight.bold,
                           letterSpacing: -0.5,
                         ),
                       ),
-                      SizedBox(height: 8),
-                      Text(
+                      const SizedBox(height: 8),
+                      const Text(
                         'Stay updated with the latest from O.',
                         style: TextStyle(
                           color: Colors.white70,
@@ -127,10 +132,13 @@ class _HubScreenState extends State<HubScreen> {
                     ],
                   ),
                   if (_isAdmin && _posts.isEmpty)
-                    TextButton.icon(
-                      onPressed: _seedDummyData,
-                      icon: const Icon(Icons.auto_fix_high, color: OTheme.neonPink),
-                      label: const Text('Seed Initial Content', style: TextStyle(color: OTheme.neonPink)),
+                    Padding(
+                      padding: EdgeInsets.only(top: isMobile ? 16 : 0),
+                      child: TextButton.icon(
+                        onPressed: _seedDummyData,
+                        icon: const Icon(Icons.auto_fix_high, color: OTheme.neonPink),
+                        label: const Text('Seed Initial Content', style: TextStyle(color: OTheme.neonPink)),
+                      ),
                     ),
                 ],
               ),
@@ -153,57 +161,91 @@ class _HubScreenState extends State<HubScreen> {
                 const SizedBox(height: 24),
               ],
               
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    flex: 2,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const _SectionHeader(title: 'Latest Updates'),
-                        const SizedBox(height: 24),
-                        if (updatePosts.isEmpty)
-                          const Text('No updates yet.', style: TextStyle(color: Colors.white38))
-                        else
-                          ...updatePosts.map((post) => _UpdateItem(
-                            title: post.title,
-                            date: DateFormat('MMM dd, yyyy').format(post.createdAt),
-                            description: post.subtitle ?? '',
-                            icon: _getIconForTag(post.tag),
-                            imageUrl: post.imageUrl,
-                            onEdit: _isAdmin ? () => _showCreatePostDialog(post) : null,
-                            onDelete: _isAdmin ? () => _handleDelete(post.id) : null,
-                          )),
-                      ],
+              if (isMobile) ...[
+                const _SectionHeader(title: 'Latest Updates'),
+                const SizedBox(height: 24),
+                if (updatePosts.isEmpty)
+                  const Text('No updates yet.', style: TextStyle(color: Colors.white38))
+                else
+                  ...updatePosts.map((post) => _UpdateItem(
+                    title: post.title,
+                    date: DateFormat('MMM dd, yyyy').format(post.createdAt),
+                    description: post.subtitle ?? '',
+                    icon: _getIconForTag(post.tag),
+                    imageUrl: post.imageUrl,
+                    onEdit: _isAdmin ? () => _showCreatePostDialog(post) : null,
+                    onDelete: _isAdmin ? () => _handleDelete(post.id) : null,
+                  )),
+                const SizedBox(height: 48),
+                const _SectionHeader(title: 'Coming Soon'),
+                const SizedBox(height: 24),
+                if (comingSoonPosts.isEmpty)
+                  const Text('Nothing planned yet.', style: TextStyle(color: Colors.white38))
+                else
+                  ...comingSoonPosts.map((post) => Padding(
+                    padding: const EdgeInsets.only(bottom: 24),
+                    child: _ComingSoonCard(
+                      title: post.title,
+                      description: post.subtitle ?? '',
+                      icon: _getIconForTag(post.tag),
+                      imageUrl: post.imageUrl,
+                      onEdit: _isAdmin ? () => _showCreatePostDialog(post) : null,
+                      onDelete: _isAdmin ? () => _handleDelete(post.id) : null,
                     ),
-                  ),
-                  const SizedBox(width: 48),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const _SectionHeader(title: 'Coming Soon'),
-                        const SizedBox(height: 24),
-                        if (comingSoonPosts.isEmpty)
-                          const Text('Nothing planned yet.', style: TextStyle(color: Colors.white38))
-                        else
-                          ...comingSoonPosts.map((post) => Padding(
-                            padding: const EdgeInsets.only(bottom: 24),
-                            child: _ComingSoonCard(
+                  )),
+              ] else ...[
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const _SectionHeader(title: 'Latest Updates'),
+                          const SizedBox(height: 24),
+                          if (updatePosts.isEmpty)
+                            const Text('No updates yet.', style: TextStyle(color: Colors.white38))
+                          else
+                            ...updatePosts.map((post) => _UpdateItem(
                               title: post.title,
+                              date: DateFormat('MMM dd, yyyy').format(post.createdAt),
                               description: post.subtitle ?? '',
                               icon: _getIconForTag(post.tag),
                               imageUrl: post.imageUrl,
                               onEdit: _isAdmin ? () => _showCreatePostDialog(post) : null,
                               onDelete: _isAdmin ? () => _handleDelete(post.id) : null,
-                            ),
-                          )),
-                      ],
+                            )),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
-              ),
+                    const SizedBox(width: 48),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const _SectionHeader(title: 'Coming Soon'),
+                          const SizedBox(height: 24),
+                          if (comingSoonPosts.isEmpty)
+                            const Text('Nothing planned yet.', style: TextStyle(color: Colors.white38))
+                          else
+                            ...comingSoonPosts.map((post) => Padding(
+                              padding: const EdgeInsets.only(bottom: 24),
+                              child: _ComingSoonCard(
+                                title: post.title,
+                                description: post.subtitle ?? '',
+                                icon: _getIconForTag(post.tag),
+                                imageUrl: post.imageUrl,
+                                onEdit: _isAdmin ? () => _showCreatePostDialog(post) : null,
+                                onDelete: _isAdmin ? () => _handleDelete(post.id) : null,
+                              ),
+                            )),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ],
           ),
         ),
@@ -625,8 +667,9 @@ class _FeaturedCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 800;
     return AspectRatio(
-      aspectRatio: 16 / 9,
+      aspectRatio: isMobile ? 1 / 1 : 16 / 9,
       child: Container(
         width: double.infinity,
         decoration: BoxDecoration(
@@ -657,7 +700,7 @@ class _FeaturedCard extends StatelessWidget {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(40),
+              padding: EdgeInsets.all(isMobile ? 24 : 40),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.end,
@@ -720,9 +763,11 @@ class _FeaturedCard extends StatelessWidget {
                   const SizedBox(height: 16),
                   Text(
                     title,
-                    style: const TextStyle(
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
                       color: Colors.white,
-                      fontSize: 32,
+                      fontSize: isMobile ? 24 : 32,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -731,9 +776,11 @@ class _FeaturedCard extends StatelessWidget {
                     width: 500,
                     child: Text(
                       subtitle,
+                      maxLines: isMobile ? 2 : 3,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: Colors.white.withOpacity(0.8),
-                        fontSize: 18,
+                        fontSize: isMobile ? 14 : 18,
                         height: 1.5,
                       ),
                     ),
