@@ -861,6 +861,8 @@ class _UpdateItem extends StatelessWidget {
 }
 
 class _ComingSoonCard extends StatelessWidget {
+  final String title;
+  final String description;
   final String? imageUrl;
   final IconData icon;
   final VoidCallback? onEdit;
