@@ -88,6 +88,11 @@ class _MessagingScreenState extends State<MessagingScreen> {
             }
           } catch (e) {
             debugPrint('MSG: Error fetching profile from DB: $e');
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Error: Could not find user ${widget.initialProfileId} in database.'), backgroundColor: Colors.redAccent),
+              );
+            }
           }
         }
       } else if (chats.isNotEmpty) {
@@ -146,7 +151,7 @@ class _MessagingScreenState extends State<MessagingScreen> {
       final results = await SupabaseService.client
           .from('profiles')
           .select()
-          .ilike('username', '%$query%')
+          .or('username.ilike.%$query%,display_name.ilike.%$query%')
           .limit(10);
       
       final myId = SupabaseService.client.auth.currentUser?.id;
@@ -169,19 +174,32 @@ class _MessagingScreenState extends State<MessagingScreen> {
   }
 
   void _sendMessage() async {
-    if (_messageController.text.isEmpty || _selectedProfile == null) return;
     final content = _messageController.text;
+    
+    if (_selectedProfile == null) {
+      debugPrint('MSG: Cannot send. _selectedProfile is NULL');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error: Profile is null. Cannot send message.'), backgroundColor: Colors.orangeAccent),
+      );
+      return;
+    }
+
+    if (content.isEmpty) {
+      debugPrint('MSG: Cannot send. Message content is EMPTY');
+      return;
+    }
+
     _messageController.clear();
     
     try {
       await SupabaseService.sendMessage(_selectedProfile!.id, content);
-      debugPrint('MSG: Message sent successfully');
+      debugPrint('MSG: Message sent successfully to ${_selectedProfile!.displayName}');
     } catch (e) {
       debugPrint('MSG: Failed to send message: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to send message: ${e is PostgrestException ? e.message : e.toString()}'),
+            content: Text('Database Error: ${e is PostgrestException ? e.message : e.toString()}'),
             backgroundColor: Colors.redAccent,
           ),
         );
