@@ -23,15 +23,18 @@ class SupabaseService {
     
     // Check if identifier is an email. Simple regex check.
     if (!RegExp(r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+").hasMatch(email)) {
-      // If not an email, assume it's a username and try to find the linked email
-      final response = await client
-          .from('profiles')
-          .select('email')
-          .eq('username', email)
-          .maybeSingle();
-      
-      if (response != null && response['email'] != null) {
-        email = response['email'];
+      // If not an email, assume it's a username and fetch the linked email via secure RPC
+      try {
+        final String? linkedEmail = await client.rpc('get_email_from_username', params: {
+          'target_username': email,
+        });
+        
+        if (linkedEmail != null) {
+          email = linkedEmail;
+        }
+      } catch (e) {
+        debugPrint('Secure lookup failed: $e');
+        // Fallback to original identifier if RPC fails
       }
     }
     
