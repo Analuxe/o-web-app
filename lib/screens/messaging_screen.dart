@@ -14,10 +14,13 @@ class _MessagingScreenState extends State<MessagingScreen> {
   Profile? _selectedProfile;
   Profile? _myProfile;
   final _messageController = TextEditingController();
+  final _searchController = TextEditingController();
   List<Profile> _chats = [];
+  List<Profile> _searchResults = [];
   List<Map<String, dynamic>> _matchRequests = [];
   bool _isLoadingChats = true;
   bool _isLoadingProfile = true;
+  bool _isSearching = false;
   bool _showRequests = false;
   bool _isFetchingInitialProfile = false;
 
@@ -132,6 +135,33 @@ class _MessagingScreenState extends State<MessagingScreen> {
     });
   }
 
+  void _handleSearch(String query) async {
+    if (query.isEmpty) {
+      setState(() {
+        _searchResults = [];
+        _isSearching = false;
+      });
+      return;
+    }
+
+    setState(() => _isSearching = true);
+    try {
+      final results = await SupabaseService.client
+          .from('profiles')
+          .select()
+          .ilike('username', '%$query%')
+          .limit(10);
+      
+      setState(() {
+        _searchResults = (results as List).map((json) => Profile.fromJson(json)).toList();
+        _isSearching = false;
+      });
+    } catch (e) {
+      debugPrint('MSG: Search error: $e');
+      setState(() => _isSearching = false);
+    }
+  }
+
   void _sendMessage() async {
     if (_messageController.text.isEmpty || _selectedProfile == null) return;
     
@@ -168,7 +198,7 @@ class _MessagingScreenState extends State<MessagingScreen> {
     // Desktop: Show both side by side
     return Row(
       children: [
-        _buildContactList(isMobile: false),
+          _buildSearchAndTabs(isMobile: false),
         Expanded(
           child: _isFetchingInitialProfile 
             ? const Center(child: CircularProgressIndicator(color: OTheme.neonPink))
@@ -180,7 +210,7 @@ class _MessagingScreenState extends State<MessagingScreen> {
     );
   }
 
-  Widget _buildContactList({required bool isMobile}) {
+  Widget _buildSearchAndTabs({required bool isMobile}) {
     return Container(
       width: isMobile ? double.infinity : 320,
       decoration: BoxDecoration(
@@ -190,13 +220,29 @@ class _MessagingScreenState extends State<MessagingScreen> {
       ),
       child: Column(
         children: [
+          // Search Bar
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: TextField(
+              controller: _searchController,
+              onChanged: _handleSearch,
+              decoration: InputDecoration(
+                hintText: 'Search usernames...',
+                prefixIcon: const Icon(Icons.search, size: 18, color: Colors.white24),
+                filled: true,
+                fillColor: OTheme.deepCharcoal,
+                contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+              ),
+            ),
+          ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24.0),
             child: Row(
               children: [
-                _buildTabButton('Messages', !_showRequests),
+                _buildTabButton('Messages', !_showRequests && _searchController.text.isEmpty),
                 const SizedBox(width: 16),
-                _buildTabButton('Requests', _showRequests, count: _matchRequests.length),
+                _buildTabButton('Requests', _showRequests && _searchController.text.isEmpty, count: _matchRequests.length),
               ],
             ),
           ),
@@ -205,10 +251,41 @@ class _MessagingScreenState extends State<MessagingScreen> {
             const Center(child: CircularProgressIndicator(color: OTheme.neonPink))
           else
             Expanded(
-              child: _showRequests ? _buildRequestsList() : _buildChatsList(),
+              child: _buildMainList(),
             ),
         ],
       ),
+    );
+  }
+
+  Widget _buildMainList() {
+    if (_searchController.text.isNotEmpty) {
+      return _buildSearchResultsList();
+    }
+    return _showRequests ? _buildRequestsList() : _buildChatsList();
+  }
+
+  Widget _buildSearchResultsList() {
+    if (_isSearching) return const Center(child: CircularProgressIndicator(color: OTheme.neonPink));
+    if (_searchResults.isEmpty) return const Center(child: Text('No users found', style: TextStyle(color: Colors.white24)));
+    
+    return ListView.builder(
+      itemCount: _searchResults.length,
+      itemBuilder: (context, index) {
+        final profile = _searchResults[index];
+        return ListTile(
+          leading: CircleAvatar(
+            backgroundImage: profile.avatarUrl != null ? NetworkImage(profile.avatarUrl!) : null,
+            backgroundColor: OTheme.deepCharcoal,
+          ),
+          title: Text(profile.displayName ?? 'Unknown', style: const TextStyle(color: Colors.white)),
+          subtitle: Text('@${profile.username}', style: const TextStyle(color: Colors.white54, fontSize: 12)),
+          onTap: () {
+            _searchController.clear();
+            _openChat(profile);
+          },
+        );
+      },
     );
   }
 
