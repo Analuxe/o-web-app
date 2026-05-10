@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:o_web/theme.dart';
 import 'package:o_web/services/supabase_service.dart';
+import 'package:o_web/models/profile.dart';
 
 class MessagingScreen extends StatefulWidget {
   final String? initialProfileId;
@@ -27,20 +28,12 @@ class _MessagingScreenState extends State<MessagingScreen> {
   @override
   void initState() {
     super.initState();
+    debugPrint('MSG: initState. initialProfileId: ${widget.initialProfileId}');
     _loadProfileAndChats();
   }
 
-  @override
-  void didUpdateWidget(MessagingScreen oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    debugPrint('MSG: didUpdateWidget. Old ID: ${oldWidget.initialProfileId}, New ID: ${widget.initialProfileId}');
-    if (widget.initialProfileId != oldWidget.initialProfileId && widget.initialProfileId != null) {
-      _loadProfileAndChats();
-    }
-  }
-
   Future<void> _loadProfileAndChats() async {
-    debugPrint('MSG: Loading profile and chats. Initial ID: ${widget.initialProfileId}');
+    debugPrint('MSG: Starting load. ID: ${widget.initialProfileId}');
     try {
       if (widget.initialProfileId != null) {
         setState(() => _isFetchingInitialProfile = true);
@@ -48,9 +41,8 @@ class _MessagingScreenState extends State<MessagingScreen> {
 
       final myProfile = await SupabaseService.getMyProfile();
       final chatData = await SupabaseService.getMyChats();
-      debugPrint('MSG: Chats loaded: ${chatData.length}');
       
-      // Fetch pending match requests where I am the receiver
+      // Fetch pending match requests
       final requestData = await SupabaseService.client
           .from('connections')
           .select('*, sender:profiles!sender_id(id, display_name, avatar_url, username)')
@@ -62,15 +54,15 @@ class _MessagingScreenState extends State<MessagingScreen> {
       bool showRequests = _showRequests;
 
       if (widget.initialProfileId != null) {
-        debugPrint('MSG: Searching for initial ID: ${widget.initialProfileId}');
+        debugPrint('MSG: Resolving initial ID: ${widget.initialProfileId}');
         showRequests = false;
         final existing = chats.where((c) => c.id == widget.initialProfileId);
+        
         if (existing.isNotEmpty) {
-          debugPrint('MSG: Found in existing chats');
+          debugPrint('MSG: Found user in existing chats');
           selectedProfile = existing.first;
         } else {
-          debugPrint('MSG: Not in existing, fetching from profiles table...');
-          // Fetch the profile if it's not in chats
+          debugPrint('MSG: User not in recent chats. Fetching from database...');
           try {
             final data = await SupabaseService.client
                 .from('profiles')
@@ -78,57 +70,52 @@ class _MessagingScreenState extends State<MessagingScreen> {
                 .eq('id', widget.initialProfileId!)
                 .single();
             final profile = Profile.fromJson(data);
-            debugPrint('MSG: Profile fetched: ${profile.displayName}');
+            debugPrint('MSG: Successfully fetched ${profile.displayName}');
             selectedProfile = profile;
+            // Inject into the top of the chat list for immediate visibility
             if (!chats.any((c) => c.id == profile.id)) {
               chats.insert(0, profile);
             }
           } catch (e) {
-            debugPrint('MSG: Error fetching initial profile: $e');
+            debugPrint('MSG: Error fetching profile from DB: $e');
           }
         }
-      } else {
-        // Only apply fallback logic if no specific initialProfileId is provided
-        if (_selectedProfile != null) {
-          selectedProfile = _selectedProfile;
-          debugPrint('MSG: Keeping currently selected profile: ${selectedProfile?.displayName}');
-        } else if (chats.isNotEmpty) {
-          selectedProfile = chats.first;
-          debugPrint('MSG: Falling back to first chat: ${selectedProfile?.displayName}');
-        }
+      } else if (chats.isNotEmpty) {
+        // Fallback to first recent chat if no ID provided
+        selectedProfile = chats.first;
       }
 
-      setState(() {
-        _myProfile = myProfile;
-        _chats = chats;
-        _selectedProfile = selectedProfile;
-        _matchRequests = List<Map<String, dynamic>>.from(requestData);
-        _showRequests = showRequests;
-        _isLoadingChats = false;
-        _isLoadingProfile = false;
-        _isFetchingInitialProfile = false;
-      });
-      debugPrint('MSG: Initialization complete. Selected: ${_selectedProfile?.displayName}');
+      if (mounted) {
+        setState(() {
+          _myProfile = myProfile;
+          _chats = chats;
+          _selectedProfile = selectedProfile;
+          _matchRequests = List<Map<String, dynamic>>.from(requestData);
+          _showRequests = showRequests;
+          _isLoadingChats = false;
+          _isLoadingProfile = false;
+          _isFetchingInitialProfile = false;
+        });
+      }
+      debugPrint('MSG: Load complete. Selected: ${_selectedProfile?.displayName ?? "NONE"}');
     } catch (e) {
-      debugPrint('MSG: CRITICAL ERROR in _loadProfileAndChats: $e');
-      setState(() {
-        _isLoadingChats = false;
-        _isLoadingProfile = false;
-        _isFetchingInitialProfile = false;
-      });
+      debugPrint('MSG: CRITICAL error in loading: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingChats = false;
+          _isLoadingProfile = false;
+          _isFetchingInitialProfile = false;
+        });
+      }
     }
   }
 
-  void _handleRequest(String requestId, String status) async {
-    await SupabaseService.respondToMatchRequest(requestId, status);
-    _loadProfileAndChats(); // Refresh
-  }
-
   void _openChat(Profile profile) {
-    debugPrint('MSG: Opening chat with ${profile.displayName}');
+    debugPrint('MSG: Manually opening chat with ${profile.displayName}');
     setState(() {
       _selectedProfile = profile;
-      // Add to chats list if not already there
+      _searchController.clear();
+      _searchResults = [];
       if (!_chats.any((c) => c.id == profile.id)) {
         _chats.insert(0, profile);
       }
@@ -162,12 +149,15 @@ class _MessagingScreenState extends State<MessagingScreen> {
     }
   }
 
+  void _handleRequest(String requestId, String status) async {
+    await SupabaseService.respondToMatchRequest(requestId, status);
+    _loadProfileAndChats(); 
+  }
+
   void _sendMessage() async {
     if (_messageController.text.isEmpty || _selectedProfile == null) return;
-    
     final content = _messageController.text;
     _messageController.clear();
-    
     await SupabaseService.sendMessage(_selectedProfile!.id, content);
   }
 
@@ -177,16 +167,14 @@ class _MessagingScreenState extends State<MessagingScreen> {
       return const Center(child: CircularProgressIndicator(color: OTheme.neonPink));
     }
 
-    // Only show locked state if user is NOT validated AND cannot message anyone
-    if (_myProfile != null && !_myProfile!.isValidated && !(_myProfile!.canMessageAnyone ?? false)) {
+    // Permission bypass for Admins/Mods/Premium
+    final bool canBypass = _myProfile?.canMessageAnyone ?? false;
+    if (_myProfile != null && !_myProfile!.isValidated && !canBypass) {
       return _buildLockedState();
     }
 
-    final width = MediaQuery.of(context).size.width;
-    final isMobile = width < 800;
+    final isMobile = MediaQuery.of(context).size.width < 800;
 
-    // On mobile, if a profile is selected, show only the chat window.
-    // Otherwise, show only the contact list.
     if (isMobile) {
       if (_selectedProfile != null) {
         return _buildChatWindow(isMobile: true);
@@ -195,10 +183,9 @@ class _MessagingScreenState extends State<MessagingScreen> {
       }
     }
 
-    // Desktop: Show both side by side
     return Row(
       children: [
-          _buildSearchAndTabs(isMobile: false),
+        _buildSearchAndTabs(isMobile: false),
         Expanded(
           child: _isFetchingInitialProfile 
             ? const Center(child: CircularProgressIndicator(color: OTheme.neonPink))
@@ -213,14 +200,9 @@ class _MessagingScreenState extends State<MessagingScreen> {
   Widget _buildSearchAndTabs({required bool isMobile}) {
     return Container(
       width: isMobile ? double.infinity : 320,
-      decoration: BoxDecoration(
-        border: Border(
-          right: BorderSide(color: Colors.white.withOpacity(0.05)),
-        ),
-      ),
+      decoration: BoxDecoration(border: Border(right: BorderSide(color: Colors.white.withOpacity(0.05)))),
       child: Column(
         children: [
-          // Search Bar
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: TextField(
@@ -247,12 +229,7 @@ class _MessagingScreenState extends State<MessagingScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          if (_isLoadingChats)
-            const Center(child: CircularProgressIndicator(color: OTheme.neonPink))
-          else
-            Expanded(
-              child: _buildMainList(),
-            ),
+          Expanded(child: _buildMainList()),
         ],
       ),
     );
@@ -262,13 +239,15 @@ class _MessagingScreenState extends State<MessagingScreen> {
     if (_searchController.text.isNotEmpty) {
       return _buildSearchResultsList();
     }
+    if (_isLoadingChats) {
+      return const Center(child: CircularProgressIndicator(color: OTheme.neonPink));
+    }
     return _showRequests ? _buildRequestsList() : _buildChatsList();
   }
 
   Widget _buildSearchResultsList() {
     if (_isSearching) return const Center(child: CircularProgressIndicator(color: OTheme.neonPink));
     if (_searchResults.isEmpty) return const Center(child: Text('No users found', style: TextStyle(color: Colors.white24)));
-    
     return ListView.builder(
       itemCount: _searchResults.length,
       itemBuilder: (context, index) {
@@ -280,10 +259,7 @@ class _MessagingScreenState extends State<MessagingScreen> {
           ),
           title: Text(profile.displayName ?? 'Unknown', style: const TextStyle(color: Colors.white)),
           subtitle: Text('@${profile.username}', style: const TextStyle(color: Colors.white54, fontSize: 12)),
-          onTap: () {
-            _searchController.clear();
-            _openChat(profile);
-          },
+          onTap: () => _openChat(profile),
         );
       },
     );
@@ -296,14 +272,7 @@ class _MessagingScreenState extends State<MessagingScreen> {
         children: [
           Row(
             children: [
-              Text(
-                label,
-                style: TextStyle(
-                  color: isSelected ? Colors.white : Colors.white24,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  fontSize: 16,
-                ),
-              ),
+              Text(label, style: TextStyle(color: isSelected ? Colors.white : Colors.white24, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal, fontSize: 16)),
               if (count > 0)
                 Container(
                   margin: const EdgeInsets.only(left: 8),
@@ -321,6 +290,7 @@ class _MessagingScreenState extends State<MessagingScreen> {
   }
 
   Widget _buildChatsList() {
+    if (_chats.isEmpty) return const Center(child: Text('No conversations yet', style: TextStyle(color: Colors.white24)));
     return ListView.builder(
       itemCount: _chats.length,
       itemBuilder: (context, index) {
@@ -335,7 +305,7 @@ class _MessagingScreenState extends State<MessagingScreen> {
             child: profile.avatarUrl == null ? const Icon(Icons.person, color: OTheme.neonPink) : null,
           ),
           title: Text(profile.displayName ?? 'Unknown', style: const TextStyle(color: Colors.white)),
-          subtitle: const Text('New message...', style: TextStyle(color: Colors.white54, fontSize: 12)),
+          subtitle: const Text('Direct Message', style: TextStyle(color: Colors.white54, fontSize: 12)),
           onTap: () => _openChat(profile),
         );
       },
@@ -343,138 +313,62 @@ class _MessagingScreenState extends State<MessagingScreen> {
   }
 
   Widget _buildRequestsList() {
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(20),
-          margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                OTheme.neonPink.withOpacity(0.15),
-                OTheme.softRose.withOpacity(0.05),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: OTheme.neonPink.withOpacity(0.3)),
-            boxShadow: [
-              BoxShadow(
-                color: OTheme.neonPink.withOpacity(0.05),
-                blurRadius: 10,
-                spreadRadius: 2,
-              ),
-            ],
-          ),
-          child: Row(
+    if (_matchRequests.isEmpty) return const Center(child: Text('No pending requests', style: TextStyle(color: Colors.white24)));
+    return ListView.builder(
+      itemCount: _matchRequests.length,
+      itemBuilder: (context, index) {
+        final request = _matchRequests[index];
+        final sender = request['sender'];
+        return ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+          leading: CircleAvatar(backgroundImage: sender['avatar_url'] != null ? NetworkImage(sender['avatar_url']) : null, backgroundColor: OTheme.deepCharcoal),
+          title: Text(sender['display_name'] ?? 'Unknown', style: const TextStyle(color: Colors.white)),
+          subtitle: Text('@${sender['username']}', style: const TextStyle(color: Colors.white54, fontSize: 12)),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: OTheme.neonPink.withOpacity(0.2),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.star_outline_rounded, color: OTheme.neonPink, size: 20),
-              ),
-              const SizedBox(width: 16),
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Match Guidance',
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      'Please only allow requests if you are genuinely interested in connecting with the requester.',
-                      style: TextStyle(color: Colors.white70, fontSize: 11, height: 1.4),
-                    ),
-                  ],
-                ),
-              ),
+              IconButton(icon: const Icon(Icons.check_circle, color: Colors.greenAccent), onPressed: () => _handleRequest(request['id'], 'accepted')),
+              IconButton(icon: const Icon(Icons.cancel, color: Colors.redAccent), onPressed: () => _handleRequest(request['id'], 'declined')),
             ],
           ),
-        ),
-        Expanded(
-          child: ListView.builder(
-            itemCount: _matchRequests.length,
-            itemBuilder: (context, index) {
-              final request = _matchRequests[index];
-              final sender = request['sender'];
-              return ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                leading: CircleAvatar(
-                  backgroundImage: sender['avatar_url'] != null ? NetworkImage(sender['avatar_url']) : null,
-                  backgroundColor: OTheme.deepCharcoal,
-                  child: sender['avatar_url'] == null ? const Icon(Icons.person, color: OTheme.neonPink) : null,
-                ),
-                title: Text(sender['display_name'] ?? 'Unknown', style: const TextStyle(color: Colors.white)),
-                subtitle: Text('@${sender['username']}', style: const TextStyle(color: Colors.white54, fontSize: 12)),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.check_circle, color: Colors.greenAccent),
-                      onPressed: () => _handleRequest(request['id'], 'accepted'),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.cancel, color: Colors.redAccent),
-                      onPressed: () => _handleRequest(request['id'], 'declined'),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-        ),
-      ],
+        );
+      },
     );
   }
 
   Widget _buildChatWindow({required bool isMobile}) {
     if (_selectedProfile == null) return const SizedBox.shrink();
-    
     return Column(
       children: [
-        // Chat Header
         _buildChatHeader(isMobile: isMobile),
-        // Messages
         Expanded(
           child: StreamBuilder<List<Map<String, dynamic>>>(
             stream: SupabaseService.getMessagesStream(_selectedProfile!.id),
             builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator(color: OTheme.neonPink));
-              }
-              
+              if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator(color: OTheme.neonPink));
               final allMessages = snapshot.data ?? [];
               final messages = allMessages.where((m) => 
                 (m['sender_id'] == _selectedProfile!.id && m['receiver_id'] == SupabaseService.client.auth.currentUser!.id) ||
                 (m['sender_id'] == SupabaseService.client.auth.currentUser!.id && m['receiver_id'] == _selectedProfile!.id)
               ).toList();
 
-              if (messages.isEmpty) {
-                return _buildFirstMessageTemplate();
-              }
+              if (messages.isEmpty) return _buildFirstMessageTemplate();
 
               return ListView.builder(
                 padding: const EdgeInsets.all(24),
                 itemCount: messages.length,
                 itemBuilder: (context, index) {
                   final m = messages[index];
-                  final isMe = m['sender_id'] == SupabaseService.client.auth.currentUser!.id;
-                  return ChatMessage(text: m['content'], isMe: isMe);
+                  return ChatMessage(text: m['content'], isMe: m['sender_id'] == SupabaseService.client.auth.currentUser!.id);
                 },
               );
             }
           ),
         ),
-        // Input (Only show if messages exist, otherwise the template has its own)
         StreamBuilder<List<Map<String, dynamic>>>(
           stream: SupabaseService.getMessagesStream(_selectedProfile!.id),
           builder: (context, snapshot) {
-            final allMessages = snapshot.data ?? [];
-            final hasMessages = allMessages.any((m) => 
+            final hasMessages = (snapshot.data ?? []).any((m) => 
               (m['sender_id'] == _selectedProfile!.id && m['receiver_id'] == SupabaseService.client.auth.currentUser!.id) ||
               (m['sender_id'] == SupabaseService.client.auth.currentUser!.id && m['receiver_id'] == _selectedProfile!.id)
             );
@@ -493,49 +387,15 @@ class _MessagingScreenState extends State<MessagingScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: OTheme.neonPink.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.mail_outline_rounded, color: OTheme.neonPink, size: 40),
-            ),
+            Container(padding: const EdgeInsets.all(20), decoration: BoxDecoration(color: OTheme.neonPink.withOpacity(0.1), shape: BoxShape.circle), child: const Icon(Icons.mail_outline_rounded, color: OTheme.neonPink, size: 40)),
             const SizedBox(height: 24),
-            Text(
-              'Start a conversation with ${_selectedProfile?.displayName}',
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
-            ),
+            Text('Message ${_selectedProfile?.displayName}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
             const SizedBox(height: 12),
-            Text(
-              'You are starting a direct message. As an Admin/Premium user, your first message will be delivered immediately.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white.withOpacity(0.5), height: 1.5),
-            ),
+            Text('Start a direct conversation. Your first message will be delivered immediately.', textAlign: TextAlign.center, style: TextStyle(color: Colors.white.withOpacity(0.5), height: 1.5)),
             const SizedBox(height: 32),
-            TextField(
-              controller: _messageController,
-              maxLines: 4,
-              decoration: InputDecoration(
-                hintText: 'Write your first message...',
-                filled: true,
-                fillColor: OTheme.deepCharcoal,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-              ),
-            ),
+            TextField(controller: _messageController, maxLines: 4, decoration: InputDecoration(hintText: 'Write your message...', filled: true, fillColor: OTheme.deepCharcoal, border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none))),
             const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: _sendMessage,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: OTheme.neonPink,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                child: const Text('Send First Message', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-              ),
-            ),
+            SizedBox(width: double.infinity, height: 50, child: ElevatedButton(onPressed: _sendMessage, style: ElevatedButton.styleFrom(backgroundColor: OTheme.neonPink, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))), child: const Text('Send Message', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)))),
           ],
         ),
       ),
@@ -545,134 +405,46 @@ class _MessagingScreenState extends State<MessagingScreen> {
   Widget _buildChatHeader({required bool isMobile}) {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: Colors.white.withOpacity(0.05))),
-      ),
+      decoration: BoxDecoration(border: Border(bottom: BorderSide(color: Colors.white.withOpacity(0.05)))),
       child: Row(
         children: [
-          if (isMobile)
-            IconButton(
-              icon: const Icon(Icons.arrow_back, color: Colors.white70),
-              onPressed: () => setState(() => _selectedProfile = null),
-            ),
-          CircleAvatar(
-            backgroundImage: _selectedProfile?.avatarUrl != null ? NetworkImage(_selectedProfile!.avatarUrl!) : null,
-            backgroundColor: OTheme.deepCharcoal,
-            child: _selectedProfile?.avatarUrl == null ? const Icon(Icons.person, color: OTheme.neonPink) : null,
-          ),
+          if (isMobile) IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white70), onPressed: () => setState(() => _selectedProfile = null)),
+          CircleAvatar(backgroundImage: _selectedProfile?.avatarUrl != null ? NetworkImage(_selectedProfile!.avatarUrl!) : null, backgroundColor: OTheme.deepCharcoal),
           const SizedBox(width: 16),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(_selectedProfile?.displayName ?? 'User', style: const TextStyle(fontWeight: FontWeight.bold)),
-              const Text('Online', style: TextStyle(fontSize: 12, color: Colors.green)),
-            ],
-          ),
-          const Spacer(),
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert, color: Colors.white54),
-            color: OTheme.deepCharcoal,
-            onSelected: (value) {
-              if (value == 'block') {
-                SupabaseService.blockUser(_selectedProfile!.id);
-                setState(() => _selectedProfile = null);
-                _loadProfileAndChats(); // Refresh the list
-              }
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(value: 'block', child: Text('Block User', style: TextStyle(color: Colors.redAccent))),
-            ],
-          ),
+          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(_selectedProfile?.displayName ?? 'User', style: const TextStyle(fontWeight: FontWeight.bold)),
+            const Text('Live', style: TextStyle(fontSize: 12, color: Colors.green)),
+          ]),
         ],
       ),
     );
   }
 
   Widget _buildInput() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: _messageController,
-              onSubmitted: (_) => _sendMessage(),
-              decoration: InputDecoration(
-                hintText: 'Type a message...',
-                filled: true,
-                fillColor: OTheme.deepCharcoal,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          FloatingActionButton(
-            onPressed: _sendMessage,
-            backgroundColor: OTheme.neonPink,
-            child: const Icon(Icons.send, color: Colors.black),
-          ),
-        ],
-      ),
-    );
+    return Container(padding: const EdgeInsets.all(24), child: Row(children: [
+      Expanded(child: TextField(controller: _messageController, onSubmitted: (_) => _sendMessage(), decoration: InputDecoration(hintText: 'Type a message...', filled: true, fillColor: OTheme.deepCharcoal, border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none), contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12)))),
+      const SizedBox(width: 16),
+      FloatingActionButton(onPressed: _sendMessage, backgroundColor: OTheme.neonPink, child: const Icon(Icons.send, color: Colors.black)),
+    ]));
   }
 
   Widget _buildLockedState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.lock_person_outlined, size: 80, color: OTheme.neonPink.withOpacity(0.5)),
-          const SizedBox(height: 24),
-          const Text(
-            'Identity Validation Pending',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
-          ),
-          const SizedBox(height: 12),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 40),
-            child: Text(
-              'O requires a human check before unlocking messaging. You can continue browsing Discovery while we process your photo.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white54),
-            ),
-          ),
-          const SizedBox(height: 32),
-          ElevatedButton(
-            onPressed: () => _loadProfileAndChats(), // Refresh
-            style: ElevatedButton.styleFrom(backgroundColor: OTheme.neonPink),
-            child: const Text('Check Status', style: TextStyle(color: Colors.black)),
-          ),
-        ],
-      ),
-    );
+    return Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+      Icon(Icons.lock_person_outlined, size: 80, color: OTheme.neonPink.withOpacity(0.5)),
+      const SizedBox(height: 24),
+      const Text('Identity Validation Pending', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
+      const SizedBox(height: 32),
+      ElevatedButton(onPressed: () => _loadProfileAndChats(), style: ElevatedButton.styleFrom(backgroundColor: OTheme.neonPink), child: const Text('Check Status', style: TextStyle(color: Colors.black))),
+    ]));
   }
-
 }
 
 class ChatMessage extends StatelessWidget {
   final String text;
   final bool isMe;
-
   const ChatMessage({super.key, required this.text, required this.isMe});
-
   @override
   Widget build(BuildContext context) {
-    return Align(
-      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: isMe ? OTheme.neonPink : OTheme.deepCharcoal,
-          borderRadius: BorderRadius.circular(16).copyWith(
-            bottomRight: isMe ? const Radius.circular(0) : const Radius.circular(16),
-            bottomLeft: isMe ? const Radius.circular(16) : const Radius.circular(0),
-          ),
-        ),
-        constraints: const BoxConstraints(maxWidth: 400),
-        child: Text(text, style: TextStyle(color: isMe ? Colors.black : Colors.white)),
-      ),
-    );
+    return Align(alignment: isMe ? Alignment.centerRight : Alignment.centerLeft, child: Container(margin: const EdgeInsets.only(bottom: 16), padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), decoration: BoxDecoration(color: isMe ? OTheme.neonPink : OTheme.deepCharcoal, borderRadius: BorderRadius.circular(16).copyWith(bottomRight: isMe ? const Radius.circular(0) : const Radius.circular(16), bottomLeft: isMe ? const Radius.circular(16) : const Radius.circular(0))), constraints: const BoxConstraints(maxWidth: 400), child: Text(text, style: TextStyle(color: isMe ? Colors.black : Colors.white))));
   }
 }
