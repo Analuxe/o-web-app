@@ -366,13 +366,19 @@ class _MessagingScreenState extends State<MessagingScreen> {
           child: StreamBuilder<List<Map<String, dynamic>>>(
             stream: SupabaseService.getMessagesStream(_selectedProfile!.id),
             builder: (context, snapshot) {
-              if (!snapshot.hasData) return const Center(child: CircularProgressIndicator(color: OTheme.neonPink));
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator(color: OTheme.neonPink));
+              }
               
-              final messages = snapshot.data!
-                .where((m) => 
-                  (m['sender_id'] == _selectedProfile!.id && m['receiver_id'] == SupabaseService.client.auth.currentUser!.id) ||
-                  (m['sender_id'] == SupabaseService.client.auth.currentUser!.id && m['receiver_id'] == _selectedProfile!.id)
-                ).toList();
+              final allMessages = snapshot.data ?? [];
+              final messages = allMessages.where((m) => 
+                (m['sender_id'] == _selectedProfile!.id && m['receiver_id'] == SupabaseService.client.auth.currentUser!.id) ||
+                (m['sender_id'] == SupabaseService.client.auth.currentUser!.id && m['receiver_id'] == _selectedProfile!.id)
+              ).toList();
+
+              if (messages.isEmpty) {
+                return _buildFirstMessageTemplate();
+              }
 
               return ListView.builder(
                 padding: const EdgeInsets.all(24),
@@ -386,9 +392,76 @@ class _MessagingScreenState extends State<MessagingScreen> {
             }
           ),
         ),
-        // Input
-        _buildInput(),
+        // Input (Only show if messages exist, otherwise the template has its own)
+        StreamBuilder<List<Map<String, dynamic>>>(
+          stream: SupabaseService.getMessagesStream(_selectedProfile!.id),
+          builder: (context, snapshot) {
+            final allMessages = snapshot.data ?? [];
+            final hasMessages = allMessages.any((m) => 
+              (m['sender_id'] == _selectedProfile!.id && m['receiver_id'] == SupabaseService.client.auth.currentUser!.id) ||
+              (m['sender_id'] == SupabaseService.client.auth.currentUser!.id && m['receiver_id'] == _selectedProfile!.id)
+            );
+            return hasMessages ? _buildInput() : const SizedBox.shrink();
+          }
+        ),
       ],
+    );
+  }
+
+  Widget _buildFirstMessageTemplate() {
+    return Center(
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 500),
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: OTheme.neonPink.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.mail_outline_rounded, color: OTheme.neonPink, size: 40),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Start a conversation with ${_selectedProfile?.displayName}',
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'You are starting a direct message. As an Admin/Premium user, your first message will be delivered immediately.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.white.withOpacity(0.5), height: 1.5),
+            ),
+            const SizedBox(height: 32),
+            TextField(
+              controller: _messageController,
+              maxLines: 4,
+              decoration: InputDecoration(
+                hintText: 'Write your first message...',
+                filled: true,
+                fillColor: OTheme.deepCharcoal,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+              ),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton(
+                onPressed: _sendMessage,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: OTheme.neonPink,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: const Text('Send First Message', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
