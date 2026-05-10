@@ -121,7 +121,7 @@ class _MessagingScreenState extends State<MessagingScreen> {
       return const Center(child: CircularProgressIndicator(color: OTheme.neonPink));
     }
 
-    if (_myProfile != null && !_myProfile!.isValidated) {
+    if (_myProfile != null && !_myProfile!.isValidated && !_myProfile!.canMessageAnyone) {
       return _buildLockedState();
     }
 
