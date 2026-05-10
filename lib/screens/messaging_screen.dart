@@ -114,13 +114,19 @@ class _MessagingScreenState extends State<MessagingScreen> {
       }
       debugPrint('MSG: Load complete. Selected: ${_selectedProfile?.displayName ?? "NONE"}');
     } catch (e) {
-      debugPrint('MSG: CRITICAL error in loading: $e');
+      print('LOAD PROFILE ERROR: $e');
+      debugPrint('LOAD PROFILE ERROR: $e');
+      
       if (mounted) {
         setState(() {
           _isLoadingChats = false;
           _isLoadingProfile = false;
           _isFetchingInitialProfile = false;
         });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Load Error: $e'), backgroundColor: Colors.redAccent),
+        );
       }
     }
   }
@@ -195,15 +201,18 @@ class _MessagingScreenState extends State<MessagingScreen> {
       await SupabaseService.sendMessage(_selectedProfile!.id, content);
       debugPrint('MSG: Message sent successfully to ${_selectedProfile!.displayName}');
     } catch (e) {
-      debugPrint('MSG: Failed to send message: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Database Error: ${e is PostgrestException ? e.message : e.toString()}'),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
-      }
+      // Force output to both developer console and standard output
+      print('SEND MESSAGE ERROR: $e');
+      debugPrint('SEND MESSAGE ERROR: $e');
+      
+      if (!mounted) return;
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: ${e is PostgrestException ? e.message : e.toString()}'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
     }
   }
 
