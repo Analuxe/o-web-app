@@ -447,125 +447,125 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 width: 2,
               ),
             ),
-            child: Column(
-              children: [
-                const SizedBox(height: 32),
-                ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 300),
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: InkWell(
-                      onTap: (_isVerifyingHuman || _isHumanVerified) ? null : _verifyHuman,
-                      borderRadius: BorderRadius.circular(4),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF9F9F9),
-                          borderRadius: BorderRadius.circular(4),
-                          border: Border.all(color: const Color(0xFFD3D3D3)),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              width: 28,
-                              height: 28,
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                border: Border.all(
-                                  color: _isHumanVerified ? Colors.green : const Color(0xFFC1C1C1),
-                                  width: 2,
-                                ),
-                                borderRadius: BorderRadius.circular(2),
+          child: Column(
+            children: [
+              const SizedBox(height: 32),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 300),
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: InkWell(
+                    onTap: (_isVerifyingHuman || _isHumanVerified) ? null : _verifyHuman,
+                    borderRadius: BorderRadius.circular(4),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF9F9F9),
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(color: const Color(0xFFD3D3D3)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 28,
+                            height: 28,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              border: Border.all(
+                                color: _isHumanVerified ? Colors.green : const Color(0xFFC1C1C1),
+                                width: 2,
                               ),
-                              child: _isVerifyingHuman
-                                  ? const Padding(
-                                      padding: EdgeInsets.all(4.0),
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: Colors.blue,
-                                      ),
-                                    )
-                                  : (_isHumanVerified
-                                      ? const Icon(Icons.check, color: Colors.green, size: 20)
-                                      : null),
+                              borderRadius: BorderRadius.circular(2),
                             ),
-                            const SizedBox(width: 14),
-                            const Text(
-                              "I'm not a robot",
-                              style: TextStyle(
-                                color: Colors.black87,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w400,
+                            child: _isVerifyingHuman
+                                ? const Padding(
+                                    padding: EdgeInsets.all(4.0),
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.blue,
+                                    ),
+                                  )
+                                : (_isHumanVerified
+                                    ? const Icon(Icons.check, color: Colors.green, size: 20)
+                                    : null),
+                          ),
+                          const SizedBox(width: 14),
+                          const Text(
+                            "I'm not a robot",
+                            style: TextStyle(
+                              color: Colors.black87,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                          const SizedBox(width: 24),
+                          Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Image.network(
+                                'https://www.gstatic.com/recaptcha/api2/logo_48.png',
+                                height: 32,
+                                errorBuilder: (context, error, stackTrace) => const Icon(Icons.security, color: Colors.blue, size: 24),
                               ),
-                            ),
-                            const SizedBox(width: 24),
-                            Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Image.network(
-                                  'https://www.gstatic.com/recaptcha/api2/logo_48.png',
-                                  height: 32,
-                                  errorBuilder: (context, error, stackTrace) => const Icon(Icons.security, color: Colors.blue, size: 24),
+                              const Text(
+                                'reCAPTCHA',
+                                style: TextStyle(
+                                  color: Colors.black54,
+                                  fontSize: 8,
                                 ),
-                                const Text(
-                                  'reCAPTCHA',
-                                  style: TextStyle(
-                                    color: Colors.black54,
-                                    fontSize: 8,
-                                  ),
+                              ),
+                              const Text(
+                                'Privacy - Terms',
+                                style: TextStyle(
+                                  color: Colors.black54,
+                                  fontSize: 8,
                                 ),
-                                const Text(
-                                  'Privacy - Terms',
-                                  style: TextStyle(
-                                    color: Colors.black54,
-                                    fontSize: 8,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ],
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
+              ),
               if (_isHumanVerified)
-                  const Padding(
-                    padding: EdgeInsets.only(top: 24),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.check_circle, color: OTheme.neonPink, size: 20),
-                        SizedBox(width: 8),
-                        Text(
-                          'Verification Successful',
-                          style: TextStyle(color: OTheme.neonPink, fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
+                const Padding(
+                  padding: EdgeInsets.only(top: 24),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.check_circle, color: OTheme.neonPink, size: 20),
+                      SizedBox(width: 8),
+                      Text(
+                        'Verification Successful',
+                        style: TextStyle(color: OTheme.neonPink, fontWeight: FontWeight.bold),
+                      ),
+                    ],
                   ),
-              ],
-            ),
+                ),
+            ],
           ),
         ),
-        const SizedBox(height: 12),
-        const Center(
-          child: Text(
-            'Powered by Enterprise Browser Protection',
-            style: TextStyle(color: Colors.white10, fontSize: 10),
-          ),
+      ),
+      const SizedBox(height: 12),
+      const Center(
+        child: Text(
+          'Powered by Enterprise Browser Protection',
+          style: TextStyle(color: Colors.white10, fontSize: 10),
         ),
-      ],
-    );
-  }
+      ),
+    ],
+  );
+}
 
   Widget _buildField(String label, TextEditingController controller, String hint, {bool isNumber = false, int maxLines = 1}) {
     return TextField(

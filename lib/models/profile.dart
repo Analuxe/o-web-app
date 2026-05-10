@@ -17,6 +17,8 @@ class Profile {
   final bool isValidated;
   final bool isVerified;
   final bool isAdmin;
+  final bool isMod;
+  final bool isPremium;
   final int thumbsDownCount;
 
   Profile({
@@ -36,6 +38,8 @@ class Profile {
     this.isValidated = false,
     this.isVerified = false,
     this.isAdmin = false,
+    this.isMod = false,
+    this.isPremium = false,
     this.thumbsDownCount = 0,
   });
 
@@ -57,6 +61,8 @@ class Profile {
       isValidated: json['is_validated'] ?? false,
       isVerified: json['is_verified'] ?? false,
       isAdmin: json['is_admin'] ?? false,
+      isMod: json['is_mod'] ?? false,
+      isPremium: json['is_premium'] ?? false,
       thumbsDownCount: json['reputation_reports'] != null 
           ? (json['reputation_reports'] is List ? (json['reputation_reports'] as List).length : 0)
           : 0,
@@ -79,10 +85,16 @@ class Profile {
       'active_pathway': activePathway,
       'is_validated': isValidated,
       'is_verified': isVerified,
+      'is_mod': isMod,
+      'is_premium': isPremium,
     };
   }
 
   bool get isComplete {
     return username != null && username!.isNotEmpty && zipcode != null && zipcode!.isNotEmpty;
+  }
+
+  bool get canMessageAnyone {
+    return isPremium || isAdmin || isMod;
   }
 }

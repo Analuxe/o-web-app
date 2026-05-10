@@ -83,7 +83,9 @@ final _router = GoRouter(
         ),
         GoRoute(
           path: '/messaging',
-          builder: (context, state) => const MessagingScreen(),
+          builder: (context, state) => MessagingScreen(
+            initialProfileId: state.uri.queryParameters['id'],
+          ),
         ),
         GoRoute(
           path: '/admin',

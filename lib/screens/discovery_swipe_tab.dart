@@ -3,15 +3,18 @@ import 'package:swipe_cards/swipe_cards.dart';
 import 'package:o_web/theme.dart';
 import 'package:o_web/models/profile.dart';
 import 'package:o_web/services/supabase_service.dart';
+import 'package:go_router/go_router.dart';
 
 class DiscoverySwipeTab extends StatefulWidget {
   final List<Profile> profiles;
   final bool isCurrentUserVerified;
+  final bool canMessageAnyone;
 
   const DiscoverySwipeTab({
     super.key,
     required this.profiles,
     this.isCurrentUserVerified = false,
+    this.canMessageAnyone = false,
   });
 
   @override
@@ -44,14 +47,29 @@ class _DiscoverySwipeTabState extends State<DiscoverySwipeTab> {
         SwipeItem(
           content: profile,
           likeAction: () {
-            SupabaseService.extendVine(profile.id);
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text("You liked ${profile.displayName}!"),
-                backgroundColor: OTheme.neonPink,
-                duration: const Duration(seconds: 1),
-              ),
-            );
+            if (widget.canMessageAnyone) {
+              context.go('/messaging?id=${profile.id}');
+            } else {
+              SupabaseService.extendVine(profile.id);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text("Match Request Sent to ${profile.displayName}!"),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Note: Recipients only allow requests if interested.',
+                        style: TextStyle(fontSize: 10, color: Colors.white70),
+                      ),
+                    ],
+                  ),
+                  backgroundColor: OTheme.neonPink,
+                  duration: const Duration(seconds: 3),
+                ),
+              );
+            }
           },
           nopeAction: () {
             // Just move to next
@@ -129,11 +147,11 @@ class _DiscoverySwipeTabState extends State<DiscoverySwipeTab> {
               _ActionButton(
                 icon: Icons.star,
                 color: Colors.blueAccent,
-                onPressed: () => _matchEngine!.currentItem?.superlike(),
+                onPressed: () => _matchEngine!.currentItem?.like(),
                 isSmall: true,
               ),
               _ActionButton(
-                icon: Icons.favorite,
+                icon: widget.canMessageAnyone ? Icons.message : Icons.favorite,
                 color: OTheme.neonPink,
                 onPressed: () => _matchEngine!.currentItem?.like(),
               ),

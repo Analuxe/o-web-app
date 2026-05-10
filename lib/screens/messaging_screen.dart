@@ -3,7 +3,8 @@ import 'package:o_web/theme.dart';
 import 'package:o_web/services/supabase_service.dart';
 
 class MessagingScreen extends StatefulWidget {
-  const MessagingScreen({super.key});
+  final String? initialProfileId;
+  const MessagingScreen({super.key, this.initialProfileId});
 
   @override
   State<MessagingScreen> createState() => _MessagingScreenState();
@@ -14,8 +15,10 @@ class _MessagingScreenState extends State<MessagingScreen> {
   Profile? _myProfile;
   final _messageController = TextEditingController();
   List<Profile> _chats = [];
+  List<Map<String, dynamic>> _matchRequests = [];
   bool _isLoadingChats = true;
   bool _isLoadingProfile = true;
+  bool _showRequests = false;
 
   @override
   void initState() {
@@ -26,19 +29,64 @@ class _MessagingScreenState extends State<MessagingScreen> {
   Future<void> _loadProfileAndChats() async {
     try {
       final myProfile = await SupabaseService.getMyProfile();
-      final data = await SupabaseService.getMyChats();
+      final chatData = await SupabaseService.getMyChats();
+      
+      // Fetch pending match requests where I am the receiver
+      final requestData = await SupabaseService.client
+          .from('connections')
+          .select('*, sender:profiles!sender_id(id, display_name, avatar_url, username)')
+          .eq('receiver_id', SupabaseService.client.auth.currentUser!.id)
+          .eq('status', 'pending');
+
       setState(() {
         _myProfile = myProfile;
-        _chats = data.map((json) => Profile.fromJson(json)).toList();
+        _chats = chatData.map((json) => Profile.fromJson(json)).toList();
+        _matchRequests = List<Map<String, dynamic>>.from(requestData);
         _isLoadingChats = false;
         _isLoadingProfile = false;
-        if (_chats.isNotEmpty) _selectedProfile = _chats.first;
+        
+        if (widget.initialProfileId != null) {
+          // Find if the profile is already in chats
+          final existing = _chats.where((c) => c.id == widget.initialProfileId);
+          if (existing.isNotEmpty) {
+            _selectedProfile = existing.first;
+          } else if (_myProfile?.canMessageAnyone ?? false) {
+            // If premium/admin/mod, we can fetch the profile and add it temporarily
+            _fetchAndSetInitialProfile(widget.initialProfileId!);
+          }
+        } else if (_chats.isNotEmpty && _selectedProfile == null) {
+          _selectedProfile = _chats.first;
+        }
       });
     } catch (e) {
       setState(() {
         _isLoadingChats = false;
         _isLoadingProfile = false;
       });
+    }
+  }
+
+  void _handleRequest(String requestId, String status) async {
+    await SupabaseService.respondToMatchRequest(requestId, status);
+    _loadProfileAndChats(); // Refresh
+  }
+
+  Future<void> _fetchAndSetInitialProfile(String profileId) async {
+    try {
+      final data = await SupabaseService.client
+          .from('profiles')
+          .select()
+          .eq('id', profileId)
+          .single();
+      final profile = Profile.fromJson(data);
+      setState(() {
+        _selectedProfile = profile;
+        if (!_chats.any((c) => c.id == profile.id)) {
+          _chats.insert(0, profile);
+        }
+      });
+    } catch (e) {
+      debugPrint('Error fetching initial profile: $e');
     }
   }
 
@@ -98,39 +146,142 @@ class _MessagingScreenState extends State<MessagingScreen> {
       child: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.all(24.0),
+            padding: const EdgeInsets.symmetric(horizontal: 24.0),
             child: Row(
               children: [
-                Text('Messages', style: Theme.of(context).textTheme.displaySmall),
+                _buildTabButton('Messages', !_showRequests),
+                const SizedBox(width: 16),
+                _buildTabButton('Requests', _showRequests, count: _matchRequests.length),
               ],
             ),
           ),
+          const SizedBox(height: 16),
           if (_isLoadingChats)
             const Center(child: CircularProgressIndicator(color: OTheme.neonPink))
           else
             Expanded(
-              child: ListView.builder(
-                itemCount: _chats.length,
-                itemBuilder: (context, index) {
-                  final profile = _chats[index];
-                  return ListTile(
-                    selected: _selectedProfile?.id == profile.id,
-                    selectedTileColor: OTheme.neonPink.withOpacity(0.1),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                    leading: CircleAvatar(
-                      backgroundImage: profile.avatarUrl != null ? NetworkImage(profile.avatarUrl!) : null,
-                      backgroundColor: OTheme.deepCharcoal,
-                      child: profile.avatarUrl == null ? const Icon(Icons.person, color: OTheme.neonPink) : null,
-                    ),
-                    title: Text(profile.displayName ?? 'Unknown', style: const TextStyle(color: Colors.white)),
-                    subtitle: const Text('New message...', style: TextStyle(color: Colors.white54, fontSize: 12)),
-                    onTap: () => setState(() => _selectedProfile = profile),
-                  );
-                },
-              ),
+              child: _showRequests ? _buildRequestsList() : _buildChatsList(),
             ),
         ],
       ),
+    );
+  }
+
+  Widget _buildTabButton(String label, bool isSelected, {int count = 0}) {
+    return InkWell(
+      onTap: () => setState(() => _showRequests = label == 'Requests'),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  color: isSelected ? Colors.white : Colors.white24,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  fontSize: 16,
+                ),
+              ),
+              if (count > 0)
+                Container(
+                  margin: const EdgeInsets.only(left: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(color: OTheme.neonPink, borderRadius: BorderRadius.circular(10)),
+                  child: Text('$count', style: const TextStyle(color: Colors.black, fontSize: 10, fontWeight: FontWeight.bold)),
+                ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          if (isSelected) Container(height: 2, width: 20, color: OTheme.neonPink),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildChatsList() {
+    return ListView.builder(
+      itemCount: _chats.length,
+      itemBuilder: (context, index) {
+        final profile = _chats[index];
+        return ListTile(
+          selected: _selectedProfile?.id == profile.id,
+          selectedTileColor: OTheme.neonPink.withOpacity(0.1),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+          leading: CircleAvatar(
+            backgroundImage: profile.avatarUrl != null ? NetworkImage(profile.avatarUrl!) : null,
+            backgroundColor: OTheme.deepCharcoal,
+            child: profile.avatarUrl == null ? const Icon(Icons.person, color: OTheme.neonPink) : null,
+          ),
+          title: Text(profile.displayName ?? 'Unknown', style: const TextStyle(color: Colors.white)),
+          subtitle: const Text('New message...', style: TextStyle(color: Colors.white54, fontSize: 12)),
+          onTap: () => setState(() {
+            _selectedProfile = profile;
+            if (MediaQuery.of(context).size.width < 800) {
+              // Navigation handled in build
+            }
+          }),
+        );
+      },
+    );
+  }
+
+  Widget _buildRequestsList() {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(16),
+          margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+          decoration: BoxDecoration(
+            color: OTheme.neonPink.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: OTheme.neonPink.withOpacity(0.2)),
+          ),
+          child: const Row(
+            children: [
+              Icon(Icons.info_outline, color: OTheme.neonPink, size: 20),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Only allow match requests if you are genuinely interested in the requester.',
+                  style: TextStyle(color: OTheme.softRose, fontSize: 12, fontWeight: FontWeight.w500),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: ListView.builder(
+            itemCount: _matchRequests.length,
+            itemBuilder: (context, index) {
+              final request = _matchRequests[index];
+              final sender = request['sender'];
+              return ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                leading: CircleAvatar(
+                  backgroundImage: sender['avatar_url'] != null ? NetworkImage(sender['avatar_url']) : null,
+                  backgroundColor: OTheme.deepCharcoal,
+                  child: sender['avatar_url'] == null ? const Icon(Icons.person, color: OTheme.neonPink) : null,
+                ),
+                title: Text(sender['display_name'] ?? 'Unknown', style: const TextStyle(color: Colors.white)),
+                subtitle: Text('@${sender['username']}', style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.check_circle, color: Colors.greenAccent),
+                      onPressed: () => _handleRequest(request['id'], 'accepted'),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.cancel, color: Colors.redAccent),
+                      onPressed: () => _handleRequest(request['id'], 'declined'),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 

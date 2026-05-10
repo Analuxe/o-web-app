@@ -129,7 +129,6 @@ class SupabaseService {
     return List<Map<String, dynamic>>.from(response);
   }
 
-  // Connection (Extend Vine) Logic
   static Future<void> extendVine(String targetUserId) async {
     final myId = client.auth.currentUser!.id;
     await client.from('connections').upsert({
@@ -137,6 +136,13 @@ class SupabaseService {
       'receiver_id': targetUserId,
       'status': 'pending',
     });
+  }
+
+  static Future<void> respondToMatchRequest(String requestId, String status) async {
+    await client.from('connections').update({
+      'status': status,
+      'updated_at': DateTime.now().toIso8601String(),
+    }).eq('id', requestId);
   }
 
   static Stream<List<Map<String, dynamic>>> getConnectionsStream() {

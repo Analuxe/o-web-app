@@ -3,6 +3,7 @@ import 'package:o_web/theme.dart';
 import 'package:o_web/services/supabase_service.dart';
 import 'package:o_web/screens/discovery_swipe_tab.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:go_router/go_router.dart';
 
 class DiscoveryScreen extends StatefulWidget {
   const DiscoveryScreen({super.key});
@@ -227,6 +228,7 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> with SingleTickerProv
                                   itemBuilder: (context, index) => UserCard(
                                     profile: profiles[index],
                                     isCurrentUserVerified: _myProfile?.isVerified ?? false,
+                                    canMessageAnyone: _myProfile?.canMessageAnyone ?? false,
                                   ),
                                 ),
                             // Swipe Tab
@@ -235,6 +237,7 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> with SingleTickerProv
                               : DiscoverySwipeTab(
                                   profiles: profiles,
                                   isCurrentUserVerified: _myProfile?.isVerified ?? false,
+                                  canMessageAnyone: _myProfile?.canMessageAnyone ?? false,
                                 ),
                           ],
                         );
@@ -411,7 +414,13 @@ class _FilterChip extends StatelessWidget {
 class UserCard extends StatefulWidget {
   final Profile profile;
   final bool isCurrentUserVerified;
-  const UserCard({super.key, required this.profile, this.isCurrentUserVerified = false});
+  final bool canMessageAnyone;
+  const UserCard({
+    super.key, 
+    required this.profile, 
+    this.isCurrentUserVerified = false,
+    this.canMessageAnyone = false,
+  });
 
   @override
   State<UserCard> createState() => _UserCardState();
@@ -463,15 +472,31 @@ class _UserCardState extends State<UserCard> {
     );
   }
 
+  void _handleMessage() {
+    context.go('/messaging?id=${widget.profile.id}');
+  }
+
   void _handleExtend() async {
     setState(() => _isExtended = true);
     await SupabaseService.extendVine(widget.profile.id);
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Vine Extended to ${widget.profile.displayName}!'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Match Request Sent to ${widget.profile.displayName}!'),
+              const SizedBox(height: 4),
+              const Text(
+                'Note: Recipients are instructed to only allow requests if they are interested.',
+                style: TextStyle(fontSize: 10, color: Colors.white70),
+              ),
+            ],
+          ),
           backgroundColor: OTheme.neonPink,
           behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 4),
         ),
       );
     }
@@ -601,14 +626,20 @@ class _UserCardState extends State<UserCard> {
           Positioned(
             right: 12,
             bottom: 12,
-            child: FloatingActionButton.small(
-              onPressed: _isExtended ? null : _handleExtend,
-              backgroundColor: _isExtended ? Colors.grey : OTheme.neonPink,
-              child: Icon(
-                _isExtended ? Icons.check : Icons.add,
-                color: Colors.black,
-              ),
-            ),
+            child: widget.canMessageAnyone 
+              ? FloatingActionButton.small(
+                  onPressed: _handleMessage,
+                  backgroundColor: OTheme.neonPink,
+                  child: const Icon(Icons.message, color: Colors.black),
+                )
+              : FloatingActionButton.small(
+                  onPressed: _isExtended ? null : _handleExtend,
+                  backgroundColor: _isExtended ? Colors.grey : OTheme.neonPink,
+                  child: Icon(
+                    _isExtended ? Icons.check : Icons.add,
+                    color: Colors.black,
+                  ),
+                ),
           ),
           if (widget.isCurrentUserVerified)
             Positioned(
