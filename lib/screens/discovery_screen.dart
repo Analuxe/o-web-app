@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:o_web/theme.dart';
 import 'package:o_web/services/supabase_service.dart';
+import 'package:o_web/screens/discovery_swipe_tab.dart';
+import 'package:geolocator/geolocator.dart';
 
 class DiscoveryScreen extends StatefulWidget {
   const DiscoveryScreen({super.key});
@@ -9,14 +11,25 @@ class DiscoveryScreen extends StatefulWidget {
   State<DiscoveryScreen> createState() => _DiscoveryScreenState();
 }
 
-class _DiscoveryScreenState extends State<DiscoveryScreen> {
+class _DiscoveryScreenState extends State<DiscoveryScreen> with SingleTickerProviderStateMixin {
   Profile? _myProfile;
   bool _isLoadingMyProfile = true;
+  TabController? _tabController;
+  Position? _currentPosition;
+  bool _isLoadingLocation = true;
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
     _loadMyProfile();
+    _determinePosition();
+  }
+
+  @override
+  void dispose() {
+    _tabController?.dispose();
+    super.dispose();
   }
 
   Future<void> _loadMyProfile() async {
@@ -26,6 +39,25 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> {
         _myProfile = profile;
         _isLoadingMyProfile = false;
       });
+    }
+  }
+
+  Future<void> _determinePosition() async {
+    try {
+      final permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.always || permission == LocationPermission.whileInUse) {
+        final position = await Geolocator.getCurrentPosition();
+        if (mounted) {
+          setState(() {
+            _currentPosition = position;
+            _isLoadingLocation = false;
+          });
+        }
+      } else {
+        if (mounted) setState(() => _isLoadingLocation = false);
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoadingLocation = false);
     }
   }
 
@@ -55,6 +87,16 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> {
     );
   }
 
+  double _calculateDistance(double lat, double lng) {
+    if (_currentPosition == null) return 0.0;
+    return Geolocator.distanceBetween(
+      _currentPosition!.latitude,
+      _currentPosition!.longitude,
+      lat,
+      lng,
+    ) / 1609.34;
+  }
+
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
@@ -69,14 +111,42 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Title Section
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'Nearby Vines',
-                        style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                          fontSize: width < 600 ? 28 : null,
-                        ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Discovery',
+                            style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                              fontSize: width < 600 ? 28 : 42,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -1,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: OTheme.neonPink.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: OTheme.neonPink.withOpacity(0.2)),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.location_on, size: 12, color: OTheme.neonPink),
+                                const SizedBox(width: 6),
+                                Text(
+                                  _currentPosition != null ? "Vines within 50 miles" : "Scanning location...",
+                                  style: const TextStyle(color: OTheme.neonPink, fontSize: 10, fontWeight: FontWeight.bold),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                       if (!isLargeScreen)
                         IconButton(
@@ -85,45 +155,88 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> {
                           style: IconButton.styleFrom(
                             backgroundColor: OTheme.neonPink.withOpacity(0.1),
                             padding: const EdgeInsets.all(12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                           ),
                         ),
                     ],
                   ),
                   const SizedBox(height: 32),
+                  
+                  // TabBar Section
+                  Container(
+                    height: 50,
+                    decoration: BoxDecoration(
+                      border: Border(bottom: BorderSide(color: Colors.white.withOpacity(0.05))),
+                    ),
+                    child: TabBar(
+                      controller: _tabController,
+                      indicatorColor: OTheme.neonPink,
+                      indicatorWeight: 3,
+                      labelColor: Colors.white,
+                      unselectedLabelColor: Colors.white24,
+                      labelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 1),
+                      dividerColor: Colors.transparent,
+                      tabs: const [
+                        Tab(text: 'GRID VIEW'),
+                        Tab(text: 'SWIPE MODE'),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  
+                  // Content Section
                   Expanded(
                     child: StreamBuilder<List<Map<String, dynamic>>>(
                       stream: SupabaseService.getNearbyVines(),
                       builder: (context, snapshot) {
                         if (snapshot.hasError) {
-                          return Center(child: Text('Error loading vines: ${snapshot.error}', style: const TextStyle(color: Colors.white54)));
+                          return Center(child: Text('Error: ${snapshot.error}', style: const TextStyle(color: Colors.white54)));
                         }
-                        if (!snapshot.hasData) {
+                        if (!snapshot.hasData || (_isLoadingLocation && _currentPosition == null)) {
                           return const Center(child: CircularProgressIndicator(color: OTheme.neonPink));
                         }
                         
-                        final profiles = snapshot.data!
+                        var profiles = snapshot.data!
                             .map((json) => Profile.fromJson(json))
                             .where((p) => p.id != SupabaseService.client.auth.currentUser?.id)
                             .toList();
-    
-                        if (profiles.isEmpty) {
-                          return const Center(child: Text('No vines nearby yet.', style: TextStyle(color: Colors.white24)));
+
+                        if (_currentPosition != null) {
+                          profiles = profiles.where((p) {
+                            if (p.latitude == null || p.longitude == null) return false;
+                            final distance = _calculateDistance(p.latitude!, p.longitude!);
+                            return distance <= 50;
+                          }).toList();
                         }
-    
-                        return GridView.builder(
-                          gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                            maxCrossAxisExtent: width < 600 ? 200 : 300,
-                            childAspectRatio: 0.75,
-                            crossAxisSpacing: width < 600 ? 12 : 24,
-                            mainAxisSpacing: width < 600 ? 12 : 24,
-                          ),
-                          itemCount: profiles.length,
-                          itemBuilder: (context, index) {
-                            return UserCard(
-                              profile: profiles[index],
-                              isCurrentUserVerified: _myProfile?.isVerified ?? false,
-                            );
-                          },
+
+                        return TabBarView(
+                          controller: _tabController,
+                          children: [
+                            // Grid Tab
+                            profiles.isEmpty 
+                              ? _buildEmptyState("No vines nearby.")
+                              : GridView.builder(
+                                  padding: const EdgeInsets.only(bottom: 100),
+                                  gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                                    maxCrossAxisExtent: width < 600 ? 200 : 300,
+                                    childAspectRatio: 0.75,
+                                    crossAxisSpacing: width < 600 ? 12 : 24,
+                                    mainAxisSpacing: width < 600 ? 12 : 24,
+                                  ),
+                                  itemCount: profiles.length,
+                                  itemBuilder: (context, index) => UserCard(
+                                    profile: profiles[index],
+                                    isCurrentUserVerified: _myProfile?.isVerified ?? false,
+                                  ),
+                                ),
+                            // Swipe Tab
+                            profiles.isEmpty
+                              ? _buildEmptyState("No more vines to swipe.")
+                              : DiscoverySwipeTab(
+                                  profiles: profiles,
+                                  isCurrentUserVerified: _myProfile?.isVerified ?? false,
+                                ),
+                          ],
                         );
                       },
                     ),
@@ -133,6 +246,19 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> {
             ),
           ),
           if (isLargeScreen) const FilterSidebar(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(String message) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.sentiment_dissatisfied, size: 64, color: Colors.white10),
+          const SizedBox(height: 16),
+          Text(message, style: const TextStyle(color: Colors.white24, fontSize: 16)),
         ],
       ),
     );
@@ -233,7 +359,6 @@ class FilterSidebar extends StatelessWidget {
     );
   }
 }
-
 
 class _FilterLabel extends StatelessWidget {
   final String label;
@@ -485,7 +610,6 @@ class _UserCardState extends State<UserCard> {
               ),
             ),
           ),
-          // Thumbs Down Button (Only for Verified Users)
           if (widget.isCurrentUserVerified)
             Positioned(
               top: 12,

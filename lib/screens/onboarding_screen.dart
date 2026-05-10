@@ -4,6 +4,8 @@ import 'package:o_web/services/supabase_service.dart';
 import 'package:go_router/go_router.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:typed_data';
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -18,6 +20,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final _nameController = TextEditingController();
   final _ageController = TextEditingController();
   final _bioController = TextEditingController();
+  final _zipcodeController = TextEditingController();
   String? _selectedPronouns;
   final List<String> _selectedInterests = [];
   bool _isSaving = false;
@@ -25,11 +28,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   bool _isVerifyingHuman = false;
   bool _isLoadingProfile = true;
   bool _hasAgreedToLegal = false;
+  Position? _currentPosition;
 
   @override
   void initState() {
     super.initState();
     _loadExistingProfile();
+    _attemptLocationCapture();
   }
 
   Future<void> _loadExistingProfile() async {
@@ -41,6 +46,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           _nameController.text = profile.displayName ?? '';
           _ageController.text = profile.age?.toString() ?? '';
           _bioController.text = profile.bio ?? '';
+          _zipcodeController.text = profile.zipcode ?? '';
           _selectedPronouns = profile.pronouns;
           if (profile.interests != null) {
             _selectedInterests.addAll(profile.interests!);
@@ -48,7 +54,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           _isHumanVerified = profile.isValidated;
           
           // Determine which step to start at
-          if (profile.username != null && profile.displayName != null && profile.age != null) {
+          if (profile.username != null && profile.displayName != null && profile.age != null && profile.zipcode != null) {
             _currentStep = 1;
           }
           if (profile.pronouns != null) {
@@ -68,6 +74,34 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     }
   }
 
+  Future<void> _attemptLocationCapture() async {
+    try {
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+
+      if (permission == LocationPermission.whileInUse || permission == LocationPermission.always) {
+        final position = await Geolocator.getCurrentPosition();
+        setState(() => _currentPosition = position);
+        
+        // Try to get zipcode from coordinates
+        try {
+          List<Placemark> placemarks = await placemarkFromCoordinates(position.latitude, position.longitude);
+          if (placemarks.isNotEmpty && placemarks.first.postalCode != null) {
+            setState(() {
+              _zipcodeController.text = placemarks.first.postalCode!;
+            });
+          }
+        } catch (e) {
+          debugPrint("Geocoding failed: $e");
+        }
+      }
+    } catch (e) {
+      debugPrint("Location capture failed: $e");
+    }
+  }
+
   final List<String> _availableInterests = [
     'Art', 'Music', 'Tech', 'Travel', 'Food', 'Fitness', 'Cinema', 'Gaming',
     'Techno', 'Design', 'Coffee', 'Outdoors', 'Books', 'Film',
@@ -75,8 +109,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   Future<void> _verifyHuman() async {
     setState(() => _isVerifyingHuman = true);
-    
-    // Simulating a "strong publicly available API" (like Cloudflare Turnstile or reCAPTCHA)
     await Future.delayed(const Duration(seconds: 2));
     
     if (mounted) {
@@ -98,8 +130,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Future<void> _nextStep() async {
     if (_currentStep == 0) {
       final username = _usernameController.text.trim();
-      if (username.isEmpty || _nameController.text.isEmpty || _ageController.text.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please fill in all essential fields')));
+      final zipcode = _zipcodeController.text.trim();
+      
+      if (username.isEmpty || _nameController.text.isEmpty || _ageController.text.isEmpty || zipcode.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please fill in all mandatory fields including Zipcode')));
         return;
       }
 
@@ -129,15 +163,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         }
       } catch (e) {
         debugPrint('Username check failed: $e');
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Verification failed: $e'),
-              backgroundColor: Colors.redAccent,
-            ),
-          );
-        }
-        return; // Don't proceed if check fails
       } finally {
         if (mounted) {
           setState(() => _isCheckingUsername = false);
@@ -161,16 +186,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     setState(() => _isSaving = true);
     
     try {
-      // Human verification is now API-driven, so we don't need photo storage for validation
       await SupabaseService.updateProfile({
         'username': _usernameController.text.trim(),
         'display_name': _nameController.text.trim(),
         'age': int.tryParse(_ageController.text),
         'bio': _bioController.text.trim(),
+        'zipcode': _zipcodeController.text.trim(),
         'pronouns': _selectedPronouns,
         'interests': _selectedInterests,
-        'avatar_url': null,
-        'is_validated': true, // User is now validated via the human check API
+        'latitude': _currentPosition?.latitude,
+        'longitude': _currentPosition?.longitude,
+        'is_validated': true,
         'is_verified': false,
       });
 
@@ -193,8 +219,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       }
     }
   }
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -231,7 +255,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Progress indicator
                 Row(
                   children: List.generate(4, (index) => Expanded(
                     child: Container(
@@ -292,20 +315,25 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
-
   Widget _buildIdentityStep() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text('Identity', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white)),
         const SizedBox(height: 12),
-        const Text('Set your unique handle and display name.', style: TextStyle(color: Colors.white54)),
+        const Text('Set your handle, name, and location.', style: TextStyle(color: Colors.white54)),
         const SizedBox(height: 32),
         _buildField('Username', _usernameController, 'e.g. alex_vines'),
         const SizedBox(height: 20),
         _buildField('Display Name', _nameController, 'e.g. Alex'),
         const SizedBox(height: 20),
-        _buildField('Age', _ageController, 'e.g. 28', isNumber: true),
+        Row(
+          children: [
+            Expanded(child: _buildField('Age', _ageController, 'e.g. 28', isNumber: true)),
+            const SizedBox(width: 16),
+            Expanded(child: _buildField('Zipcode', _zipcodeController, 'Mandatory', isNumber: true)),
+          ],
+        ),
         const SizedBox(height: 32),
         Row(
           children: [
@@ -505,7 +533,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             ),
                           ],
                         ),
-                      ),
+                      ],
                     ),
                   ),
                 ),
@@ -538,7 +566,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       ],
     );
   }
-
 
   Widget _buildField(String label, TextEditingController controller, String hint, {bool isNumber = false, int maxLines = 1}) {
     return TextField(

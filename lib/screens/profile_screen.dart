@@ -19,6 +19,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   final _displayNameController = TextEditingController();
   final _bioController = TextEditingController();
+  final _zipcodeController = TextEditingController();
   String? _selectedPronouns;
   List<String> _selectedInterests = [];
   bool _isUploading = false;
@@ -42,6 +43,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (profile != null) {
         _displayNameController.text = profile.displayName ?? '';
         _bioController.text = profile.bio ?? '';
+        _zipcodeController.text = profile.zipcode ?? '';
         _selectedPronouns = profile.pronouns;
         _selectedInterests = List.from(profile.interests ?? []);
       }
@@ -49,10 +51,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _saveProfile() async {
+    if (_zipcodeController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Zipcode is mandatory')));
+      return;
+    }
+
     setState(() => _isLoading = true);
     await SupabaseService.updateProfile({
       'display_name': _displayNameController.text.isEmpty ? null : _displayNameController.text,
       'bio': _bioController.text.isEmpty ? null : _bioController.text,
+      'zipcode': _zipcodeController.text.trim(),
       'pronouns': _selectedPronouns,
       'interests': _selectedInterests,
     });
@@ -225,6 +233,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     const SizedBox(height: 24),
 
+                    // Zipcode
+                    _buildField(
+                      label: 'Zipcode',
+                      value: _profile?.zipcode ?? 'Mandatory',
+                      controller: _zipcodeController,
+                      isEditing: _isEditing,
+                      hint: 'Required for matching',
+                    ),
+                    const SizedBox(height: 24),
+
                     // Pronouns
                     _buildLabel('Pronouns'),
                     if (_isEditing)
@@ -272,7 +290,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               setState(() {
                                 if (selected) _selectedInterests.add(interest);
                                 else _selectedInterests.remove(interest);
-                              });
+                               });
                             },
                             selectedColor: OTheme.neonPink.withOpacity(0.2),
                             checkmarkColor: OTheme.neonPink,
@@ -322,6 +340,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     required String value,
     required TextEditingController controller,
     required bool isEditing,
+    String? hint,
     int maxLines = 1,
   }) {
     return Column(
@@ -333,13 +352,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             controller: controller,
             maxLines: maxLines,
             style: const TextStyle(color: Colors.white),
-            decoration: _inputDecoration(),
+            decoration: _inputDecoration().copyWith(hintText: hint),
           )
         else
           Text(
             value,
             style: TextStyle(
-              color: value == 'Not set' ? Colors.white24 : Colors.white,
+              color: (value == 'Not set' || value == 'Mandatory') ? Colors.white24 : Colors.white,
               fontSize: 16,
             ),
           ),

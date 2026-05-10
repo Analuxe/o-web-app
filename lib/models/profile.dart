@@ -12,6 +12,7 @@ class Profile {
   final List<String>? labels;
   final double? latitude;
   final double? longitude;
+  final String? zipcode;
   final String? activePathway;
   final bool isValidated;
   final bool isVerified;
@@ -30,6 +31,7 @@ class Profile {
     this.labels,
     this.latitude,
     this.longitude,
+    this.zipcode,
     this.activePathway,
     this.isValidated = false,
     this.isVerified = false,
@@ -50,6 +52,7 @@ class Profile {
       labels: (json['labels'] as List?)?.cast<String>(),
       latitude: json['latitude']?.toDouble(),
       longitude: json['longitude']?.toDouble(),
+      zipcode: json['zipcode'],
       activePathway: json['active_pathway'],
       isValidated: json['is_validated'] ?? false,
       isVerified: json['is_verified'] ?? false,
@@ -72,6 +75,7 @@ class Profile {
       'labels': labels,
       'latitude': latitude,
       'longitude': longitude,
+      'zipcode': zipcode,
       'active_pathway': activePathway,
       'is_validated': isValidated,
       'is_verified': isVerified,
@@ -79,6 +83,6 @@ class Profile {
   }
 
   bool get isComplete {
-    return username != null && username!.isNotEmpty;
+    return username != null && username!.isNotEmpty && zipcode != null && zipcode!.isNotEmpty;
   }
 }

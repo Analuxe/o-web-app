@@ -8,14 +8,17 @@ class DummyDataService {
   static Future<void> seedDummyData() async {
     final random = Random();
     
-    // 1. Create Dummy Profiles
-    // Note: This might fail if RLS is strict on the profiles table for inserts.
+    // 1. Create Dummy Profiles with Zipcodes and Coordinates
+    // New York: 40.7501, -73.9970 (10001)
+    // Baltimore: 39.2904, -76.6122 (21201)
+    // DC: 38.9072, -77.0369 (20001)
+
     final List<Map<String, dynamic>> dummyProfiles = [
       {
         'id': 'd0000000-0000-0000-0000-000000000001',
         'username': 'techno_king',
         'display_name': 'Marcus',
-        'bio': 'Berlin based producer. Minimal techno & modular synths.',
+        'bio': 'Berlin based producer currently in NYC. Minimal techno & modular synths.',
         'age': 29,
         'pronouns': 'He/Him',
         'interests': ['Techno', 'Design', 'Art'],
@@ -23,6 +26,9 @@ class DummyDataService {
         'is_verified': true,
         'is_validated': true,
         'is_vip': true,
+        'zipcode': '10001',
+        'latitude': 40.7501,
+        'longitude': -73.9970,
         'avatar_url': 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&h=400&fit=crop',
         'updated_at': DateTime.now().toIso8601String(),
       },
@@ -30,7 +36,7 @@ class DummyDataService {
         'id': 'd0000000-0000-0000-0000-000000000002',
         'username': 'sarah_starlight',
         'display_name': 'Sarah',
-        'bio': 'Digital nomad and yoga enthusiast. Seeking high vibrations.',
+        'bio': 'Digital nomad in Baltimore. Yoga enthusiast. Seeking high vibrations.',
         'age': 26,
         'pronouns': 'She/Her',
         'interests': ['Travel', 'Fitness', 'Coffee'],
@@ -38,6 +44,9 @@ class DummyDataService {
         'is_verified': false,
         'is_validated': true,
         'is_vip': false,
+        'zipcode': '21201',
+        'latitude': 39.2904,
+        'longitude': -76.6122,
         'avatar_url': 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop',
         'updated_at': DateTime.now().toIso8601String(),
       },
@@ -45,7 +54,7 @@ class DummyDataService {
         'id': 'd0000000-0000-0000-0000-000000000003',
         'username': 'jordan_vines',
         'display_name': 'Jordan',
-        'bio': 'Architect by day, artist by night. Loves brutalism and red wine.',
+        'bio': 'Architect in DC. Artist by night. Loves brutalism and red wine.',
         'age': 32,
         'pronouns': 'They/Them',
         'interests': ['Design', 'Art', 'Wine'],
@@ -53,36 +62,43 @@ class DummyDataService {
         'is_verified': true,
         'is_validated': true,
         'is_vip': true,
+        'zipcode': '20001',
+        'latitude': 38.9072,
+        'longitude': -77.0369,
         'avatar_url': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop',
         'updated_at': DateTime.now().toIso8601String(),
       },
       {
         'id': 'd0000000-0000-0000-0000-000000000004',
-        'username': 'pending_paul',
+        'username': 'paul_nyc',
         'display_name': 'Paul',
-        'bio': 'Just joined! Hope to meet some cool people.',
+        'bio': 'NYC Native. Looking for coffee and conversation.',
         'age': 24,
         'pronouns': 'He/Him',
-        'interests': ['Music', 'Gaming'],
+        'interests': ['Music', 'Gaming', 'Coffee'],
         'labels': ['Gay'],
         'is_verified': false,
-        'is_validated': false, // For moderation testing
-        'is_vip': false,
+        'is_validated': true,
+        'zipcode': '10012',
+        'latitude': 40.7259,
+        'longitude': -73.9983,
         'avatar_url': 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=400&fit=crop',
         'updated_at': DateTime.now().toIso8601String(),
       },
       {
         'id': 'd0000000-0000-0000-0000-000000000005',
-        'username': 'glitch_art',
-        'display_name': 'Xen',
-        'bio': 'Exploring the boundaries of reality through code.',
-        'age': 27,
-        'pronouns': 'They/Them',
-        'interests': ['Tech', 'Design', 'Art'],
+        'username': 'alex_balt',
+        'display_name': 'Alex',
+        'bio': 'Baltimore based engineer. Into hiking and tech.',
+        'age': 28,
+        'pronouns': 'He/Him',
+        'interests': ['Tech', 'Fitness', 'Outdoors'],
         'labels': ['Queer'],
         'is_verified': true,
         'is_validated': true,
-        'is_vip': false,
+        'zipcode': '21230',
+        'latitude': 39.2764,
+        'longitude': -76.6107,
         'avatar_url': 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400&h=400&fit=crop',
         'updated_at': DateTime.now().toIso8601String(),
       },
@@ -92,7 +108,7 @@ class DummyDataService {
       await _client.from('profiles').upsert(profile);
     }
 
-    // 2. Create Dummy Reports (for moderation testing)
+    // 2. Create Dummy Reports
     final currentUserId = _client.auth.currentUser?.id;
     if (currentUserId != null) {
       await _client.from('reports').upsert({
@@ -149,7 +165,6 @@ class DummyDataService {
   }
 
   static Future<void> clearDummyData() async {
-    // Optional: Add logic to remove dummy data by looking for the 'd000...' prefix
     await _client.from('profiles').delete().like('id', 'd0000000-0000-0000-0000-%');
   }
 }
