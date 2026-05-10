@@ -48,6 +48,31 @@ class _HubScreenState extends State<HubScreen> {
     );
   }
 
+  void _handleDelete(String id) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: OTheme.deepCharcoal,
+        title: const Text('Delete Post?', style: TextStyle(color: Colors.white)),
+        content: const Text('This action cannot be undone. Are you sure?', style: TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () async {
+              await SupabaseService.deleteHubPost(id);
+              if (mounted) {
+                Navigator.pop(context);
+                _loadData();
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -122,6 +147,7 @@ class _HubScreenState extends State<HubScreen> {
                     image: post.imageUrl ?? 'https://images.unsplash.com/photo-1614850523296-d8c1af93d400?auto=format&fit=crop&q=80&w=1000',
                     tag: post.tag,
                     onEdit: _isAdmin ? () => _showCreatePostDialog(post) : null,
+                    onDelete: _isAdmin ? () => _handleDelete(post.id) : null,
                   ),
                 )),
                 const SizedBox(height: 24),
@@ -147,6 +173,7 @@ class _HubScreenState extends State<HubScreen> {
                             icon: _getIconForTag(post.tag),
                             imageUrl: post.imageUrl,
                             onEdit: _isAdmin ? () => _showCreatePostDialog(post) : null,
+                            onDelete: _isAdmin ? () => _handleDelete(post.id) : null,
                           )),
                       ],
                     ),
@@ -169,6 +196,7 @@ class _HubScreenState extends State<HubScreen> {
                               icon: _getIconForTag(post.tag),
                               imageUrl: post.imageUrl,
                               onEdit: _isAdmin ? () => _showCreatePostDialog(post) : null,
+                              onDelete: _isAdmin ? () => _handleDelete(post.id) : null,
                             ),
                           )),
                       ],
@@ -584,14 +612,16 @@ class _FeaturedCard extends StatelessWidget {
   final String image;
   final String tag;
   final VoidCallback? onEdit;
-
-  const _FeaturedCard({
-    required this.title,
-    required this.subtitle,
-    required this.image,
-    required this.tag,
-    this.onEdit,
-  });
+  final VoidCallback? onDelete;
+ 
+   const _FeaturedCard({
+     required this.title,
+     required this.subtitle,
+     required this.image,
+     required this.tag,
+     this.onEdit,
+     this.onDelete,
+   });
 
   @override
   Widget build(BuildContext context) {
@@ -672,6 +702,18 @@ class _FeaturedCard extends StatelessWidget {
                             ),
                           ),
                         ],
+                        if (onDelete != null) ...[
+                          const SizedBox(width: 8),
+                          const SizedBox(height: 12, child: VerticalDivider(color: Colors.white24, width: 1)),
+                          const SizedBox(width: 8),
+                          IconButton(
+                            onPressed: onDelete,
+                            icon: const Icon(Icons.delete_outline, color: Colors.white70, size: 16),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                            tooltip: 'Delete Post',
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -710,18 +752,20 @@ class _UpdateItem extends StatelessWidget {
   final String title;
   final String date;
   final String description;
-  final String? imageUrl;
-  final IconData icon;
-  final VoidCallback? onEdit;
-
-  const _UpdateItem({
-    required this.title,
-    required this.date,
-    required this.description,
-    required this.icon,
-    this.imageUrl,
-    this.onEdit,
-  });
+   final String? imageUrl;
+   final IconData icon;
+   final VoidCallback? onEdit;
+   final VoidCallback? onDelete;
+ 
+   const _UpdateItem({
+     required this.title,
+     required this.date,
+     required this.description,
+     required this.icon,
+     this.imageUrl,
+     this.onEdit,
+     this.onDelete,
+   });
 
   @override
   Widget build(BuildContext context) {
@@ -770,6 +814,15 @@ class _UpdateItem extends StatelessWidget {
                         constraints: const BoxConstraints(),
                       ),
                     ],
+                    if (onDelete != null) ...[
+                      const SizedBox(width: 12),
+                      IconButton(
+                        onPressed: onDelete,
+                        icon: const Icon(Icons.delete_outline, color: Colors.white38, size: 20),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                    ],
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -808,11 +861,10 @@ class _UpdateItem extends StatelessWidget {
 }
 
 class _ComingSoonCard extends StatelessWidget {
-  final String title;
-  final String description;
   final String? imageUrl;
   final IconData icon;
   final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
 
   const _ComingSoonCard({
     required this.title,
@@ -820,6 +872,7 @@ class _ComingSoonCard extends StatelessWidget {
     required this.icon,
     this.imageUrl,
     this.onEdit,
+    this.onDelete,
   });
 
   @override
@@ -838,13 +891,27 @@ class _ComingSoonCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Icon(icon, color: Colors.white54, size: 32),
-              if (onEdit != null)
-                IconButton(
-                  onPressed: onEdit,
-                  icon: const Icon(Icons.edit, color: Colors.white, size: 20),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (onEdit != null)
+                    IconButton(
+                      onPressed: onEdit,
+                      icon: const Icon(Icons.edit, color: Colors.white, size: 20),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  if (onDelete != null) ...[
+                    const SizedBox(width: 12),
+                    IconButton(
+                      onPressed: onDelete,
+                      icon: const Icon(Icons.delete_outline, color: Colors.white38, size: 20),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ],
+              ),
             ],
           ),
           const SizedBox(height: 20),
