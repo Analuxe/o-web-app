@@ -6,6 +6,8 @@ import 'package:file_picker/file_picker.dart';
 import 'dart:typed_data';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:o_web/widgets/tag_selector.dart';
+import 'package:o_web/models/tags.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -102,10 +104,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     }
   }
 
-  final List<String> _availableInterests = [
-    'Art', 'Music', 'Tech', 'Travel', 'Food', 'Fitness', 'Cinema', 'Gaming',
-    'Techno', 'Design', 'Coffee', 'Outdoors', 'Books', 'Film',
-  ];
 
   Future<void> _verifyHuman() async {
     setState(() => _isVerifyingHuman = true);
@@ -403,26 +401,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         const SizedBox(height: 12),
         const Text('Select what moves you.', style: TextStyle(color: Colors.white54)),
         const SizedBox(height: 32),
-        Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: _availableInterests.map((interest) {
-            final isSelected = _selectedInterests.contains(interest);
-            return FilterChip(
-              label: Text(interest),
-              selected: isSelected,
-              onSelected: (selected) {
-                setState(() {
-                  if (selected) _selectedInterests.add(interest);
-                  else _selectedInterests.remove(interest);
-                });
-              },
-              selectedColor: OTheme.neonPink.withOpacity(0.2),
-              checkmarkColor: OTheme.neonPink,
-              labelStyle: TextStyle(color: isSelected ? OTheme.neonPink : Colors.white70),
-              backgroundColor: Colors.white.withOpacity(0.05),
-            );
-          }).toList(),
+        CategorizedTagSelector(
+          selectedTags: _selectedInterests,
+          onChanged: (tags) {
+            setState(() {
+              _selectedInterests.clear();
+              _selectedInterests.addAll(tags);
+            });
+          },
         ),
       ],
     );

@@ -4,6 +4,9 @@ import 'package:o_web/services/supabase_service.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:o_web/screens/verification_screen.dart';
 import 'dart:typed_data';
+import 'package:o_web/widgets/tag_selector.dart';
+import 'package:o_web/models/tags.dart';
+import 'package:o_web/models/profile.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -24,10 +27,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   List<String> _selectedInterests = [];
   bool _isUploading = false;
 
-  final List<String> _availableInterests = [
-    'Art', 'Music', 'Tech', 'Travel', 'Food', 'Fitness', 'Cinema', 'Gaming',
-    'Techno', 'Design', 'Coffee', 'Outdoors', 'Books', 'Film',
-  ];
 
   @override
   void initState() {
@@ -295,26 +294,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     // Interests
                     _buildLabel('Interests'),
                     if (_isEditing)
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: _availableInterests.map((interest) {
-                          final isSelected = _selectedInterests.contains(interest);
-                          return FilterChip(
-                            label: Text(interest),
-                            selected: isSelected,
-                            onSelected: (selected) {
-                              setState(() {
-                                if (selected) _selectedInterests.add(interest);
-                                else _selectedInterests.remove(interest);
-                               });
-                            },
-                            selectedColor: OTheme.neonPink.withOpacity(0.2),
-                            checkmarkColor: OTheme.neonPink,
-                            labelStyle: TextStyle(color: isSelected ? OTheme.neonPink : Colors.white70),
-                            backgroundColor: Colors.white.withOpacity(0.05),
-                          );
-                        }).toList(),
+                      CategorizedTagSelector(
+                        selectedTags: _selectedInterests,
+                        onChanged: (tags) {
+                          setState(() {
+                            _selectedInterests = tags;
+                          });
+                        },
                       )
                     else if (_profile?.interests?.isNotEmpty == true)
                       Wrap(
