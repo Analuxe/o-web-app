@@ -36,6 +36,7 @@ class _MessagingScreenState extends State<MessagingScreen> {
   }
 
   Future<void> _loadProfileAndChats() async {
+    debugPrint('MSG: Loading profile and chats. Initial ID: ${widget.initialProfileId}');
     try {
       if (widget.initialProfileId != null) {
         setState(() => _isFetchingInitialProfile = true);
@@ -43,6 +44,7 @@ class _MessagingScreenState extends State<MessagingScreen> {
 
       final myProfile = await SupabaseService.getMyProfile();
       final chatData = await SupabaseService.getMyChats();
+      debugPrint('MSG: Chats loaded: ${chatData.length}');
       
       // Fetch pending match requests where I am the receiver
       final requestData = await SupabaseService.client
@@ -56,11 +58,14 @@ class _MessagingScreenState extends State<MessagingScreen> {
       bool showRequests = _showRequests;
 
       if (widget.initialProfileId != null) {
+        debugPrint('MSG: Searching for initial ID: ${widget.initialProfileId}');
         showRequests = false;
         final existing = chats.where((c) => c.id == widget.initialProfileId);
         if (existing.isNotEmpty) {
+          debugPrint('MSG: Found in existing chats');
           selectedProfile = existing.first;
         } else if (myProfile?.canMessageAnyone ?? false) {
+          debugPrint('MSG: Not in existing, fetching from profiles table...');
           // Fetch the profile if it's not in chats but allowed
           try {
             final data = await SupabaseService.client
@@ -69,18 +74,29 @@ class _MessagingScreenState extends State<MessagingScreen> {
                 .eq('id', widget.initialProfileId!)
                 .single();
             final profile = Profile.fromJson(data);
+            debugPrint('MSG: Profile fetched: ${profile.displayName}');
             selectedProfile = profile;
             if (!chats.any((c) => c.id == profile.id)) {
               chats.insert(0, profile);
             }
           } catch (e) {
-            debugPrint('Error fetching initial profile: $e');
+            debugPrint('MSG: Error fetching initial profile: $e');
           }
+        } else {
+          debugPrint('MSG: Cannot message anyone and not in existing chats.');
         }
       } 
       
-      // Fallback: if no specific selection, use current or first available
-      selectedProfile ??= _selectedProfile ?? (chats.isNotEmpty ? chats.first : null);
+      // Fallback logic
+      if (selectedProfile == null) {
+        if (_selectedProfile != null) {
+          selectedProfile = _selectedProfile;
+          debugPrint('MSG: Keeping currently selected profile: ${selectedProfile?.displayName}');
+        } else if (chats.isNotEmpty) {
+          selectedProfile = chats.first;
+          debugPrint('MSG: Falling back to first chat: ${selectedProfile?.displayName}');
+        }
+      }
 
       setState(() {
         _myProfile = myProfile;
@@ -92,7 +108,9 @@ class _MessagingScreenState extends State<MessagingScreen> {
         _isLoadingProfile = false;
         _isFetchingInitialProfile = false;
       });
+      debugPrint('MSG: Initialization complete. Selected: ${_selectedProfile?.displayName}');
     } catch (e) {
+      debugPrint('MSG: CRITICAL ERROR in _loadProfileAndChats: $e');
       setState(() {
         _isLoadingChats = false;
         _isLoadingProfile = false;
