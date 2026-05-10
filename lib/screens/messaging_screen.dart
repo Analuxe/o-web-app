@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:o_web/theme.dart';
 import 'package:o_web/services/supabase_service.dart';
 import 'package:o_web/models/profile.dart';
@@ -30,6 +31,15 @@ class _MessagingScreenState extends State<MessagingScreen> {
     super.initState();
     debugPrint('MSG: initState. initialProfileId: ${widget.initialProfileId}');
     _loadProfileAndChats();
+  }
+
+  @override
+  void didUpdateWidget(MessagingScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialProfileId != oldWidget.initialProfileId) {
+      debugPrint('MSG: initialProfileId changed from ${oldWidget.initialProfileId} to ${widget.initialProfileId}');
+      _loadProfileAndChats();
+    }
   }
 
   Future<void> _loadProfileAndChats() async {
@@ -139,8 +149,12 @@ class _MessagingScreenState extends State<MessagingScreen> {
           .ilike('username', '%$query%')
           .limit(10);
       
+      final myId = SupabaseService.client.auth.currentUser?.id;
       setState(() {
-        _searchResults = (results as List).map((json) => Profile.fromJson(json)).toList();
+        _searchResults = (results as List)
+            .map((json) => Profile.fromJson(json))
+            .where((p) => p.id != myId) // Filter out current user
+            .toList();
         _isSearching = false;
       });
     } catch (e) {
@@ -158,7 +172,21 @@ class _MessagingScreenState extends State<MessagingScreen> {
     if (_messageController.text.isEmpty || _selectedProfile == null) return;
     final content = _messageController.text;
     _messageController.clear();
-    await SupabaseService.sendMessage(_selectedProfile!.id, content);
+    
+    try {
+      await SupabaseService.sendMessage(_selectedProfile!.id, content);
+      debugPrint('MSG: Message sent successfully');
+    } catch (e) {
+      debugPrint('MSG: Failed to send message: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to send message: ${e is PostgrestException ? e.message : e.toString()}'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -346,19 +374,21 @@ class _MessagingScreenState extends State<MessagingScreen> {
             stream: SupabaseService.getMessagesStream(_selectedProfile!.id),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator(color: OTheme.neonPink));
-              final allMessages = snapshot.data ?? [];
-              final messages = allMessages.where((m) => 
+              final messages = snapshot.data ?? [];
+              // We still do a final filter to ensure we only show messages for the CURRENT active conversation
+              // especially if the stream is delivering messages for other chats we're involved in.
+              final conversationMessages = messages.where((m) => 
                 (m['sender_id'] == _selectedProfile!.id && m['receiver_id'] == SupabaseService.client.auth.currentUser!.id) ||
                 (m['sender_id'] == SupabaseService.client.auth.currentUser!.id && m['receiver_id'] == _selectedProfile!.id)
               ).toList();
 
-              if (messages.isEmpty) return _buildFirstMessageTemplate();
+              if (conversationMessages.isEmpty) return _buildFirstMessageTemplate();
 
               return ListView.builder(
                 padding: const EdgeInsets.all(24),
-                itemCount: messages.length,
+                itemCount: conversationMessages.length,
                 itemBuilder: (context, index) {
-                  final m = messages[index];
+                  final m = conversationMessages[index];
                   return ChatMessage(text: m['content'], isMe: m['sender_id'] == SupabaseService.client.auth.currentUser!.id);
                 },
               );

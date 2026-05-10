@@ -106,7 +106,10 @@ class SupabaseService {
 
   // Messaging Logic
   static Stream<List<Map<String, dynamic>>> getMessagesStream(String otherUserId) {
-    final myId = client.auth.currentUser!.id;
+    // Security: RLS policies on the 'messages' table now ensure that we only 
+    // receive messages where the current user is either the sender or receiver.
+    // Performance: We stream the table and let the UI handle the specific 
+    // conversation filtering to maintain real-time responsiveness for all active chats.
     return client
         .from('messages')
         .stream(primaryKey: ['id'])
