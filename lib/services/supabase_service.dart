@@ -1,5 +1,4 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:o_web/models/profile.dart';
 import 'package:o_web/models/hub_post.dart';
@@ -117,6 +116,18 @@ class SupabaseService {
 
     return client.storage
         .from('avatars')
+        .getPublicUrl(path);
+  }
+
+  static Future<String> uploadGalleryImage(String userId, Uint8List bytes, String fileName) async {
+    final path = '$userId/$fileName';
+    
+    await client.storage
+        .from('gallery')
+        .uploadBinary(path, bytes);
+
+    return client.storage
+        .from('gallery')
         .getPublicUrl(path);
   }
 

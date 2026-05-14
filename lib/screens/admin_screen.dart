@@ -455,15 +455,15 @@ class _AdminScreenState extends State<AdminScreen> {
             color: OTheme.deepCharcoal,
             borderRadius: BorderRadius.circular(20),
           ),
-          child: Column(
+          child: const Column(
             children: [
-              const _TrendRow(name: 'Techno', users: 128, growth: '+24%', isPositive: true),
-              const Divider(color: Colors.white10, height: 32),
-              const _TrendRow(name: 'Kink', users: 94, growth: '+18%', isPositive: true),
-              const Divider(color: Colors.white10, height: 32),
-              const _TrendRow(name: 'Digital Art', users: 156, growth: '+12%', isPositive: true),
-              const Divider(color: Colors.white10, height: 32),
-              const _TrendRow(name: 'Travel', users: 210, growth: '-5%', isPositive: false),
+              _TrendRow(name: 'Techno', users: 128, growth: '+24%', isPositive: true),
+              Divider(color: Colors.white10, height: 32),
+              _TrendRow(name: 'Kink', users: 94, growth: '+18%', isPositive: true),
+              Divider(color: Colors.white10, height: 32),
+              _TrendRow(name: 'Digital Art', users: 156, growth: '+12%', isPositive: true),
+              Divider(color: Colors.white10, height: 32),
+              _TrendRow(name: 'Travel', users: 210, growth: '-5%', isPositive: false),
             ],
           ),
         ),
@@ -752,26 +752,26 @@ class _AdminScreenState extends State<AdminScreen> {
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: OTheme.neonPink.withOpacity(0.3)),
       ),
-      child: Column(
+      child: const Column(
         children: [
-          const Text(
+          Text(
             'Financial Health',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 12),
-          const Text(
+          SizedBox(height: 12),
+          Text(
             'Breakeven: 24 VIPs | Current: 28',
             style: TextStyle(color: OTheme.softRose, fontSize: 14),
           ),
-          const SizedBox(height: 32),
-          const Divider(color: Colors.white10),
-          const SizedBox(height: 24),
-          const Text(
+          SizedBox(height: 32),
+          Divider(color: Colors.white10),
+          SizedBox(height: 24),
+          Text(
             'Est. Monthly Revenue',
             style: TextStyle(color: Colors.white54, fontSize: 12),
           ),
-          const SizedBox(height: 8),
-          const Text(
+          SizedBox(height: 8),
+          Text(
             '\$279.72',
             style: TextStyle(
               fontSize: 36,

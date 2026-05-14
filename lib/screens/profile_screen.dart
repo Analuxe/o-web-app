@@ -28,6 +28,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _zipcodeController = TextEditingController();
   String? _selectedPronouns;
   List<String> _selectedInterests = [];
+  List<String> _galleryUrls = [];
+  final Map<String, TextEditingController> _promptControllers = {};
+  final _instagramController = TextEditingController();
+  final _twitterController = TextEditingController();
   bool _isUploading = false;
 
 
@@ -49,12 +53,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
       setState(() {
         _profile = profile;
         _isLoading = false;
-        if (profile != null && isMe) {
-          _displayNameController.text = profile.displayName ?? '';
-          _bioController.text = profile.bio ?? '';
-          _zipcodeController.text = profile.zipcode ?? '';
-          _selectedPronouns = profile.pronouns;
-          _selectedInterests = List.from(profile.interests ?? []);
+        if (profile != null) {
+          _galleryUrls = List.from(profile.galleryUrls ?? []);
+          if (isMe) {
+            _displayNameController.text = profile.displayName ?? '';
+            _bioController.text = profile.bio ?? '';
+            _zipcodeController.text = profile.zipcode ?? '';
+            _selectedPronouns = profile.pronouns;
+            _selectedInterests = List.from(profile.interests ?? []);
+
+            final prompts = profile.prompts ?? {};
+            for (final key in prompts.keys) {
+              _promptControllers[key] = TextEditingController(text: prompts[key]);
+            }
+
+            final socialLinks = profile.socialLinks ?? {};
+            _instagramController.text = socialLinks['instagram'] ?? '';
+            _twitterController.text = socialLinks['x'] ?? '';
+          }
         }
       });
     }
@@ -66,13 +82,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return;
     }
 
-    setState(() => _isLoading = true);
+    final Map<String, dynamic> prompts = {};
+    _promptControllers.forEach((key, controller) {
+      if (controller.text.trim().isNotEmpty) {
+        prompts[key] = controller.text.trim();
+      }
+    });
+
+    final Map<String, dynamic> socialLinks = {};
+    if (_instagramController.text.trim().isNotEmpty) socialLinks['instagram'] = _instagramController.text.trim();
+    if (_twitterController.text.trim().isNotEmpty) socialLinks['x'] = _twitterController.text.trim();
+
     await SupabaseService.updateProfile({
       'display_name': _displayNameController.text.isEmpty ? null : _displayNameController.text,
       'bio': _bioController.text.isEmpty ? null : _bioController.text,
       'zipcode': _zipcodeController.text.trim(),
       'pronouns': _selectedPronouns,
       'interests': _selectedInterests,
+      'gallery_urls': _galleryUrls,
+      'prompts': prompts,
+      'social_links': socialLinks,
     });
     await _loadProfile();
     setState(() => _isEditing = false);
@@ -111,6 +140,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
         }
       }
     }
+  }
+
+  Future<void> _pickGalleryImage() async {
+    if (_galleryUrls.length >= 6) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Maximum 6 photos allowed')));
+      return;
+    }
+    final picker = ImagePicker();
+    final XFile? image = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1024,
+      maxHeight: 1024,
+      imageQuality: 80,
+    );
+
+    if (image != null) {
+      setState(() => _isUploading = true);
+      try {
+        final bytes = await image.readAsBytes();
+        final fileName = '${DateTime.now().millisecondsSinceEpoch}.jpg';
+        final userId = SupabaseService.client.auth.currentUser?.id;
+        
+        if (userId != null) {
+          final url = await SupabaseService.uploadGalleryImage(userId, bytes, fileName);
+          setState(() {
+            _galleryUrls.add(url);
+          });
+        }
+      } catch (e) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Upload failed: $e')));
+      } finally {
+        if (mounted) setState(() => _isUploading = false);
+      }
+    }
+  }
+
+  void _removeGalleryImage(int index) {
+    setState(() => _galleryUrls.removeAt(index));
   }
 
   @override
@@ -298,12 +365,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       hint: 'Required for matching',
                     ),
                     const SizedBox(height: 24),
+                    
+                    // Social Links
+                    _buildLabel('Social Links'),
+                    if (_isEditing) ...[
+                      TextField(
+                        controller: _instagramController,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: _inputDecoration().copyWith(hintText: 'Instagram Handle', prefixText: '@'),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: _twitterController,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: _inputDecoration().copyWith(hintText: 'X (Twitter) Handle', prefixText: '@'),
+                      ),
+                    ] else ...[
+                      if (_profile?.socialLinks != null && _profile!.socialLinks!.isNotEmpty)
+                        Row(
+                          children: [
+                            if (_profile!.socialLinks!['instagram'] != null)
+                              Padding(
+                                padding: const EdgeInsets.only(right: 16),
+                                child: Text('IG: @${_profile!.socialLinks!['instagram']}', style: const TextStyle(color: OTheme.neonPink)),
+                              ),
+                            if (_profile!.socialLinks!['x'] != null)
+                              Text('X: @${_profile!.socialLinks!['x']}', style: const TextStyle(color: OTheme.neonPink)),
+                          ],
+                        )
+                      else
+                        const Text('No social links', style: TextStyle(color: Colors.white24, fontSize: 16)),
+                    ],
+                    const SizedBox(height: 24),
     
                     // Pronouns
                     _buildLabel('Pronouns'),
                     if (_isEditing)
                       DropdownButtonFormField<String>(
-                        value: _selectedPronouns,
+                        initialValue: _selectedPronouns,
                         dropdownColor: OTheme.deepCharcoal,
                         decoration: _inputDecoration(),
                         items: ['He/Him', 'She/Her', 'They/Them', 'Other'].map((p) =>
@@ -358,6 +457,101 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       )
                     else
                       const Text('No interests set', style: TextStyle(color: Colors.white24, fontSize: 16)),
+                      
+                    const SizedBox(height: 32),
+                    
+                    // Prompts
+                    _buildLabel('Icebreakers'),
+                    if (_isEditing) ...[
+                      _buildPromptEditor('My ideal night out involves...'),
+                      const SizedBox(height: 12),
+                      _buildPromptEditor('The most controversial opinion I have is...'),
+                      const SizedBox(height: 12),
+                      _buildPromptEditor('I am looking for...'),
+                    ] else ...[
+                      if (_profile?.prompts != null && _profile!.prompts!.isNotEmpty)
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: _profile!.prompts!.entries.map((e) => Container(
+                            width: double.infinity,
+                            margin: const EdgeInsets.only(bottom: 12),
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.05),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(e.key, style: const TextStyle(color: OTheme.softRose, fontSize: 12)),
+                                const SizedBox(height: 8),
+                                Text(e.value, style: const TextStyle(color: Colors.white, fontSize: 16)),
+                              ],
+                            ),
+                          )).toList(),
+                        )
+                      else
+                        const Text('No icebreakers set', style: TextStyle(color: Colors.white24, fontSize: 16)),
+                    ],
+                    
+                    const SizedBox(height: 32),
+                    
+                    // Photo Gallery
+                    _buildLabel('Photo Gallery'),
+                    if (_galleryUrls.isNotEmpty || _isEditing)
+                      GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 3,
+                          crossAxisSpacing: 8,
+                          mainAxisSpacing: 8,
+                        ),
+                        itemCount: _isEditing ? (_galleryUrls.length < 6 ? _galleryUrls.length + 1 : 6) : _galleryUrls.length,
+                        itemBuilder: (context, index) {
+                          if (_isEditing && index == _galleryUrls.length) {
+                            return InkWell(
+                              onTap: _pickGalleryImage,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.05),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: Colors.white10),
+                                ),
+                                child: const Icon(Icons.add_photo_alternate, color: Colors.white54, size: 32),
+                              ),
+                            );
+                          }
+                          return Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: Image.network(_galleryUrls[index], fit: BoxFit.cover),
+                              ),
+                              if (_isEditing)
+                                Positioned(
+                                  top: 4,
+                                  right: 4,
+                                  child: InkWell(
+                                    onTap: () => _removeGalleryImage(index),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(4),
+                                      decoration: const BoxDecoration(
+                                        color: Colors.black54,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(Icons.close, color: Colors.white, size: 16),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          );
+                        },
+                      )
+                    else
+                      const Text('No photos in gallery', style: TextStyle(color: Colors.white24, fontSize: 16)),
+
                   ],
                 ),
               ),
@@ -405,6 +599,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
               fontSize: 16,
             ),
           ),
+      ],
+    );
+  }
+
+  Widget _buildPromptEditor(String prompt) {
+    if (!_promptControllers.containsKey(prompt)) {
+      _promptControllers[prompt] = TextEditingController(text: _profile?.prompts?[prompt]);
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(prompt, style: const TextStyle(color: OTheme.softRose, fontSize: 13)),
+        const SizedBox(height: 8),
+        TextField(
+          controller: _promptControllers[prompt],
+          maxLines: 2,
+          style: const TextStyle(color: Colors.white),
+          decoration: _inputDecoration().copyWith(hintText: 'Your answer...'),
+        ),
       ],
     );
   }

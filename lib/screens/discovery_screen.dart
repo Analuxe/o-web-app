@@ -329,10 +329,10 @@ class FilterSidebar extends StatelessWidget {
           ),
           const SizedBox(height: 32),
           const _FilterLabel(label: 'Identity Labels'),
-          Wrap(
+          const Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: const [
+            children: [
               _FilterChip(label: 'Gay', isSelected: true),
               _FilterChip(label: 'Bi', isSelected: false),
               _FilterChip(label: 'Trans', isSelected: false),

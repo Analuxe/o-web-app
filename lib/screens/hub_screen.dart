@@ -478,7 +478,7 @@ class _CreatePostDialogState extends State<_CreatePostDialog> {
             ),
             const SizedBox(height: 24),
             DropdownButtonFormField<HubPostType>(
-              value: _type,
+              initialValue: _type,
               dropdownColor: OTheme.deepCharcoal,
               decoration: const InputDecoration(labelText: 'Post Type'),
               items: HubPostType.values.map((t) => DropdownMenuItem(

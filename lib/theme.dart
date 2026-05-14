@@ -17,7 +17,6 @@ class OTheme {
       primary: neonPink,
       secondary: softRose,
       surface: deepCharcoal,
-      background: black,
       onPrimary: black,
       onSurface: Colors.white,
     ),

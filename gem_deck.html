@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>O App - Go-To-Market Deck</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'deep-charcoal': '#0D0D0D',
+                        'pure-black': '#000000',
+                        'neon-pink': '#FF4FA3',
+                        'soft-rose': '#FFB3D9'
+                    },
+                    fontFamily: {
+                        'inter': ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #0D0D0D; color: white; overflow: hidden; margin: 0; }
+        .slide { 
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            opacity: 0; 
+            visibility: hidden;
+            transition: opacity 0.6s ease-in-out, visibility 0.6s; 
+            display: flex;
+        }
+        .slide.active { 
+            opacity: 1; 
+            visibility: visible;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col justify-center items-center relative select-none">
+
+    <!-- 1. The Opportunity -->
+    <div class="slide active flex-col justify-center items-center p-12 text-center bg-deep-charcoal">
+        <h1 class="text-6xl font-black text-neon-pink mb-6 tracking-tight">The Opportunity</h1>
+        <p class="text-2xl text-gray-300 max-w-4xl leading-relaxed">Disrupting the niche trust vacuum left by fragmented, clunky competitors like <span class="text-gray-400">Recon</span> and <span class="text-gray-400">Asspig.com</span>.</p>
+        <div class="mt-16 bg-pure-black p-10 rounded-3xl border border-neon-pink/20 shadow-[0_0_40px_rgba(255,79,163,0.1)]">
+            <h2 class="text-5xl font-bold text-white mb-4 tracking-wide">High-Trust <span class="text-neon-pink mx-2">+</span> High-Intent</h2>
+            <p class="text-xl text-gray-400 mt-4">The definitive architecture for modern LGBTQ+ connection.</p>
+        </div>
+    </div>
+
+    <!-- 2. The Community Frustration -->
+    <div class="slide flex-col justify-center items-center p-12 bg-deep-charcoal">
+        <h1 class="text-5xl font-black text-white mb-4 tracking-tight">The Community Frustration</h1>
+        <p class="text-xl text-neon-pink mb-12 uppercase tracking-widest font-bold">Validating the Trust Vacuum</p>
+        
+        <div class="grid grid-cols-2 gap-8 w-full max-w-6xl">
+            <!-- Recon Complaints -->
+            <div class="bg-pure-black p-8 rounded-3xl border border-gray-800 hover:border-gray-600 transition-colors shadow-xl">
+                <div class="flex items-center gap-4 mb-6 border-b border-gray-800 pb-4">
+                    <div class="w-10 h-10 bg-[#FF4500] rounded-full flex items-center justify-center text-white font-bold">R</div>
+                    <h3 class="text-xl font-bold text-gray-300">r/gaybros on <span class="text-white">Recon</span></h3>
+                </div>
+                <div class="space-y-6">
+                    <div class="bg-gray-900/50 p-6 rounded-xl border border-gray-800 relative">
+                        <span class="absolute -top-4 -left-2 text-5xl text-neon-pink opacity-50 font-serif">"</span>
+                        <p class="text-gray-300 italic mt-2 relative z-10">The app is stuck in 2012. It crashes constantly, the UI is incredibly clunky, and searching for exactly what you want takes forever.</p>
+                    </div>
+                    <div class="bg-gray-900/50 p-6 rounded-xl border border-gray-800 relative">
+                        <span class="absolute -top-4 -left-2 text-5xl text-neon-pink opacity-50 font-serif">"</span>
+                        <p class="text-gray-300 italic mt-2 relative z-10">Too many flakes and picture collectors. It's supposed to be high-intent but no one actually meets up.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Asspig Complaints -->
+            <div class="bg-pure-black p-8 rounded-3xl border border-gray-800 hover:border-gray-600 transition-colors shadow-xl">
+                <div class="flex items-center gap-4 mb-6 border-b border-gray-800 pb-4">
+                    <div class="w-10 h-10 bg-[#7289DA] rounded-full flex items-center justify-center text-white font-bold">D</div>
+                    <h3 class="text-xl font-bold text-gray-300">Discord on <span class="text-white">Asspig.com</span></h3>
+                </div>
+                <div class="space-y-6">
+                    <div class="bg-gray-900/50 p-6 rounded-xl border border-gray-800 relative">
+                        <span class="absolute -top-4 -left-2 text-5xl text-neon-pink opacity-50 font-serif">"</span>
+                        <p class="text-gray-300 italic mt-2 relative z-10">Is anyone on there actually real anymore? It feels like it's 90% bots and fake profiles. Zero trust.</p>
+                    </div>
+                    <div class="bg-gray-900/50 p-6 rounded-xl border border-gray-800 relative">
+                        <span class="absolute -top-4 -left-2 text-5xl text-neon-pink opacity-50 font-serif">"</span>
+                        <p class="text-gray-300 italic mt-2 relative z-10">The site is so fragmented and the moderation is a joke. It's exhausting having to vet every single person myself.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. The Identity -->
+    <div class="slide flex-col justify-center items-center p-12 text-center bg-deep-charcoal">
+        <div class="w-40 h-40 rounded-full border-4 border-neon-pink flex items-center justify-center mb-10 shadow-[0_0_50px_rgba(255,79,163,0.4)] bg-pure-black overflow-hidden p-2">
+            <!-- Actual Asset Logo -->
+            <img src="web/icons/Icon-512.png" alt="O App Logo" class="w-full h-full object-contain drop-shadow-[0_0_10px_rgba(255,79,163,0.5)]">
+        </div>
+        <h1 class="text-6xl font-black text-white mb-8 tracking-tight">The Identity</h1>
+        <h2 class="text-5xl font-bold text-neon-pink mt-4 tracking-wide">Open up.</h2>
+        <h2 class="text-3xl font-light text-neon-pink mt-2 tracking-wide opacity-80">Let loose.</h2>
+    </div>
+
+    <!-- 4. The Product Moat -->
+    <div class="slide flex-col justify-center items-center p-12 bg-deep-charcoal">
+        <h1 class="text-5xl font-black text-neon-pink mb-16 tracking-tight">The Product Moat</h1>
+        <div class="flex gap-10 w-full max-w-6xl">
+            <div class="flex-1 bg-pure-black p-10 rounded-3xl border border-gray-800 hover:border-neon-pink/50 transition-colors duration-300">
+                <div class="w-12 h-12 bg-gray-900 rounded-full flex items-center justify-center mb-6 border border-gray-700">
+                    <svg class="w-6 h-6 text-neon-pink" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+                </div>
+                <h3 class="text-3xl font-bold mb-4 text-white">Sexual Preference Sliders</h3>
+                <p class="text-gray-400 text-lg leading-relaxed">Granular control over role and kinks. Moving beyond static tags to capture authentic fluidity.</p>
+                <div class="mt-8 h-2 bg-gray-800 rounded-full relative">
+                    <div class="absolute left-1/4 right-1/4 h-full bg-neon-pink rounded-full shadow-[0_0_10px_rgba(255,79,163,0.8)]"></div>
+                    <div class="absolute left-1/4 w-4 h-4 bg-white rounded-full -top-1 shadow-md"></div>
+                    <div class="absolute right-1/4 w-4 h-4 bg-white rounded-full -top-1 shadow-md"></div>
+                </div>
+            </div>
+            <div class="flex-1 bg-pure-black p-10 rounded-3xl border border-gray-800 hover:border-neon-pink/50 transition-colors duration-300">
+                <div class="w-12 h-12 bg-gray-900 rounded-full flex items-center justify-center mb-6 border border-gray-700">
+                    <svg class="w-6 h-6 text-neon-pink" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                </div>
+                <h3 class="text-3xl font-bold mb-4 text-white">Peer-to-Peer Vouching</h3>
+                <p class="text-gray-400 text-lg leading-relaxed">A self-healing, community-led moderation system that ensures absolute safety and elevates high-quality interactions.</p>
+                <div class="mt-8 flex gap-3 items-center">
+                    <div class="flex space-x-1">
+                        <span class="text-neon-pink text-2xl">★</span><span class="text-neon-pink text-2xl">★</span><span class="text-neon-pink text-2xl">★</span><span class="text-neon-pink text-2xl">★</span><span class="text-neon-pink text-2xl">★</span>
+                    </div>
+                    <span class="text-gray-500 text-sm ml-2">Trust Verified</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. The Dual Pathway -->
+    <div class="slide flex-col justify-center items-center p-12 bg-deep-charcoal">
+        <h1 class="text-5xl font-black text-white mb-16 tracking-tight">The Dual Pathway</h1>
+        <div class="flex w-full max-w-6xl h-[450px] rounded-3xl overflow-hidden shadow-2xl border border-gray-800">
+            <div class="flex-1 bg-[#1a0b11] flex flex-col justify-center items-center p-12 border-r border-gray-800 relative group cursor-pointer overflow-hidden">
+                <div class="absolute inset-0 bg-gradient-to-t from-soft-rose/10 to-transparent opacity-50 group-hover:opacity-100 transition-opacity duration-500"></div>
+                <div class="w-16 h-16 rounded-full bg-soft-rose/20 flex items-center justify-center mb-6 relative z-10 group-hover:scale-110 transition-transform">
+                    <span class="text-soft-rose text-2xl">☕</span>
+                </div>
+                <h2 class="text-4xl font-bold text-soft-rose mb-4 relative z-10 tracking-wide">Singles Lounge</h2>
+                <p class="text-center text-gray-300 relative z-10 text-lg">Curated, soft-paced romantic connection.</p>
+            </div>
+            <div class="flex-1 bg-pure-black flex flex-col justify-center items-center p-12 relative group cursor-pointer overflow-hidden">
+                <div class="absolute inset-0 bg-gradient-to-t from-neon-pink/10 to-transparent opacity-50 group-hover:opacity-100 transition-opacity duration-500"></div>
+                <div class="w-16 h-16 rounded-full bg-neon-pink/20 flex items-center justify-center mb-6 relative z-10 group-hover:scale-110 transition-transform shadow-[0_0_20px_rgba(255,79,163,0.3)]">
+                    <span class="text-neon-pink text-2xl">⚡</span>
+                </div>
+                <h2 class="text-4xl font-bold text-neon-pink mb-4 relative z-10 tracking-wide">Cruising Path</h2>
+                <p class="text-center text-gray-300 relative z-10 text-lg">High-intent, sharp, and immediate encounters.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6. The Acquisition Engine (FistFest Augusta) -->
+    <div class="slide flex-col justify-center items-center p-12 text-center bg-deep-charcoal">
+        <h1 class="text-5xl font-black text-neon-pink mb-4 tracking-tight">The Acquisition Engine</h1>
+        <p class="text-xl text-gray-400 mb-10 tracking-wide">Grassroots domination starting in Augusta.</p>
+        
+        <div class="flex gap-8 w-full max-w-6xl">
+            <div class="flex-1 bg-pure-black p-10 rounded-3xl border-2 border-neon-pink relative overflow-hidden shadow-[0_0_50px_rgba(255,79,163,0.15)] transform hover:scale-[1.02] transition-transform duration-500 flex flex-col justify-center">
+                <div class="absolute -right-10 -top-10 text-9xl opacity-10 font-black text-neon-pink select-none">JULY</div>
+                <div class="absolute left-0 top-0 w-2 h-full bg-neon-pink"></div>
+                <h2 class="text-5xl font-black text-white mb-4 uppercase tracking-widest text-left">FistFest<br><span class="text-3xl text-gray-400">Augusta</span></h2>
+                <h3 class="text-2xl font-bold text-neon-pink mb-6 uppercase tracking-widest text-left">JulyFest Premiere</h3>
+                <p class="text-lg text-gray-300 leading-relaxed text-left">The physical launch targeting our highest-density power users at the year's premier destination event. We are turning a physical gathering into a digital acquisition engine.</p>
+            </div>
+            
+            <div class="flex-1 bg-pure-black p-10 rounded-3xl border border-gray-800 flex flex-col justify-center">
+                <h3 class="text-2xl font-bold text-white mb-6 uppercase tracking-widest border-b border-gray-800 pb-4 text-left">Board & Leadership Integration</h3>
+                <p class="text-gray-400 text-left mb-6">Leveraging strategic ties with the event organizers to secure early platform adoption at scale.</p>
+                <div class="space-y-4">
+                    <div class="flex items-center gap-4 bg-gray-900 p-4 rounded-xl border border-gray-700">
+                        <div class="w-12 h-12 bg-neon-pink/20 rounded-full flex items-center justify-center text-neon-pink font-bold">FFIT</div>
+                        <div class="text-left">
+                            <h4 class="text-white font-bold">FFIT Events of America, Inc.</h4>
+                            <p class="text-sm text-gray-500">The primary organization running FistFest.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-4 bg-gray-900 p-4 rounded-xl border border-gray-700">
+                        <div class="w-12 h-12 bg-neon-pink/20 rounded-full flex items-center justify-center text-neon-pink font-bold">LS</div>
+                        <div class="text-left">
+                            <h4 class="text-white font-bold">Larry Shockey</h4>
+                            <p class="text-sm text-gray-500">President & Spokesperson driving the partnership.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 7. The Geo-Hub Strategy -->
+    <div class="slide flex-col justify-center items-center p-12 bg-deep-charcoal">
+        <h1 class="text-5xl font-black text-white mb-12 tracking-tight">The Geo-Hub Strategy</h1>
+        <div class="w-full max-w-5xl aspect-[21/9] bg-pure-black rounded-3xl border border-gray-800 relative flex items-center justify-center overflow-hidden shadow-2xl">
+            <!-- Grid overlay -->
+            <div class="absolute inset-0 opacity-10" style="background-image: linear-gradient(#FF4FA3 1px, transparent 1px), linear-gradient(90deg, #FF4FA3 1px, transparent 1px); background-size: 40px 40px;"></div>
+            
+            <div class="relative w-full h-full overflow-hidden">
+                <!-- SVG Landmass (East Coast Silhouette) -->
+                <svg class="absolute inset-0 w-full h-full opacity-30" preserveAspectRatio="none" viewBox="0 0 100 100">
+                    <path d="M 0,-10 L 85,-10 C 85,10 80,15 80,20 C 80,25 78,28 75,25 C 72,25 70,35 69,45 C 68,55 68,55 65,60 C 62,65 63,65 65,70 C 67,75 66,75 65,85 C 64,90 60,90 58,85 C 56,80 54,75 50,75 C 45,75 40,70 30,70 L 0,70 Z" fill="#111111" stroke="#FF4FA3" stroke-width="0.3" stroke-opacity="0.5"/>
+                </svg>
+
+                <!-- SVG Connecting Lines (Network) -->
+                <svg class="absolute inset-0 w-full h-full opacity-60" pointer-events="none">
+                    <line x1="75%" y1="25%" x2="70%" y2="45%" stroke="#FF4FA3" stroke-width="3" stroke-dasharray="8,8" class="animate-[dash_5s_linear_infinite]" />
+                    <line x1="70%" y1="45%" x2="55%" y2="60%" stroke="#FF4FA3" stroke-width="3" stroke-dasharray="8,8" class="animate-[dash_5s_linear_infinite]" />
+                    <line x1="55%" y1="60%" x2="65%" y2="75%" stroke="#FF4FA3" stroke-width="3" stroke-dasharray="8,8" class="animate-[dash_5s_linear_infinite]" />
+                </svg>
+                
+                <style>
+                    @keyframes dash {
+                        to { stroke-dashoffset: -100; }
+                    }
+                </style>
+
+                <!-- Map Node: NYC -->
+                <div class="absolute" style="top: 25%; left: 75%; transform: translate(-50%, -50%);">
+                    <div class="w-32 h-32 bg-neon-pink/10 rounded-full animate-ping absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" style="animation-duration: 3s;"></div>
+                    <div class="w-5 h-5 bg-white rounded-full shadow-[0_0_20px_#FFFFFF] relative z-10 border-4 border-neon-pink"></div>
+                    <div class="absolute top-2 left-6 text-white font-black text-xl tracking-wider drop-shadow-md">NYC</div>
+                </div>
+
+                <!-- Map Node: DC -->
+                <div class="absolute" style="top: 45%; left: 70%; transform: translate(-50%, -50%);">
+                    <div class="w-24 h-24 bg-neon-pink/10 rounded-full animate-ping absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" style="animation-duration: 3.5s; animation-delay: 0.5s;"></div>
+                    <div class="w-4 h-4 bg-neon-pink rounded-full shadow-[0_0_15px_#FF4FA3] relative z-10"></div>
+                    <div class="absolute top-2 left-5 text-white font-bold text-lg tracking-wider drop-shadow-md">DC</div>
+                </div>
+
+                <!-- Map Node: Atlanta -->
+                <div class="absolute" style="top: 60%; left: 55%; transform: translate(-50%, -50%);">
+                    <div class="w-40 h-40 bg-neon-pink/10 rounded-full animate-ping absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" style="animation-duration: 4s; animation-delay: 1s;"></div>
+                    <div class="w-5 h-5 bg-neon-pink rounded-full shadow-[0_0_15px_#FF4FA3] relative z-10 border-2 border-white"></div>
+                    <div class="absolute -top-8 -left-12 text-white font-black text-xl tracking-wider drop-shadow-md">ATLANTA</div>
+                </div>
+
+                <!-- Map Node: Fort Lauderdale -->
+                <div class="absolute" style="top: 75%; left: 65%; transform: translate(-50%, -50%);">
+                    <div class="w-24 h-24 bg-neon-pink/10 rounded-full animate-ping absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" style="animation-duration: 3s; animation-delay: 1.5s;"></div>
+                    <div class="w-4 h-4 bg-neon-pink rounded-full shadow-[0_0_15px_#FF4FA3] relative z-10"></div>
+                    <div class="absolute -top-8 left-0 text-white font-bold text-lg tracking-wider drop-shadow-md whitespace-nowrap">FORT LAUDERDALE</div>
+                </div>
+            </div>
+            
+            <div class="absolute bottom-8 bg-pure-black/90 px-8 py-4 rounded-3xl border border-neon-pink/40 backdrop-blur-md shadow-xl flex flex-col items-center">
+                <span class="text-neon-pink font-bold tracking-widest text-sm mb-2 uppercase">Initial Target Hubs</span>
+                <div class="flex gap-6 text-white font-black text-lg uppercase tracking-wider">
+                    <span>Greater NYC</span>
+                    <span class="text-gray-600">|</span>
+                    <span>Greater DC</span>
+                    <span class="text-gray-600">|</span>
+                    <span>Greater Atlanta</span>
+                    <span class="text-gray-600">|</span>
+                    <span>Greater Fort Lauderdale</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 8. Sustainable Scaling -->
+    <div class="slide flex-col justify-center items-center p-12 bg-deep-charcoal">
+        <h1 class="text-5xl font-black text-neon-pink mb-16 tracking-tight">Sustainable Scaling</h1>
+        <div class="flex gap-12 w-full max-w-5xl">
+            <div class="flex-1 bg-pure-black p-12 rounded-3xl border border-gray-800 flex flex-col justify-center items-center text-center relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-gray-900 rounded-bl-full -mr-10 -mt-10"></div>
+                <h3 class="text-2xl text-gray-400 mb-6 uppercase tracking-widest font-bold">VIP Model</h3>
+                <div class="text-7xl font-black text-white mb-2">$9.99<span class="text-3xl text-gray-600 font-bold ml-1">/mo</span></div>
+                <p class="text-gray-400 mt-6 text-lg">Premium features & priority visibility within the ecosystem.</p>
+            </div>
+            <div class="flex-1 bg-pure-black p-12 rounded-3xl border-2 border-neon-pink shadow-[0_0_40px_rgba(255,79,163,0.15)] flex flex-col justify-center items-center text-center relative overflow-hidden">
+                <div class="absolute inset-0 bg-gradient-to-br from-neon-pink/5 to-transparent"></div>
+                <h3 class="text-2xl text-neon-pink mb-6 uppercase tracking-widest font-bold relative z-10">Milestone</h3>
+                <div class="text-8xl font-black text-white mb-2 relative z-10">24</div>
+                <p class="text-2xl text-gray-300 font-bold mt-4 relative z-10">User Breakeven</p>
+                <p class="text-sm text-gray-500 mt-2 relative z-10">Hyper-efficient operational unit economics.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 9. Competitive Matrix -->
+    <div class="slide flex-col justify-center items-center p-12 bg-deep-charcoal">
+        <h1 class="text-5xl font-black text-white mb-12 tracking-tight">Competitive Matrix</h1>
+        <div class="w-full max-w-3xl aspect-square relative border-l-2 border-b-2 border-gray-600 p-8 mt-8">
+            <div class="absolute -left-20 top-1/2 -translate-y-1/2 -rotate-90 text-gray-500 font-black tracking-widest text-lg">HIGH TRUST</div>
+            <div class="absolute -bottom-16 left-1/2 -translate-x-1/2 text-gray-500 font-black tracking-widest text-lg">HIGH INTENT</div>
+            
+            <!-- Grid lines -->
+            <div class="absolute left-0 right-0 top-1/2 h-px bg-gray-800 border-dashed border-t border-gray-700"></div>
+            <div class="absolute top-0 bottom-0 left-1/2 w-px bg-gray-800 border-dashed border-l border-gray-700"></div>
+            
+            <!-- Competitors -->
+            <div class="absolute bottom-1/4 left-1/4 transform -translate-x-1/2 translate-y-1/2 bg-pure-black text-gray-400 px-6 py-3 rounded-xl border border-gray-800 font-semibold shadow-lg">Tinder / Hinge</div>
+            <div class="absolute top-3/4 right-1/4 transform -translate-x-1/2 translate-y-1/2 bg-pure-black text-gray-400 px-6 py-3 rounded-xl border border-gray-800 font-semibold shadow-lg">Asspig.com</div>
+            <div class="absolute top-1/2 right-[30%] transform translate-x-1/2 -translate-y-1/2 bg-pure-black text-gray-400 px-6 py-3 rounded-xl border border-gray-800 font-semibold shadow-lg">Recon</div>
+            
+            <!-- O App -->
+            <div class="absolute top-[20%] right-[20%] transform translate-x-1/2 -translate-y-1/2 bg-neon-pink text-pure-black font-black px-8 py-4 rounded-2xl shadow-[0_0_30px_rgba(255,79,163,0.6)] text-3xl z-10 border border-white/20">O</div>
+        </div>
+    </div>
+
+    <!-- 10. UAT to Launch Timeline -->
+    <div class="slide flex-col justify-center items-center p-12 bg-pure-black">
+        <h1 class="text-5xl font-black text-white mb-4 tracking-tight">The Path to Revenue</h1>
+        <p class="text-xl text-neon-pink mb-24 uppercase tracking-widest font-bold">UAT to Launch Timeline</p>
+        
+        <div class="w-full max-w-5xl relative h-64 flex items-center mt-12">
+            <!-- Smooth Curved Line -->
+            <svg class="absolute inset-0 w-full h-full" preserveAspectRatio="none" viewBox="0 0 1000 200">
+                <path d="M 50 100 Q 250 150 500 100 T 950 100" fill="none" stroke="#333" stroke-width="4" stroke-linecap="round"/>
+                <path d="M 50 100 Q 250 150 500 100 T 950 100" fill="none" stroke="#FF4FA3" stroke-width="4" stroke-linecap="round" stroke-dasharray="2000" stroke-dashoffset="0" class="animate-[dash_3s_ease-in-out_infinite]" style="filter: drop-shadow(0 0 8px #FF4FA3);"/>
+            </svg>
+            
+            <style>
+                @keyframes dash {
+                    0% { stroke-dashoffset: 2000; }
+                    50% { stroke-dashoffset: 0; }
+                    100% { stroke-dashoffset: -2000; }
+                }
+            </style>
+            
+            <div class="absolute w-full flex justify-between px-12" style="top: calc(50% - 24px);">
+                <!-- Node 1 -->
+                <div class="flex flex-col items-center relative -top-6">
+                    <div class="w-8 h-8 rounded-full bg-pure-black border-4 border-neon-pink shadow-[0_0_20px_#FF4FA3] mb-6 relative z-10 flex items-center justify-center">
+                        <div class="w-3 h-3 bg-neon-pink rounded-full animate-ping"></div>
+                    </div>
+                    <div class="text-center absolute top-14 w-40">
+                        <h4 class="text-white font-bold text-2xl">UAT</h4>
+                        <p class="text-gray-500 font-semibold text-lg uppercase tracking-wider">(May)</p>
+                    </div>
+                </div>
+                
+                <!-- Node 2 -->
+                <div class="flex flex-col items-center relative top-2">
+                    <div class="w-8 h-8 rounded-full bg-pure-black border-4 border-neon-pink shadow-[0_0_20px_#FF4FA3] mb-6 relative z-10 flex items-center justify-center">
+                        <div class="w-3 h-3 bg-neon-pink rounded-full animate-ping" style="animation-delay: 0.5s;"></div>
+                    </div>
+                    <div class="text-center absolute top-14 w-40">
+                        <h4 class="text-white font-bold text-2xl">Beta Loop</h4>
+                        <p class="text-gray-500 font-semibold text-lg uppercase tracking-wider">(June)</p>
+                    </div>
+                </div>
+                
+                <!-- Node 3 -->
+                <div class="flex flex-col items-center relative -top-2">
+                    <div class="w-12 h-12 rounded-full bg-neon-pink shadow-[0_0_30px_#FF4FA3] mb-6 relative z-10 flex items-center justify-center">
+                        <svg class="w-6 h-6 text-pure-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <div class="text-center absolute top-16 w-48">
+                        <h4 class="text-neon-pink font-black text-3xl">FistFest Premiere</h4>
+                        <p class="text-white font-bold text-lg uppercase tracking-wider">(July)</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 11. Meaningful Metrics -->
+    <div class="slide flex-col justify-center items-center p-12 bg-deep-charcoal">
+        <h1 class="text-5xl font-black text-white mb-16 tracking-tight">Meaningful Metrics</h1>
+        <div class="grid grid-cols-2 gap-10 w-full max-w-5xl">
+            <!-- Metric 1 -->
+            <div class="bg-pure-black p-12 rounded-3xl border border-gray-800 hover:border-gray-600 transition-colors">
+                <div class="flex justify-between items-start mb-8">
+                    <h3 class="text-gray-400 font-bold text-xl uppercase tracking-wider">Conversion Rate</h3>
+                    <svg class="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+                </div>
+                <div class="text-7xl font-black text-neon-pink mb-6">2.0%</div>
+                <div class="w-full bg-gray-900 rounded-full h-3 mb-6">
+                    <div class="bg-neon-pink h-3 rounded-full w-[15%] shadow-[0_0_10px_rgba(255,79,163,0.8)]"></div>
+                </div>
+                <p class="text-lg text-gray-300 border-t border-gray-800 pt-6 mt-4">Industry-leading top-of-funnel engagement projection.</p>
+            </div>
+            
+            <!-- Metric 2 -->
+            <div class="bg-pure-black p-12 rounded-3xl border border-gray-800 relative overflow-hidden group hover:border-gray-600 transition-colors">
+                <div class="absolute -right-8 -bottom-12 text-[180px] text-gray-900 font-black opacity-30 group-hover:text-neon-pink/10 transition-colors">V</div>
+                <div class="flex justify-between items-start mb-8 relative z-10">
+                    <h3 class="text-gray-400 font-bold text-xl uppercase tracking-wider">Vouching Velocity</h3>
+                    <svg class="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                </div>
+                <div class="text-5xl font-black text-white mb-6 relative z-10 leading-tight">High<br>Frequency</div>
+                <p class="text-lg text-gray-300 border-t border-gray-800 pt-6 mt-12 relative z-10">Rapid, self-sustaining trust network formation.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 12. Safety & Legal -->
+    <div class="slide flex-col justify-center items-center p-12 text-center bg-deep-charcoal">
+        <h1 class="text-5xl font-black text-neon-pink mb-16 tracking-tight">Safety & Legal</h1>
+        <div class="bg-pure-black rounded-full w-[450px] h-[450px] flex flex-col justify-center items-center border-[12px] border-gray-900 hover:border-neon-pink transition-colors duration-700 shadow-[0_0_60px_rgba(0,0,0,0.8)] relative group">
+            <div class="absolute inset-0 rounded-full bg-neon-pink/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+            <h2 class="text-4xl font-black text-gray-300 text-center leading-relaxed tracking-widest uppercase">The</h2>
+            <h2 class="text-6xl font-black text-white text-center leading-none my-4 tracking-tight"><span class="text-neon-pink">Consent-First</span></h2>
+            <h2 class="text-4xl font-black text-gray-300 text-center leading-relaxed tracking-widest uppercase">Moat</h2>
+        </div>
+        <p class="text-2xl text-gray-400 mt-16 max-w-3xl leading-relaxed">Built from the bedrock up to protect users and outpace stringent regulatory requirements in the adult social sector.</p>
+    </div>
+
+    <!-- 13. Mockup 1: Film Rights -->
+    <div class="slide flex-col justify-center items-center p-12 bg-deep-charcoal">
+        <h1 class="text-5xl font-black text-white mb-4 tracking-tight">Marketing Execution</h1>
+        <p class="text-xl text-neon-pink mb-12 uppercase tracking-widest font-bold">Mockup 1: Exclusive Film Rights Access</p>
+        
+        <div class="flex w-full max-w-5xl justify-center items-center gap-16">
+            <!-- Digital Wallet Card -->
+            <div class="w-80 h-[480px] bg-pure-black rounded-[40px] border-4 border-gray-800 p-6 flex flex-col items-center justify-between relative shadow-[0_0_50px_rgba(0,0,0,0.8)] overflow-hidden group hover:border-neon-pink transition-colors duration-500">
+                <div class="absolute inset-0 bg-gradient-to-b from-gray-900 to-pure-black opacity-50"></div>
+                <div class="w-16 h-1.5 rounded-full bg-gray-700 mt-2 z-10"></div>
+                
+                <div class="relative z-10 flex flex-col items-center mt-12 w-full">
+                    <!-- Actual Asset Logo -->
+                    <div class="w-32 h-32 mb-8 bg-transparent rounded-full overflow-hidden drop-shadow-[0_0_15px_rgba(255,79,163,0.5)]">
+                        <img src="web/icons/Icon-512.png" alt="O App Logo" class="w-full h-full object-cover">
+                    </div>
+                    <h3 class="text-2xl font-bold text-white tracking-widest text-center uppercase leading-snug">O: Official<br><span class="text-neon-pink mt-1 block">Film Access</span></h3>
+                </div>
+                
+                <div class="w-full relative z-10">
+                    <div class="h-20 w-full bg-white rounded-xl mb-4 flex items-center justify-center p-2">
+                        <div class="w-full h-full bg-gray-200" style="background-image: repeating-linear-gradient(90deg, #000, #000 4px, transparent 4px, transparent 8px);"></div>
+                    </div>
+                    <p class="text-center text-gray-500 text-xs uppercase tracking-widest">Apple Wallet / Google Pay</p>
+                </div>
+            </div>
+            
+            <div class="flex-1 max-w-md">
+                <h3 class="text-4xl font-bold text-white mb-4 tracking-wide">"Film Rights Integration"</h3>
+                <p class="text-gray-400 text-lg leading-relaxed mb-8">Users who sign up for a year subscription will be able to film video content at an agreed upon time.</p>
+                <div class="bg-pure-black border border-gray-800 p-6 rounded-2xl border-l-4 border-l-neon-pink">
+                    <p class="text-sm text-neon-pink font-bold mb-2 uppercase tracking-widest">Board Exception</p>
+                    <p class="text-gray-300">Public filming is not allowed, but we are actively leveraging our board connections to negotiate this highly coveted exception exclusively for our annual subscribers.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 14. Mockup 2: Billboard -->
+    <div class="slide flex-col justify-center items-center p-12 bg-deep-charcoal">
+        <h1 class="text-5xl font-black text-white mb-4 tracking-tight">Marketing Execution</h1>
+        <p class="text-xl text-neon-pink mb-12 uppercase tracking-widest font-bold">Mockup 2: Intent-Aware Billboard</p>
+        
+        <div class="w-full max-w-5xl h-[500px] bg-pure-black rounded-3xl border border-gray-800 overflow-hidden relative shadow-[0_0_40px_rgba(255,79,163,0.1)] group hover:border-gray-600 transition-colors">
+            <!-- Background Image Placeholder (Dark Moody Gradient) -->
+            <div class="absolute inset-0 bg-gradient-to-br from-[#1a0510] via-pure-black to-[#2a081a] opacity-80"></div>
+            <!-- Silhouette / Abstract shapes for two men in nightlife -->
+            <div class="absolute bottom-0 left-10 w-64 h-96 bg-soft-rose/5 rounded-t-full blur-3xl"></div>
+            <div class="absolute bottom-0 right-32 w-48 h-80 bg-neon-pink/10 rounded-t-full blur-3xl"></div>
+            
+            <div class="relative z-10 w-full h-full flex flex-col justify-between p-12">
+                <!-- Top UI Overlay -->
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h2 class="text-7xl font-black text-white mb-2 drop-shadow-lg tracking-tighter">Stop guessing.</h2>
+                        <h2 class="text-7xl font-black text-neon-pink drop-shadow-lg tracking-tighter">Start connecting.</h2>
+                    </div>
+                    
+                    <!-- Sliders UI Overlay -->
+                    <div class="bg-pure-black/80 backdrop-blur-md p-6 rounded-2xl border border-white/10 w-72 shadow-2xl">
+                        <div class="mb-6">
+                            <div class="flex justify-between text-xs text-gray-400 mb-3 font-bold uppercase tracking-wider"><span class="text-neon-pink">Top</span><span>Vers</span><span>Bottom</span></div>
+                            <div class="h-1.5 bg-gray-800 rounded-full relative">
+                                <div class="absolute left-0 right-1/2 h-full bg-white rounded-full"></div>
+                                <div class="absolute right-1/2 w-4 h-4 bg-neon-pink rounded-full -top-[5px] shadow-[0_0_10px_#FF4FA3]"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-xs text-gray-400 mb-3 font-bold uppercase tracking-wider"><span>Mild</span><span class="text-neon-pink">Spicy</span></div>
+                            <div class="h-1.5 bg-gray-800 rounded-full relative">
+                                <div class="absolute left-1/4 right-0 h-full bg-white rounded-full"></div>
+                                <div class="absolute left-1/4 w-4 h-4 bg-neon-pink rounded-full -top-[5px] shadow-[0_0_10px_#FF4FA3]"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Bottom Branding -->
+                <div class="flex items-center gap-6 mt-auto">
+                    <!-- Actual Asset Logo Small -->
+                    <div class="w-16 h-16 bg-pure-black rounded-full border-2 border-neon-pink flex items-center justify-center overflow-hidden shadow-[0_0_20px_rgba(255,79,163,0.5)]">
+                        <img src="web/icons/Icon-512.png" alt="O App Logo" class="w-full h-full object-cover">
+                    </div>
+                    <div class="text-2xl font-bold text-white tracking-wide">
+                        Open up. Let loose. <span class="text-neon-pink mx-2">|</span> Live at FistFest.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 15. The Final Ask -->
+    <div class="slide flex-col justify-center items-center p-12 text-center bg-pure-black relative overflow-hidden">
+        <!-- Dramatic background lighting -->
+        <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-neon-pink/20 via-deep-charcoal to-pure-black opacity-80"></div>
+        <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-neon-pink to-transparent opacity-50"></div>
+        
+        <div class="relative z-10 flex flex-col items-center w-full max-w-4xl">
+            <h1 class="text-7xl font-black text-white mb-8 uppercase tracking-widest">The Final Ask</h1>
+            <p class="text-4xl text-gray-300 mb-20 font-light">Secure the capital. Deploy the network.</p>
+            
+            <button class="bg-neon-pink text-pure-black px-16 py-8 rounded-2xl font-black text-4xl shadow-[0_0_50px_rgba(255,79,163,0.6)] transform hover:scale-105 hover:bg-white hover:text-neon-pink hover:shadow-[0_0_80px_rgba(255,255,255,0.8)] transition-all duration-300 w-full border-2 border-transparent">
+                Fund the First 1,000 Power Users
+            </button>
+            
+            <div class="mt-16 flex items-center gap-4">
+                <div class="w-12 h-[2px] bg-neon-pink/50"></div>
+                <p class="text-2xl text-neon-pink font-bold tracking-widest uppercase">FistFest is waiting</p>
+                <div class="w-12 h-[2px] bg-neon-pink/50"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Controls -->
+    <div class="absolute bottom-8 left-0 right-0 flex justify-center items-center gap-10 z-50">
+        <button onclick="prevSlide()" id="prevBtn" class="p-3 rounded-full border-2 border-gray-700 text-gray-400 hover:border-white hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:border-gray-700 disabled:hover:text-gray-400">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+        </button>
+        
+        <div class="flex gap-3 items-center bg-pure-black/50 px-6 py-3 rounded-full backdrop-blur-sm border border-gray-800" id="dots">
+            <!-- Dots generated by JS -->
+        </div>
+        
+        <button onclick="nextSlide()" id="nextBtn" class="p-3 rounded-full bg-neon-pink text-pure-black hover:bg-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed shadow-[0_0_15px_rgba(255,79,163,0.4)]">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7"></path></svg>
+        </button>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const dotsContainer = document.getElementById('dots');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+
+        // Generate Dots
+        slides.forEach((_, i) => {
+            const dot = document.createElement('button');
+            dot.className = `w-3 h-3 rounded-full transition-all duration-300 focus:outline-none ${i === 0 ? 'bg-neon-pink scale-125 shadow-[0_0_8px_#FF4FA3]' : 'bg-gray-700 hover:bg-gray-500'}`;
+            dot.onclick = () => goToSlide(i);
+            dot.setAttribute('aria-label', `Go to slide ${i + 1}`);
+            dotsContainer.appendChild(dot);
+        });
+        const dots = dotsContainer.children;
+
+        function updateUI() {
+            // Update Slides
+            slides.forEach((slide, i) => {
+                if (i === currentSlide) {
+                    slide.classList.add('active');
+                } else {
+                    slide.classList.remove('active');
+                }
+            });
+
+            // Update Dots
+            Array.from(dots).forEach((dot, i) => {
+                if (i === currentSlide) {
+                    dot.className = 'w-3 h-3 rounded-full transition-all duration-300 focus:outline-none bg-neon-pink scale-125 shadow-[0_0_8px_#FF4FA3]';
+                } else {
+                    dot.className = 'w-3 h-3 rounded-full transition-all duration-300 focus:outline-none bg-gray-700 hover:bg-gray-500';
+                }
+            });
+
+            // Update Buttons
+            prevBtn.disabled = currentSlide === 0;
+            if(currentSlide === slides.length - 1) {
+                nextBtn.innerHTML = '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>'; // Checkmark
+                nextBtn.classList.remove('bg-neon-pink');
+                nextBtn.classList.add('bg-white', 'text-black');
+            } else {
+                nextBtn.innerHTML = '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7"></path></svg>'; // Arrow
+                nextBtn.classList.add('bg-neon-pink');
+                nextBtn.classList.remove('bg-white', 'text-black');
+            }
+        }
+
+        function nextSlide() {
+            if (currentSlide < slides.length - 1) {
+                currentSlide++;
+                updateUI();
+            }
+        }
+
+        function prevSlide() {
+            if (currentSlide > 0) {
+                currentSlide--;
+                updateUI();
+            }
+        }
+
+        function goToSlide(index) {
+            currentSlide = index;
+            updateUI();
+        }
+
+        // Initialize UI State
+        updateUI();
+
+        // Keyboard Navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === 'Space') {
+                e.preventDefault();
+                nextSlide();
+            }
+            if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                prevSlide();
+            }
+        });
+    </script>
+</body>
+</html>

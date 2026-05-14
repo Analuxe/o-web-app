@@ -1,4 +1,3 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 class Profile {
   final String id;
@@ -10,6 +9,9 @@ class Profile {
   final String? pronouns;
   final List<String>? interests;
   final List<String>? labels;
+  final List<String>? galleryUrls;
+  final Map<String, dynamic>? prompts;
+  final Map<String, dynamic>? socialLinks;
   final double? latitude;
   final double? longitude;
   final String? zipcode;
@@ -31,6 +33,9 @@ class Profile {
     this.pronouns,
     this.interests,
     this.labels,
+    this.galleryUrls,
+    this.prompts,
+    this.socialLinks,
     this.latitude,
     this.longitude,
     this.zipcode,
@@ -54,6 +59,9 @@ class Profile {
       pronouns: json['pronouns'],
       interests: (json['interests'] as List?)?.cast<String>(),
       labels: (json['labels'] as List?)?.cast<String>(),
+      galleryUrls: (json['gallery_urls'] as List?)?.cast<String>(),
+      prompts: json['prompts'] as Map<String, dynamic>?,
+      socialLinks: json['social_links'] as Map<String, dynamic>?,
       latitude: json['latitude']?.toDouble(),
       longitude: json['longitude']?.toDouble(),
       zipcode: json['zipcode'],
@@ -79,6 +87,9 @@ class Profile {
       'pronouns': pronouns,
       'interests': interests,
       'labels': labels,
+      'gallery_urls': galleryUrls,
+      'prompts': prompts,
+      'social_links': socialLinks,
       'latitude': latitude,
       'longitude': longitude,
       'zipcode': zipcode,
