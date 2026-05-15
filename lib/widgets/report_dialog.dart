@@ -90,13 +90,13 @@ class _ReportDialogState extends State<ReportDialog> {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.5),
+              color: Colors.black.withOpacity(0.5),
               blurRadius: 24,
               offset: const Offset(0, 12),
             ),
             // Subtle inner highlight/shadow simulation
             BoxShadow(
-              color: Colors.white.withValues(alpha: 0.05),
+              color: Colors.white.withOpacity(0.05),
               blurRadius: 0,
               spreadRadius: -1,
               offset: const Offset(0, 1),
@@ -121,7 +121,7 @@ class _ReportDialogState extends State<ReportDialog> {
             Text(
               'Please help us understand what\'s happening.',
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.5),
+                color: Colors.white.withOpacity(0.5),
                 fontSize: 14,
               ),
             ),
@@ -141,7 +141,7 @@ class _ReportDialogState extends State<ReportDialog> {
               decoration: BoxDecoration(
                 color: Colors.black,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                border: Border.all(color: Colors.white.withOpacity(0.1)),
               ),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
@@ -181,16 +181,16 @@ class _ReportDialogState extends State<ReportDialog> {
               style: const TextStyle(color: Colors.white, fontSize: 15),
               decoration: InputDecoration(
                 hintText: 'Briefly describe the issue...',
-                hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.2), fontSize: 15),
+                hintStyle: TextStyle(color: Colors.white.withOpacity(0.2), fontSize: 15),
                 filled: true,
                 fillColor: Colors.black,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                  borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                  borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -238,7 +238,7 @@ class _ReportDialogState extends State<ReportDialog> {
                 onPressed: () => Navigator.pop(context),
                 child: Text(
                   'Cancel',
-                  style: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
+                  style: TextStyle(color: Colors.white.withOpacity(0.3)),
                 ),
               ),
             ),

@@ -155,7 +155,7 @@ class _MatchmakerScreenState extends State<MatchmakerScreen> with SingleTickerPr
             Container(
               height: 50,
               decoration: BoxDecoration(
-                border: Border(bottom: BorderSide(color: Colors.white.withValues(alpha: 0.05))),
+                border: Border(bottom: BorderSide(color: Colors.white.withOpacity(0.05))),
               ),
               child: TabBar(
                 controller: _tabController,
@@ -345,7 +345,7 @@ class _MatchmakerScreenState extends State<MatchmakerScreen> with SingleTickerPr
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
-            color: OTheme.neonPink.withValues(alpha: 0.1),
+            color: OTheme.neonPink.withOpacity(0.1),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(color: OTheme.neonPink),
           ),
@@ -385,9 +385,9 @@ class _MatchmakerScreenState extends State<MatchmakerScreen> with SingleTickerPr
         Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.05),
+            color: Colors.white.withOpacity(0.05),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: OTheme.neonPink.withValues(alpha: 0.2)),
+            border: Border.all(color: OTheme.neonPink.withOpacity(0.2)),
           ),
           child: const Column(
             children: [
@@ -448,7 +448,7 @@ class _Chip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? OTheme.neonPink.withValues(alpha: 0.1) : Colors.transparent,
+          color: isSelected ? OTheme.neonPink.withOpacity(0.1) : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: isSelected ? OTheme.neonPink : Colors.white10),
         ),
