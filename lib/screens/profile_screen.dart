@@ -283,7 +283,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     padding: EdgeInsets.all(isMobile ? 30 : 40.0),
                                     child: Image.asset(
                                       'assets/logo.png',
-                                      color: OTheme.neonPink.withOpacity(0.3),
+                                      color: OTheme.neonPink.withValues(alpha: 0.3),
                                     ),
                                   ),
                                 )
@@ -306,9 +306,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: Colors.green.withOpacity(0.1),
+                          color: Colors.green.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: Colors.green.withOpacity(0.4)),
+                          border: Border.all(color: Colors.green.withValues(alpha: 0.4)),
                         ),
                         child: const Row(
                           mainAxisSize: MainAxisSize.min,
@@ -329,7 +329,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         icon: const Icon(Icons.verified_user, size: 16),
                         label: const Text('Get Verified'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: OTheme.neonPink.withOpacity(0.1),
+                          backgroundColor: OTheme.neonPink.withValues(alpha: 0.1),
                           foregroundColor: OTheme.neonPink,
                           side: const BorderSide(color: OTheme.neonPink),
                         ),
@@ -446,9 +446,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         children: _profile!.interests!.map((i) => Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
-                            color: OTheme.neonPink.withOpacity(0.1),
+                            color: OTheme.neonPink.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: OTheme.neonPink.withOpacity(0.3)),
+                            border: Border.all(color: OTheme.neonPink.withValues(alpha: 0.3)),
                           ),
                           child: Text(UserTag.format(i), style: const TextStyle(color: OTheme.neonPink, fontSize: 13)),
                         )).toList(),
@@ -475,7 +475,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             margin: const EdgeInsets.only(bottom: 12),
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.05),
+                              color: Colors.white.withValues(alpha: 0.05),
                               borderRadius: BorderRadius.circular(16),
                             ),
                             child: Column(
@@ -512,7 +512,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               onTap: _pickGalleryImage,
                               child: Container(
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.05),
+                                  color: Colors.white.withValues(alpha: 0.05),
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(color: Colors.white10),
                                 ),
@@ -623,7 +623,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   InputDecoration _inputDecoration() {
     return InputDecoration(
       filled: true,
-      fillColor: Colors.white.withOpacity(0.05),
+      fillColor: Colors.white.withValues(alpha: 0.05),
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
       contentPadding: const EdgeInsets.all(16),
     );

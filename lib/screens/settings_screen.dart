@@ -199,7 +199,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               labelText: 'Profile Zipcode',
                               labelStyle: const TextStyle(color: Colors.white54),
                               filled: true,
-                              fillColor: Colors.white.withOpacity(0.05),
+                              fillColor: Colors.white.withValues(alpha: 0.05),
                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                             ),
                             style: const TextStyle(color: Colors.white),
@@ -245,7 +245,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 icon: Icons.delete_outline,
                 title: 'Delete Account',
                 onTap: () => _showDeleteConfirmation(context),
-                titleColor: Colors.redAccent.withOpacity(0.8),
+                titleColor: Colors.redAccent.withValues(alpha: 0.8),
               ),
             ]),
             
@@ -291,7 +291,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           decoration: BoxDecoration(
             color: OTheme.deepCharcoal,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withOpacity(0.05)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
           ),
           child: Column(children: children),
         ),

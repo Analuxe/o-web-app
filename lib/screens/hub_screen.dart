@@ -442,7 +442,7 @@ class _CreatePostDialogState extends State<_CreatePostDialog> {
       child: ElevatedButton(
         onPressed: () => setState(() => _aspectRatio = ratio),
         style: ElevatedButton.styleFrom(
-          backgroundColor: isSelected ? OTheme.neonPink : Colors.white.withOpacity(0.05),
+          backgroundColor: isSelected ? OTheme.neonPink : Colors.white.withValues(alpha: 0.05),
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           elevation: isSelected ? 8 : 0,
@@ -544,7 +544,7 @@ class _CreatePostDialogState extends State<_CreatePostDialog> {
                     image: MemoryImage(_selectedFileBytes!),
                     fit: BoxFit.cover,
                   ),
-                  border: Border.all(color: OTheme.neonPink.withOpacity(0.3)),
+                  border: Border.all(color: OTheme.neonPink.withValues(alpha: 0.3)),
                 ),
               ),
               const SizedBox(height: 8),
@@ -693,8 +693,8 @@ class _FeaturedCard extends StatelessWidget {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Colors.black.withOpacity(0.2),
-                      Colors.black.withOpacity(0.6),
+                      Colors.black.withValues(alpha: 0.2),
+                      Colors.black.withValues(alpha: 0.6),
                     ],
                   ),
                 ),
@@ -780,7 +780,7 @@ class _FeaturedCard extends StatelessWidget {
                       maxLines: isMobile ? 2 : 3,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.8),
+                        color: Colors.white.withValues(alpha: 0.8),
                         fontSize: isMobile ? 14 : 18,
                         height: 1.5,
                       ),
@@ -894,7 +894,7 @@ class _UpdateItem extends StatelessWidget {
                 Text(
                   description,
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.5),
+                    color: Colors.white.withValues(alpha: 0.5),
                     fontSize: 15,
                     height: 1.5,
                   ),
@@ -930,9 +930,9 @@ class _ComingSoonCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: OTheme.deepCharcoal.withOpacity(0.5),
+        color: OTheme.deepCharcoal.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -994,7 +994,7 @@ class _ComingSoonCard extends StatelessWidget {
           Text(
             description,
             style: TextStyle(
-              color: Colors.white.withOpacity(0.4),
+              color: Colors.white.withValues(alpha: 0.4),
               fontSize: 14,
               height: 1.4,
             ),
