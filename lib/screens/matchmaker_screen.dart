@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:o_web/theme.dart';
 import 'package:o_web/services/supabase_service.dart';
+import 'package:o_web/screens/discovery_swipe_tab.dart';
 import 'dart:async';
 import 'dart:math';
-import 'package:o_web/screens/discovery_swipe_tab.dart';
+import 'package:o_web/models/discovery_filters.dart';
+import 'package:o_web/widgets/filter_sidebar.dart';
+import 'package:geolocator/geolocator.dart';
 
 class MatchmakerScreen extends StatefulWidget {
   const MatchmakerScreen({super.key});
@@ -18,16 +21,17 @@ class _MatchmakerScreenState extends State<MatchmakerScreen> with SingleTickerPr
   Profile? myProfile;
   Profile? matchedProfile;
   int matchScore = 0;
-  int distanceRange = 25;
-  List<String> selectedIntents = ['Singles', 'Hookups'];
+  DiscoveryFilters _filters = DiscoveryFilters();
   bool isLoadingSettings = true;
   bool isConfirming = false;
+  Position? _currentPosition;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _loadSettings();
+    _determinePosition();
   }
 
   @override
@@ -42,8 +46,10 @@ class _MatchmakerScreenState extends State<MatchmakerScreen> with SingleTickerPr
       final optIn = await SupabaseService.getMatchmakerOptIn();
       if (optIn != null && mounted) {
         setState(() {
-          distanceRange = optIn['max_distance'] ?? 25;
-          selectedIntents = List<String>.from(optIn['intents'] ?? ['Singles', 'Hookups']);
+          _filters = _filters.copyWith(
+            maxDistance: (optIn['max_distance'] ?? 25).toDouble(),
+            selectedIntents: List<String>.from(optIn['intents'] ?? ['Singles', 'Hookups']),
+          );
         });
       }
     } catch (e) {
@@ -55,14 +61,25 @@ class _MatchmakerScreenState extends State<MatchmakerScreen> with SingleTickerPr
     }
   }
 
-  void _toggleIntent(String intent) {
-    setState(() {
-      if (selectedIntents.contains(intent)) {
-        selectedIntents.remove(intent);
-      } else {
-        selectedIntents.add(intent);
+  Future<void> _determinePosition() async {
+    try {
+      final position = await Geolocator.getCurrentPosition();
+      if (mounted) {
+        setState(() => _currentPosition = position);
       }
-    });
+    } catch (e) {
+      debugPrint('Error getting location: $e');
+    }
+  }
+
+  double _calculateDistance(double lat, double lng) {
+    if (_currentPosition == null) return 0.0;
+    return Geolocator.distanceBetween(
+      _currentPosition!.latitude,
+      _currentPosition!.longitude,
+      lat,
+      lng,
+    ) / 1609.34;
   }
 
   Future<void> startSearch() async {
@@ -73,14 +90,43 @@ class _MatchmakerScreenState extends State<MatchmakerScreen> with SingleTickerPr
 
     try {
       // Save settings first
-      await SupabaseService.saveMatchmakerOptIn(distanceRange, selectedIntents);
+      await SupabaseService.saveMatchmakerOptIn(_filters.maxDistance.toInt(), _filters.selectedIntents);
       
       // Simulate scanning animation delay
       await Future.delayed(const Duration(seconds: 2));
 
       // Find candidates
-      final candidates = await SupabaseService.findMatchmakerCandidates(distanceRange, selectedIntents);
+      var candidates = await SupabaseService.findMatchmakerCandidates(_filters.maxDistance.toInt(), _filters.selectedIntents);
       
+      // Apply additional filters client-side (Age, Kink, Role)
+      candidates = candidates.where((p) {
+        // Age Filter
+        if (p.age != null) {
+          if (p.age! < _filters.ageRange.start || p.age! > _filters.ageRange.end) return false;
+        }
+
+        // Kink Filter
+        if (_filters.selectedKinks.isNotEmpty) {
+          final profileKinks = (p.labels ?? []).map((l) => l.split(':')[0]).toSet();
+          final matchesKink = _filters.selectedKinks.any((k) => profileKinks.contains(k));
+          if (!matchesKink) return false;
+        }
+
+        // Role Filter
+        if (_filters.selectedRoles.isNotEmpty) {
+          final profileRoles = (p.labels ?? []).map((l) {
+            final parts = l.split(':');
+            if (parts.length < 2) return '';
+            final pref = int.tryParse(parts[1]) ?? 1;
+            return pref == 0 ? 'Bottom' : (pref == 1 ? 'Versatile' : 'Top');
+          }).toSet();
+          final matchesRole = _filters.selectedRoles.any((r) => profileRoles.contains(r));
+          if (!matchesRole) return false;
+        }
+
+        return true;
+      }).toList();
+
       if (mounted) {
         setState(() {
           isSearching = false;
@@ -132,57 +178,117 @@ class _MatchmakerScreenState extends State<MatchmakerScreen> with SingleTickerPr
     }
   }
 
+  void _showFilterSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.7,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        builder: (_, controller) => Container(
+          decoration: const BoxDecoration(
+            color: OTheme.black,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+          ),
+          child: ListView(
+            controller: controller,
+            padding: const EdgeInsets.all(24),
+            children: [
+              FilterSidebar(
+                isDrawer: true,
+                filters: _filters,
+                onChanged: (newFilters) {
+                  setState(() => _filters = newFilters);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
+    final isLargeScreen = width > 1200;
     final isMobile = width < 600;
 
     return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Matchmaker',
-              style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                fontSize: width < 600 ? 28 : 42,
-                fontWeight: FontWeight.w900,
-                letterSpacing: -1,
-              ),
-            ),
-            const SizedBox(height: 32),
-            Container(
-              height: 50,
-              decoration: BoxDecoration(
-                border: Border(bottom: BorderSide(color: Colors.white.withValues(alpha: 0.05))),
-              ),
-              child: TabBar(
-                controller: _tabController,
-                indicatorColor: OTheme.neonPink,
-                indicatorWeight: 3,
-                labelColor: Colors.white,
-                unselectedLabelColor: Colors.white24,
-                labelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 1),
-                dividerColor: Colors.transparent,
-                tabs: const [
-                  Tab(text: 'O ADMIN MATCH'),
-                  Tab(text: 'SWIPE MODE'),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-            Expanded(
-              child: TabBarView(
-                controller: _tabController,
+      child: Row(
+        children: [
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildMatchmakerContent(isMobile),
-                  _buildSwipeTab(isMobile),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Matchmaker',
+                        style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                          fontSize: width < 600 ? 28 : 42,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: -1,
+                        ),
+                      ),
+                      if (!isLargeScreen)
+                        IconButton(
+                          onPressed: _showFilterSheet,
+                          icon: const Icon(Icons.tune, color: OTheme.neonPink),
+                          style: IconButton.styleFrom(
+                            backgroundColor: OTheme.neonPink.withValues(alpha: 0.1),
+                            padding: const EdgeInsets.all(12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 32),
+                  Container(
+                    height: 50,
+                    decoration: BoxDecoration(
+                      border: Border(bottom: BorderSide(color: Colors.white.withValues(alpha: 0.05))),
+                    ),
+                    child: TabBar(
+                      controller: _tabController,
+                      indicatorColor: OTheme.neonPink,
+                      indicatorWeight: 3,
+                      labelColor: Colors.white,
+                      unselectedLabelColor: Colors.white24,
+                      labelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 1),
+                      dividerColor: Colors.transparent,
+                      tabs: const [
+                        Tab(text: 'O ADMIN MATCH'),
+                        Tab(text: 'SWIPE MODE'),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Expanded(
+                    child: TabBarView(
+                      controller: _tabController,
+                      children: [
+                        _buildMatchmakerContent(isMobile),
+                        _buildSwipeTab(isMobile),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
-          ],
-        ),
+          ),
+          if (isLargeScreen) FilterSidebar(
+            filters: _filters,
+            onChanged: (newFilters) {
+              setState(() => _filters = newFilters);
+            },
+          ),
+        ],
       ),
     );
   }
@@ -223,8 +329,53 @@ class _MatchmakerScreenState extends State<MatchmakerScreen> with SingleTickerPr
             .where((p) => p.id != SupabaseService.client.auth.currentUser?.id)
             .toList();
 
+        // APPLY FILTERS
+        profiles = profiles.where((p) {
+          // 1. Distance Filter
+          if (_currentPosition != null) {
+            if (p.latitude == null || p.longitude == null) return false;
+            final distance = _calculateDistance(p.latitude!, p.longitude!);
+            if (distance > _filters.maxDistance) return false;
+          }
+
+          // 2. Age Filter
+          if (p.age != null) {
+            if (p.age! < _filters.ageRange.start || p.age! > _filters.ageRange.end) return false;
+          }
+
+          // 3. Kink Filter
+          if (_filters.selectedKinks.isNotEmpty) {
+            final profileKinks = (p.labels ?? []).map((l) => l.split(':')[0]).toSet();
+            final matchesKink = _filters.selectedKinks.any((k) => profileKinks.contains(k));
+            if (!matchesKink) return false;
+          }
+
+          // 4. Role Filter
+          if (_filters.selectedRoles.isNotEmpty) {
+            final profileRoles = (p.labels ?? []).map((l) {
+              final parts = l.split(':');
+              if (parts.length < 2) return '';
+              final pref = int.tryParse(parts[1]) ?? 1;
+              return pref == 0 ? 'Bottom' : (pref == 1 ? 'Versatile' : 'Top');
+            }).toSet();
+            final matchesRole = _filters.selectedRoles.any((r) => profileRoles.contains(r));
+            if (!matchesRole) return false;
+          }
+
+          // 5. Intent Filter (if profile has intents/activePathway)
+          if (_filters.selectedIntents.isNotEmpty) {
+            // Assuming interests or bio might contain intents, or a dedicated field
+            // For now, let's check interests if it matches
+            final profileIntents = (p.interests ?? []).toSet();
+            final matchesIntent = _filters.selectedIntents.any((i) => profileIntents.contains(i));
+            if (!matchesIntent) return false;
+          }
+
+          return true;
+        }).toList();
+
         if (profiles.isEmpty) {
-          return const Center(child: Text("No more vines to swipe.", style: TextStyle(color: Colors.white24, fontSize: 16)));
+          return const Center(child: Text("No vines match your filters.", style: TextStyle(color: Colors.white24, fontSize: 16)));
         }
 
         return DiscoverySwipeTab(
@@ -257,49 +408,25 @@ class _MatchmakerScreenState extends State<MatchmakerScreen> with SingleTickerPr
           decoration: BoxDecoration(
             color: OTheme.deepCharcoal,
             borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Search Preferences', style: TextStyle(fontWeight: FontWeight.bold)),
+              const Text('Current Search Settings', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
               const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text('Distance Range', style: TextStyle(color: OTheme.softRose)),
-                  Text('$distanceRange miles', style: const TextStyle(fontWeight: FontWeight.bold)),
-                ],
-              ),
-              Slider(
-                value: distanceRange.toDouble(),
-                min: 5,
-                max: 100,
-                divisions: 19,
-                onChanged: (v) => setState(() => distanceRange = v.round()),
-                activeColor: OTheme.neonPink,
-              ),
-              const SizedBox(height: 24),
-              const Text('Intents', style: TextStyle(color: OTheme.softRose)),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 12,
-                children: [
-                  _Chip(
-                    label: 'Singles', 
-                    isSelected: selectedIntents.contains('Singles'),
-                    onTap: () => _toggleIntent('Singles'),
-                  ),
-                  _Chip(
-                    label: 'Hookups', 
-                    isSelected: selectedIntents.contains('Hookups'),
-                    onTap: () => _toggleIntent('Hookups'),
-                  ),
-                  _Chip(
-                    label: 'Friends', 
-                    isSelected: selectedIntents.contains('Friends'),
-                    onTap: () => _toggleIntent('Friends'),
-                  ),
-                ],
+              _buildSettingRow('Distance', '${_filters.maxDistance.toInt()} miles'),
+              _buildSettingRow('Age Range', '${_filters.ageRange.start.toInt()} - ${_filters.ageRange.end.toInt()}'),
+              if (_filters.selectedKinks.isNotEmpty)
+                _buildSettingRow('Kinks', _filters.selectedKinks.join(', ')),
+              if (_filters.selectedRoles.isNotEmpty)
+                _buildSettingRow('Roles', _filters.selectedRoles.join(', ')),
+              if (_filters.selectedIntents.isNotEmpty)
+                _buildSettingRow('Intents', _filters.selectedIntents.join(', ')),
+              const SizedBox(height: 16),
+              const Text(
+                'Use the filter icon to adjust these settings.',
+                style: TextStyle(color: Colors.white24, fontSize: 12),
               ),
             ],
           ),
@@ -309,10 +436,32 @@ class _MatchmakerScreenState extends State<MatchmakerScreen> with SingleTickerPr
           onPressed: startSearch,
           style: ElevatedButton.styleFrom(
             minimumSize: Size(isMobile ? double.infinity : 300, 60),
+            backgroundColor: OTheme.neonPink,
+            foregroundColor: Colors.black,
           ),
-          child: const Text('Find My Vibe'),
+          child: const Text('Find My Vibe', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
         ),
       ],
+    );
+  }
+
+  Widget _buildSettingRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(color: OTheme.softRose)),
+          Flexible(
+            child: Text(
+              value, 
+              style: const TextStyle(fontWeight: FontWeight.bold),
+              textAlign: TextAlign.right,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -413,10 +562,12 @@ class _MatchmakerScreenState extends State<MatchmakerScreen> with SingleTickerPr
               onPressed: isConfirming ? null : _handleConfirmDate,
               style: ElevatedButton.styleFrom(
                 minimumSize: Size(isMobile ? double.infinity : 200, 56),
+                backgroundColor: OTheme.neonPink,
+                foregroundColor: Colors.black,
               ),
               child: isConfirming 
                 ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
-                : const Text('Confirm Date'),
+                : const Text('Confirm Date', style: TextStyle(fontWeight: FontWeight.bold)),
             ),
             if (isMobile) const SizedBox(height: 12) else const SizedBox(width: 24),
             OutlinedButton(
@@ -430,30 +581,6 @@ class _MatchmakerScreenState extends State<MatchmakerScreen> with SingleTickerPr
           ],
         ),
       ],
-    );
-  }
-}
-
-class _Chip extends StatelessWidget {
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-  const _Chip({required this.label, required this.isSelected, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? OTheme.neonPink.withValues(alpha: 0.1) : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: isSelected ? OTheme.neonPink : Colors.white10),
-        ),
-        child: Text(label, style: TextStyle(color: isSelected ? OTheme.neonPink : Colors.white54)),
-      ),
     );
   }
 }

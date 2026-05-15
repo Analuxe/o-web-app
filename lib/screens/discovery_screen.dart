@@ -4,6 +4,8 @@ import 'package:o_web/services/supabase_service.dart';
 
 import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
+import 'package:o_web/models/discovery_filters.dart';
+import 'package:o_web/widgets/filter_sidebar.dart';
 import 'package:o_web/widgets/report_dialog.dart';
 import 'package:o_web/models/tags.dart';
 
@@ -18,6 +20,7 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> {
   Profile? _myProfile;
   Position? _currentPosition;
   bool _isLoadingLocation = true;
+  DiscoveryFilters _filters = DiscoveryFilters();
 
   @override
   void initState() {
@@ -71,8 +74,14 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> {
           child: ListView(
             controller: controller,
             padding: const EdgeInsets.all(24),
-            children: const [
-              FilterSidebar(isDrawer: true),
+            children: [
+              FilterSidebar(
+                isDrawer: true,
+                filters: _filters,
+                onChanged: (newFilters) {
+                  setState(() => _filters = newFilters);
+                },
+              ),
             ],
           ),
         ),
@@ -133,7 +142,7 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> {
                                 const Icon(Icons.location_on, size: 12, color: OTheme.neonPink),
                                 const SizedBox(width: 6),
                                 Text(
-                                  _currentPosition != null ? "Vines within 50 miles" : "Scanning location...",
+                                  _currentPosition != null ? "Vines within ${_filters.maxDistance.toInt()} miles" : "Scanning location...",
                                   style: const TextStyle(color: OTheme.neonPink, fontSize: 10, fontWeight: FontWeight.bold),
                                 ),
                               ],
@@ -172,16 +181,44 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> {
                             .where((p) => p.id != SupabaseService.client.auth.currentUser?.id)
                             .toList();
 
-                        if (_currentPosition != null) {
-                          profiles = profiles.where((p) {
+                        // APPLY FILTERS
+                        profiles = profiles.where((p) {
+                          // 1. Distance Filter
+                          if (_currentPosition != null) {
                             if (p.latitude == null || p.longitude == null) return false;
                             final distance = _calculateDistance(p.latitude!, p.longitude!);
-                            return distance <= 50;
-                          }).toList();
-                        }
+                            if (distance > _filters.maxDistance) return false;
+                          }
+
+                          // 2. Age Filter
+                          if (p.age != null) {
+                            if (p.age! < _filters.ageRange.start || p.age! > _filters.ageRange.end) return false;
+                          }
+
+                          // 3. Kink Filter
+                          if (_filters.selectedKinks.isNotEmpty) {
+                            final profileKinks = (p.labels ?? []).map((l) => l.split(':')[0]).toSet();
+                            final matchesKink = _filters.selectedKinks.any((k) => profileKinks.contains(k));
+                            if (!matchesKink) return false;
+                          }
+
+                          // 4. Role Filter
+                          if (_filters.selectedRoles.isNotEmpty) {
+                            final profileRoles = (p.labels ?? []).map((l) {
+                              final parts = l.split(':');
+                              if (parts.length < 2) return '';
+                              final pref = int.tryParse(parts[1]) ?? 1;
+                              return pref == 0 ? 'Bottom' : (pref == 1 ? 'Versatile' : 'Top');
+                            }).toSet();
+                            final matchesRole = _filters.selectedRoles.any((r) => profileRoles.contains(r));
+                            if (!matchesRole) return false;
+                          }
+
+                          return true;
+                        }).toList();
 
                         if (profiles.isEmpty) {
-                          return _buildEmptyState("No vines nearby.");
+                          return _buildEmptyState("No vines match your filters.");
                         }
 
                         return GridView.builder(
@@ -206,7 +243,12 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> {
               ),
             ),
           ),
-          if (isLargeScreen) const FilterSidebar(),
+          if (isLargeScreen) FilterSidebar(
+            filters: _filters,
+            onChanged: (newFilters) {
+              setState(() => _filters = newFilters);
+            },
+          ),
         ],
       ),
     );
@@ -221,160 +263,6 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> {
           const SizedBox(height: 16),
           Text(message, style: const TextStyle(color: Colors.white24, fontSize: 16)),
         ],
-      ),
-    );
-  }
-}
-
-class FilterSidebar extends StatelessWidget {
-  final bool isDrawer;
-  const FilterSidebar({super.key, this.isDrawer = false});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: isDrawer ? null : 320,
-      decoration: BoxDecoration(
-        color: OTheme.black,
-        border: isDrawer ? null : Border(
-          left: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
-        ),
-      ),
-      padding: isDrawer ? EdgeInsets.zero : const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Filters',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              if (isDrawer)
-                IconButton(
-                  onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.close, color: Colors.white54),
-                ),
-            ],
-          ),
-          const SizedBox(height: 32),
-          const _FilterLabel(label: 'Distance'),
-          Slider(
-            value: 0.5,
-            onChanged: (v) {},
-            activeColor: OTheme.neonPink,
-            inactiveColor: Colors.white10,
-          ),
-          const Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('0.1 mi', style: TextStyle(color: Colors.white38, fontSize: 12)),
-              Text('50 mi', style: TextStyle(color: Colors.white38, fontSize: 12)),
-            ],
-          ),
-          const SizedBox(height: 32),
-          const _FilterLabel(label: 'Age Range'),
-          RangeSlider(
-            values: const RangeValues(18, 45),
-            min: 18,
-            max: 99,
-            onChanged: (v) {},
-            activeColor: OTheme.neonPink,
-          ),
-          const SizedBox(height: 32),
-          const _FilterLabel(label: 'Kink'),
-          const Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _FilterChip(label: 'Leather', isSelected: true),
-              _FilterChip(label: 'Rubber/Latex', isSelected: false),
-              _FilterChip(label: 'BDSM', isSelected: false),
-              _FilterChip(label: 'Puppy Play', isSelected: false),
-              _FilterChip(label: 'Uniforms', isSelected: true),
-            ],
-          ),
-          const SizedBox(height: 32),
-          const _FilterLabel(label: 'Role'),
-          const Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _FilterChip(label: 'Top', isSelected: true),
-              _FilterChip(label: 'Versatile', isSelected: false),
-              _FilterChip(label: 'Bottom', isSelected: false),
-            ],
-          ),
-          const SizedBox(height: 48),
-          ElevatedButton(
-            onPressed: () {
-              if (isDrawer) Navigator.pop(context);
-            },
-            style: ElevatedButton.styleFrom(
-              minimumSize: const Size(double.infinity, 56),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            ),
-            child: const Text('Apply Filters'),
-          ),
-          const SizedBox(height: 12),
-          TextButton(
-            onPressed: () {},
-            style: TextButton.styleFrom(
-              minimumSize: const Size(double.infinity, 50),
-              foregroundColor: Colors.white38,
-            ),
-            child: const Text('Reset All'),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _FilterLabel extends StatelessWidget {
-  final String label;
-  const _FilterLabel({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Text(
-        label,
-        style: const TextStyle(
-          color: OTheme.softRose,
-          fontWeight: FontWeight.bold,
-          fontSize: 14,
-        ),
-      ),
-    );
-  }
-}
-
-class _FilterChip extends StatelessWidget {
-  final String label;
-  final bool isSelected;
-
-  const _FilterChip({required this.label, required this.isSelected});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: isSelected ? OTheme.neonPink.withValues(alpha: 0.1) : Colors.transparent,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isSelected ? OTheme.neonPink : Colors.white10,
-        ),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: isSelected ? OTheme.neonPink : Colors.white54,
-          fontSize: 12,
-        ),
       ),
     );
   }
