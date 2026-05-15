@@ -3,7 +3,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:o_web/theme.dart';
 import 'package:o_web/services/supabase_service.dart';
 import 'package:o_web/widgets/report_dialog.dart';
-import 'package:o_web/models/profile.dart';
 import 'package:image_picker/image_picker.dart';
 
 class MessagingScreen extends StatefulWidget {
@@ -116,7 +115,6 @@ class _MessagingScreenState extends State<MessagingScreen> {
       }
       debugPrint('MSG: Load complete. Selected: ${_selectedProfile?.displayName ?? "NONE"}');
     } catch (e) {
-      print('LOAD PROFILE ERROR: $e');
       debugPrint('LOAD PROFILE ERROR: $e');
       
       if (mounted) {
@@ -231,7 +229,6 @@ class _MessagingScreenState extends State<MessagingScreen> {
       debugPrint('MSG: Message sent successfully to ${_selectedProfile!.displayName}');
     } catch (e) {
       // Force output to both developer console and standard output
-      print('SEND MESSAGE ERROR: $e');
       debugPrint('SEND MESSAGE ERROR: $e');
       
       if (!mounted) return;
@@ -284,7 +281,7 @@ class _MessagingScreenState extends State<MessagingScreen> {
   Widget _buildSearchAndTabs({required bool isMobile}) {
     return Container(
       width: isMobile ? double.infinity : 320,
-      decoration: BoxDecoration(border: Border(right: BorderSide(color: Colors.white.withOpacity(0.05)))),
+      decoration: BoxDecoration(border: Border(right: BorderSide(color: Colors.white.withValues(alpha: 0.05)))),
       child: Column(
         children: [
           Padding(
@@ -381,7 +378,7 @@ class _MessagingScreenState extends State<MessagingScreen> {
         final profile = _chats[index];
         return ListTile(
           selected: _selectedProfile?.id == profile.id,
-          selectedTileColor: OTheme.neonPink.withOpacity(0.1),
+          selectedTileColor: OTheme.neonPink.withValues(alpha: 0.1),
           contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
           leading: CircleAvatar(
             backgroundImage: profile.avatarUrl != null ? NetworkImage(profile.avatarUrl!) : null,
@@ -478,11 +475,11 @@ class _MessagingScreenState extends State<MessagingScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(padding: const EdgeInsets.all(20), decoration: BoxDecoration(color: OTheme.neonPink.withOpacity(0.1), shape: BoxShape.circle), child: const Icon(Icons.mail_outline_rounded, color: OTheme.neonPink, size: 40)),
+            Container(padding: const EdgeInsets.all(20), decoration: BoxDecoration(color: OTheme.neonPink.withValues(alpha: 0.1), shape: BoxShape.circle), child: const Icon(Icons.mail_outline_rounded, color: OTheme.neonPink, size: 40)),
             const SizedBox(height: 24),
             Text('Message ${_selectedProfile?.displayName}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
             const SizedBox(height: 12),
-            Text('Start a direct conversation. Your first message will be delivered immediately.', textAlign: TextAlign.center, style: TextStyle(color: Colors.white.withOpacity(0.5), height: 1.5)),
+            Text('Start a direct conversation. Your first message will be delivered immediately.', textAlign: TextAlign.center, style: TextStyle(color: Colors.white.withValues(alpha: 0.5), height: 1.5)),
             const SizedBox(height: 32),
             TextField(controller: _messageController, maxLines: 4, decoration: InputDecoration(hintText: 'Write your message...', filled: true, fillColor: OTheme.deepCharcoal, border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none))),
             const SizedBox(height: 24),
@@ -496,7 +493,7 @@ class _MessagingScreenState extends State<MessagingScreen> {
   Widget _buildChatHeader({required bool isMobile}) {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(border: Border(bottom: BorderSide(color: Colors.white.withOpacity(0.05)))),
+      decoration: BoxDecoration(border: Border(bottom: BorderSide(color: Colors.white.withValues(alpha: 0.05)))),
       child: Row(
         children: [
           if (isMobile) IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white70), onPressed: () => setState(() => _selectedProfile = null)),
@@ -538,7 +535,7 @@ class _MessagingScreenState extends State<MessagingScreen> {
 
   Widget _buildLockedState() {
     return Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-      Icon(Icons.lock_person_outlined, size: 80, color: OTheme.neonPink.withOpacity(0.5)),
+      Icon(Icons.lock_person_outlined, size: 80, color: OTheme.neonPink.withValues(alpha: 0.5)),
       const SizedBox(height: 24),
       const Text('Identity Validation Pending', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
       const SizedBox(height: 32),

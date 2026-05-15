@@ -22,6 +22,8 @@ class Profile {
   final bool isMod;
   final bool isPremium;
   final int thumbsDownCount;
+  final bool isOnline;
+  final DateTime? lastActive;
 
   Profile({
     required this.id,
@@ -46,6 +48,8 @@ class Profile {
     this.isMod = false,
     this.isPremium = false,
     this.thumbsDownCount = 0,
+    this.isOnline = false,
+    this.lastActive,
   });
 
   factory Profile.fromJson(Map<String, dynamic> json) {
@@ -74,6 +78,8 @@ class Profile {
       thumbsDownCount: json['reputation_reports'] != null 
           ? (json['reputation_reports'] is List ? (json['reputation_reports'] as List).length : 0)
           : 0,
+      isOnline: json['is_online'] ?? false,
+      lastActive: json['last_active'] != null ? DateTime.parse(json['last_active']) : null,
     );
   }
 
@@ -98,6 +104,8 @@ class Profile {
       'is_verified': isVerified,
       'is_mod': isMod,
       'is_premium': isPremium,
+      'is_online': isOnline,
+      if (lastActive != null) 'last_active': lastActive!.toIso8601String(),
     };
   }
 

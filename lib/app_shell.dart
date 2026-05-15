@@ -13,7 +13,7 @@ class AppShell extends StatefulWidget {
   State<AppShell> createState() => _AppShellState();
 }
 
-class _AppShellState extends State<AppShell> {
+class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   bool _isAdmin = false;
   bool _isLoading = true;
@@ -21,7 +21,28 @@ class _AppShellState extends State<AppShell> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _checkAdminStatus();
+    _updateOnlineStatus(true);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _updateOnlineStatus(true);
+    } else if (state == AppLifecycleState.paused || state == AppLifecycleState.detached) {
+      _updateOnlineStatus(false);
+    }
+  }
+
+  Future<void> _updateOnlineStatus(bool isOnline) async {
+    await SupabaseService.updateOnlineStatus(isOnline);
   }
 
   Future<void> _checkAdminStatus() async {
@@ -43,6 +64,7 @@ class _AppShellState extends State<AppShell> {
 
   Future<void> _handleSignOut() async {
     try {
+      await SupabaseService.updateOnlineStatus(false);
       await Supabase.instance.client.auth.signOut();
       if (mounted) {
         context.go('/login');
@@ -226,7 +248,7 @@ class _NavButton extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
           decoration: BoxDecoration(
-            color: isSelected ? OTheme.neonPink.withOpacity(0.1) : Colors.transparent,
+            color: isSelected ? OTheme.neonPink.withValues(alpha: 0.1) : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
@@ -272,7 +294,7 @@ class TopNavBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: OTheme.black,
         border: Border(
-          bottom: BorderSide(color: Colors.white.withOpacity(0.05)),
+          bottom: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
         ),
       ),
       child: Row(

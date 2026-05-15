@@ -93,6 +93,20 @@ class SupabaseService {
     }
   }
 
+  static Future<void> updateOnlineStatus(bool isOnline) async {
+    final user = client.auth.currentUser;
+    if (user == null) return;
+
+    try {
+      await client.from('profiles').update({
+        'is_online': isOnline,
+        'last_active': DateTime.now().toIso8601String(),
+      }).eq('id', user.id);
+    } catch (e) {
+      debugPrint('Error updating online status: $e');
+    }
+  }
+
   static Future<void> updateProfile(Map<String, dynamic> updates) async {
     final user = client.auth.currentUser;
     if (user == null) return;
@@ -169,7 +183,6 @@ class SupabaseService {
   }
 
   static Future<List<Map<String, dynamic>>> getMyChats() async {
-    final myId = client.auth.currentUser!.id;
     // This fetches unique profiles you've interacted with
     final response = await client.rpc('get_my_chats');
     return List<Map<String, dynamic>>.from(response);

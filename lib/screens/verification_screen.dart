@@ -132,7 +132,7 @@ class _VerificationScreenState extends State<VerificationScreen> {
                       width: double.infinity,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: OTheme.neonPink.withOpacity(0.5)),
+                        border: Border.all(color: OTheme.neonPink.withValues(alpha: 0.5)),
                         image: DecorationImage(
                           image: MemoryImage(_selectedImageBytes!),
                           fit: BoxFit.contain,
@@ -205,9 +205,9 @@ class _VerificationScreenState extends State<VerificationScreen> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Column(
         children: [

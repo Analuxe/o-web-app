@@ -239,7 +239,7 @@ class _SwipeCardState extends State<_SwipeCard> {
               color: OTheme.deepCharcoal,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.3),
+                  color: Colors.black.withValues(alpha: 0.3),
                   blurRadius: 20,
                   offset: const Offset(0, 10),
                 ),
@@ -260,7 +260,7 @@ class _SwipeCardState extends State<_SwipeCard> {
                       stops: const [0.5, 1.0],
                       colors: [
                         Colors.transparent,
-                        Colors.black.withOpacity(0.95),
+                        Colors.black.withValues(alpha: 0.95),
                       ],
                     ),
                   ),
@@ -280,7 +280,7 @@ class _SwipeCardState extends State<_SwipeCard> {
                             decoration: BoxDecoration(
                               color: index == _currentPhotoIndex 
                                 ? Colors.white 
-                                : Colors.white.withOpacity(0.3),
+                                : Colors.white.withValues(alpha: 0.3),
                               borderRadius: BorderRadius.circular(2),
                             ),
                           ),
@@ -298,13 +298,33 @@ class _SwipeCardState extends State<_SwipeCard> {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                Text(
-                  "${profile.displayName}, ${profile.age}",
-                  style: const TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        "${profile.displayName}, ${profile.age}",
+                        style: const TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (profile.isOnline)
+                      Container(
+                        margin: const EdgeInsets.only(left: 12),
+                        width: 14,
+                        height: 14,
+                        decoration: const BoxDecoration(
+                          color: Colors.greenAccent,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(color: Colors.greenAccent, blurRadius: 6, spreadRadius: 2),
+                          ],
+                        ),
+                      ),
+                  ],
                 ),
                 const SizedBox(height: 8),
                 Row(
@@ -338,7 +358,7 @@ class _SwipeCardState extends State<_SwipeCard> {
                     return Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.1),
+                        color: Colors.white.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(color: Colors.white10),
                       ),
@@ -385,10 +405,10 @@ class _ActionButton extends StatelessWidget {
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: OTheme.black,
-          border: Border.all(color: color.withOpacity(0.5), width: 2),
+          border: Border.all(color: color.withValues(alpha: 0.5), width: 2),
           boxShadow: [
             BoxShadow(
-              color: color.withOpacity(0.2),
+              color: color.withValues(alpha: 0.2),
               blurRadius: 15,
               spreadRadius: 2,
             ),

@@ -1,13 +1,10 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:o_web/services/supabase_service.dart';
-import 'dart:math';
 
 class DummyDataService {
   static final SupabaseClient _client = SupabaseService.client;
 
   static Future<void> seedDummyData() async {
-    final random = Random();
-    
     // 1. Create Dummy Profiles with Zipcodes and Coordinates
     // New York: 40.7501, -73.9970 (10001)
     // Baltimore: 39.2904, -76.6122 (21201)

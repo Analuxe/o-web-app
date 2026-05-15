@@ -174,7 +174,7 @@ class _AdminScreenState extends State<AdminScreen> {
     final controller = TextEditingController();
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         backgroundColor: OTheme.deepCharcoal,
         title: const Text('Promote to Admin', style: TextStyle(color: Colors.white)),
         content: Column(
@@ -198,7 +198,7 @@ class _AdminScreenState extends State<AdminScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancel'),
           ),
           ElevatedButton(
@@ -208,18 +208,16 @@ class _AdminScreenState extends State<AdminScreen> {
               
               try {
                 await SupabaseService.promoteToAdmin(username);
-                if (mounted) {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('User @$username is now an Admin'), backgroundColor: Colors.green),
-                  );
-                }
+                if (!dialogContext.mounted) return;
+                Navigator.pop(dialogContext);
+                ScaffoldMessenger.of(dialogContext).showSnackBar(
+                  SnackBar(content: Text('User @$username is now an Admin'), backgroundColor: Colors.green),
+                );
               } catch (e) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(e.toString().replaceAll('Exception: ', '')), backgroundColor: Colors.redAccent),
-                  );
-                }
+                if (!dialogContext.mounted) return;
+                ScaffoldMessenger.of(dialogContext).showSnackBar(
+                  SnackBar(content: Text(e.toString().replaceAll('Exception: ', '')), backgroundColor: Colors.redAccent),
+                );
               }
             },
             child: const Text('Promote'),
@@ -322,25 +320,23 @@ class _AdminScreenState extends State<AdminScreen> {
                     onPressed: () async {
                       try {
                         await DummyDataService.seedDummyData();
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Dummy Data Seeded Successfully'), backgroundColor: Colors.green),
-                          );
-                          _loadStats();
-                          _loadUnvalidatedUsers();
-                        }
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Dummy Data Seeded Successfully'), backgroundColor: Colors.green),
+                        );
+                        _loadStats();
+                        _loadUnvalidatedUsers();
                       } catch (e) {
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Error seeding data: $e'), backgroundColor: Colors.redAccent),
-                          );
-                        }
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Error seeding data: $e'), backgroundColor: Colors.redAccent),
+                        );
                       }
                     },
                     icon: const Icon(Icons.storage, size: 16),
                     label: const Text('Seed UAT Data'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: OTheme.neonPink.withOpacity(0.1),
+                      backgroundColor: OTheme.neonPink.withValues(alpha: 0.1),
                       foregroundColor: OTheme.neonPink,
                       side: const BorderSide(color: OTheme.neonPink),
                     ),
@@ -351,7 +347,7 @@ class _AdminScreenState extends State<AdminScreen> {
                     icon: const Icon(Icons.admin_panel_settings, size: 16),
                     label: const Text('Add Moderator'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: OTheme.neonPink.withOpacity(0.1),
+                      backgroundColor: OTheme.neonPink.withValues(alpha: 0.1),
                       foregroundColor: OTheme.neonPink,
                       side: const BorderSide(color: OTheme.neonPink),
                     ),
@@ -579,7 +575,7 @@ class _AdminScreenState extends State<AdminScreen> {
                   color: OTheme.deepCharcoal,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: user.thumbsDownCount >= 3 ? Colors.redAccent.withOpacity(0.3) : Colors.white.withOpacity(0.05),
+                    color: user.thumbsDownCount >= 3 ? Colors.redAccent.withValues(alpha: 0.3) : Colors.white.withValues(alpha: 0.05),
                   ),
                 ),
                 child: Row(
@@ -606,10 +602,10 @@ class _AdminScreenState extends State<AdminScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       decoration: BoxDecoration(
-                        color: user.thumbsDownCount >= 3 ? Colors.redAccent.withOpacity(0.1) : Colors.white.withOpacity(0.05),
+                        color: user.thumbsDownCount >= 3 ? Colors.redAccent.withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.05),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: user.thumbsDownCount >= 3 ? Colors.redAccent.withOpacity(0.4) : Colors.white10,
+                          color: user.thumbsDownCount >= 3 ? Colors.redAccent.withValues(alpha: 0.4) : Colors.white10,
                         ),
                       ),
                       child: Row(
@@ -748,9 +744,9 @@ class _AdminScreenState extends State<AdminScreen> {
     return Container(
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
-        color: OTheme.neonPink.withOpacity(0.05),
+        color: OTheme.neonPink.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: OTheme.neonPink.withOpacity(0.3)),
+        border: Border.all(color: OTheme.neonPink.withValues(alpha: 0.3)),
       ),
       child: const Column(
         children: [
@@ -804,7 +800,7 @@ class _TabButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         decoration: BoxDecoration(
-          color: isActive ? OTheme.neonPink.withOpacity(0.1) : Colors.transparent,
+          color: isActive ? OTheme.neonPink.withValues(alpha: 0.1) : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isActive ? OTheme.neonPink : Colors.white10,
@@ -868,7 +864,7 @@ class StatCard extends StatelessWidget {
             title,
             style: TextStyle(
               fontSize: 12,
-              color: isHighlight ? Colors.black.withOpacity(0.6) : Colors.white54,
+              color: isHighlight ? Colors.black.withValues(alpha: 0.6) : Colors.white54,
             ),
           ),
         ],
@@ -922,7 +918,7 @@ class _HubRow extends StatelessWidget {
                     borderRadius: BorderRadius.circular(4),
                     boxShadow: [
                       BoxShadow(
-                        color: OTheme.neonPink.withOpacity(0.3),
+                        color: OTheme.neonPink.withValues(alpha: 0.3),
                         blurRadius: 8,
                         spreadRadius: 2,
                       ),
@@ -966,7 +962,7 @@ class _TrendRow extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: (isPositive ? Colors.green : Colors.red).withOpacity(0.1),
+            color: (isPositive ? Colors.green : Colors.red).withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Text(

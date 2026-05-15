@@ -57,7 +57,7 @@ class _CategorizedTagSelectorState extends State<CategorizedTagSelector> {
                       activeTrackColor: OTheme.neonPink,
                       inactiveTrackColor: Colors.white10,
                       thumbColor: OTheme.neonPink,
-                      overlayColor: OTheme.neonPink.withOpacity(0.2),
+                      overlayColor: OTheme.neonPink.withValues(alpha: 0.2),
                       valueIndicatorColor: OTheme.neonPink,
                       valueIndicatorTextStyle: const TextStyle(color: Colors.black),
                     ),
@@ -121,10 +121,10 @@ class _CategorizedTagSelectorState extends State<CategorizedTagSelector> {
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.05),
+              color: Colors.white.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: _isExpanded ? OTheme.neonPink.withOpacity(0.5) : Colors.white10,
+                color: _isExpanded ? OTheme.neonPink.withValues(alpha: 0.5) : Colors.white10,
               ),
             ),
             child: Row(
@@ -139,7 +139,7 @@ class _CategorizedTagSelectorState extends State<CategorizedTagSelector> {
                             ...widget.selectedTags.take(3).map((tag) => Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                               decoration: BoxDecoration(
-                                color: OTheme.neonPink.withOpacity(0.1),
+                                color: OTheme.neonPink.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(_formatTag(tag), style: const TextStyle(color: OTheme.neonPink, fontSize: 12)),
@@ -167,7 +167,7 @@ class _CategorizedTagSelectorState extends State<CategorizedTagSelector> {
               border: Border.all(color: Colors.white10),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.3),
+                  color: Colors.black.withValues(alpha: 0.3),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -209,13 +209,13 @@ class _CategorizedTagSelectorState extends State<CategorizedTagSelector> {
               label: Text(tag.label),
               selected: isSelected,
               onSelected: (selected) => _toggleTag(tag.label),
-              selectedColor: OTheme.neonPink.withOpacity(0.2),
+              selectedColor: OTheme.neonPink.withValues(alpha: 0.2),
               checkmarkColor: OTheme.neonPink,
               labelStyle: TextStyle(
                 color: isSelected ? OTheme.neonPink : Colors.white70,
                 fontSize: 12,
               ),
-              backgroundColor: Colors.white.withOpacity(0.05),
+              backgroundColor: Colors.white.withValues(alpha: 0.05),
               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
             );
           }).toList(),

@@ -6,7 +6,6 @@ import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:o_web/widgets/report_dialog.dart';
 import 'package:o_web/models/tags.dart';
-import 'package:o_web/models/profile.dart';
 
 class DiscoveryScreen extends StatefulWidget {
   const DiscoveryScreen({super.key});
@@ -17,7 +16,6 @@ class DiscoveryScreen extends StatefulWidget {
 
 class _DiscoveryScreenState extends State<DiscoveryScreen> with SingleTickerProviderStateMixin {
   Profile? _myProfile;
-  bool _isLoadingMyProfile = true;
   TabController? _tabController;
   Position? _currentPosition;
   bool _isLoadingLocation = true;
@@ -41,7 +39,6 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> with SingleTickerProv
     if (mounted) {
       setState(() {
         _myProfile = profile;
-        _isLoadingMyProfile = false;
       });
     }
   }
@@ -134,9 +131,9 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> with SingleTickerProv
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                             decoration: BoxDecoration(
-                              color: OTheme.neonPink.withOpacity(0.1),
+                              color: OTheme.neonPink.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: OTheme.neonPink.withOpacity(0.2)),
+                              border: Border.all(color: OTheme.neonPink.withValues(alpha: 0.2)),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
@@ -157,7 +154,7 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> with SingleTickerProv
                           onPressed: _showFilterSheet,
                           icon: const Icon(Icons.tune, color: OTheme.neonPink),
                           style: IconButton.styleFrom(
-                            backgroundColor: OTheme.neonPink.withOpacity(0.1),
+                            backgroundColor: OTheme.neonPink.withValues(alpha: 0.1),
                             padding: const EdgeInsets.all(12),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                           ),
@@ -170,7 +167,7 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> with SingleTickerProv
                   Container(
                     height: 50,
                     decoration: BoxDecoration(
-                      border: Border(bottom: BorderSide(color: Colors.white.withOpacity(0.05))),
+                      border: Border(bottom: BorderSide(color: Colors.white.withValues(alpha: 0.05))),
                     ),
                     child: TabBar(
                       controller: _tabController,
@@ -282,7 +279,7 @@ class FilterSidebar extends StatelessWidget {
       decoration: BoxDecoration(
         color: OTheme.black,
         border: isDrawer ? null : Border(
-          left: BorderSide(color: Colors.white.withOpacity(0.05)),
+          left: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
         ),
       ),
       padding: isDrawer ? EdgeInsets.zero : const EdgeInsets.all(24),
@@ -397,7 +394,7 @@ class _FilterChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: isSelected ? OTheme.neonPink.withOpacity(0.1) : Colors.transparent,
+        color: isSelected ? OTheme.neonPink.withValues(alpha: 0.1) : Colors.transparent,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: isSelected ? OTheme.neonPink : Colors.white10,
@@ -536,11 +533,11 @@ class _UserCardState extends State<UserCard> {
           color: OTheme.deepCharcoal,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: _isExtended ? OTheme.neonPink.withOpacity(0.5) : Colors.white.withOpacity(0.05),
+            color: _isExtended ? OTheme.neonPink.withValues(alpha: 0.5) : Colors.white.withValues(alpha: 0.05),
             width: _isExtended ? 2 : 1,
           ),
           boxShadow: _isExtended ? [
-            BoxShadow(color: OTheme.neonPink.withOpacity(0.2), blurRadius: 20, spreadRadius: -5),
+            BoxShadow(color: OTheme.neonPink.withValues(alpha: 0.2), blurRadius: 20, spreadRadius: -5),
           ] : null,
         ),
         clipBehavior: Clip.antiAlias,
@@ -570,8 +567,8 @@ class _UserCardState extends State<UserCard> {
                                   begin: Alignment.topCenter,
                                   end: Alignment.bottomCenter,
                                   colors: [
-                                    OTheme.neonPink.withOpacity(0.2),
-                                    OTheme.black.withOpacity(0.8),
+                                    OTheme.neonPink.withValues(alpha: 0.2),
+                                    OTheme.black.withValues(alpha: 0.8),
                                   ],
                                 ) : null,
                               ),
@@ -596,7 +593,7 @@ class _UserCardState extends State<UserCard> {
                                         decoration: BoxDecoration(
                                           color: index == _currentPhotoIndex 
                                             ? Colors.white 
-                                            : Colors.white.withOpacity(0.3),
+                                            : Colors.white.withValues(alpha: 0.3),
                                           borderRadius: BorderRadius.circular(2),
                                         ),
                                       ),
@@ -619,14 +616,33 @@ class _UserCardState extends State<UserCard> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Expanded(
-                            child: Text(
-                              '${widget.profile.displayName}, ${widget.profile.age}',
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                              overflow: TextOverflow.ellipsis,
+                            child: Row(
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    '${widget.profile.displayName}, ${widget.profile.age}',
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                if (widget.profile.isOnline)
+                                  Container(
+                                    margin: const EdgeInsets.only(left: 8),
+                                    width: 10,
+                                    height: 10,
+                                    decoration: const BoxDecoration(
+                                      color: Colors.greenAccent,
+                                      shape: BoxShape.circle,
+                                      boxShadow: [
+                                        BoxShadow(color: Colors.greenAccent, blurRadius: 4, spreadRadius: 1),
+                                      ],
+                                    ),
+                                  ),
+                              ],
                             ),
                           ),
                           PopupMenuButton<String>(
@@ -691,7 +707,7 @@ class _UserCardState extends State<UserCard> {
                   child: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.6),
+                      color: Colors.black.withValues(alpha: 0.6),
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.white10),
                     ),
@@ -720,7 +736,7 @@ class _Tag extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: OTheme.neonPink.withOpacity(0.1),
+        color: OTheme.neonPink.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
