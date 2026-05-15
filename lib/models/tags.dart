@@ -11,12 +11,30 @@ class UserTag {
     return !excluded.contains(label);
   }
 
+  static String getRoleFromPref(int pref) {
+    return switch (pref) {
+      0 => 'Bottom',
+      1 => 'Vers-Bottom',
+      2 => 'Versatile',
+      3 => 'Vers-Top',
+      4 => 'Top',
+      _ => 'Versatile',
+    };
+  }
+
   static String format(String tag) {
     final parts = tag.split(':');
     if (parts.length < 2) return tag;
     final label = parts[0];
-    final pref = int.tryParse(parts[1]) ?? 1;
-    final prefStr = pref == 0 ? 'Bottom' : (pref == 1 ? 'Versatile' : 'Top');
+    final pref = int.tryParse(parts[1]) ?? 2;
+    final prefStr = switch (pref) {
+      0 => 'Bottom',
+      1 => 'Vers-Bottom',
+      2 => 'Versatile',
+      3 => 'Vers-Top',
+      4 => 'Top',
+      _ => 'Versatile',
+    };
     return '$label: $prefStr';
   }
 }

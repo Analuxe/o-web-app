@@ -16,6 +16,7 @@ class Profile {
   final double? longitude;
   final String? zipcode;
   final String? activePathway;
+  final String? relationshipStatus;
   final bool isValidated;
   final bool isVerified;
   final bool isAdmin;
@@ -42,6 +43,7 @@ class Profile {
     this.longitude,
     this.zipcode,
     this.activePathway,
+    this.relationshipStatus,
     this.isValidated = false,
     this.isVerified = false,
     this.isAdmin = false,
@@ -70,6 +72,7 @@ class Profile {
       longitude: json['longitude']?.toDouble(),
       zipcode: json['zipcode'],
       activePathway: json['active_pathway'],
+      relationshipStatus: json['relationship_status'],
       isValidated: json['is_validated'] ?? false,
       isVerified: json['is_verified'] ?? false,
       isAdmin: json['is_admin'] ?? false,
@@ -100,6 +103,7 @@ class Profile {
       'longitude': longitude,
       'zipcode': zipcode,
       'active_pathway': activePathway,
+      'relationship_status': relationshipStatus,
       'is_validated': isValidated,
       'is_verified': isVerified,
       'is_mod': isMod,
@@ -126,14 +130,14 @@ class Profile {
       score += shared.length * 10;
     }
     
-    // 2. Role Matching (Sliding Sexual Tags)
+    // 2. Role Matching (Sliding Sexual Tags: 0-4)
     if (labels != null && other.labels != null) {
       for (final myTag in labels!) {
         final parts = myTag.split(':');
         if (parts.length < 2) continue;
         
         final kink = parts[0];
-        final myPref = int.tryParse(parts[1]) ?? 1;
+        final myPref = int.tryParse(parts[1]) ?? 2;
         
         // Find matching kink in other profile
         final otherTag = other.labels!.firstWhere(
@@ -143,16 +147,17 @@ class Profile {
         
         if (otherTag.isNotEmpty) {
           final otherParts = otherTag.split(':');
-          final otherPref = int.tryParse(otherParts[1]) ?? 1;
+          final otherPref = int.tryParse(otherParts[1]) ?? 2;
           
-          // Matching Logic:
-          // 0 (Bottom) matches 2 (Top)
-          // 2 (Top) matches 0 (Bottom)
-          // 1 (Vers) matches anyone
-          if ((myPref == 0 && otherPref == 2) || 
-              (myPref == 2 && otherPref == 0) || 
-              (myPref == 1 || otherPref == 1)) {
-            score += 15; // Good match for a kink
+          // Matching Logic (0-4 Scale):
+          // Perfect complement is when sum is 4 (e.g. 0 & 4, 1 & 3)
+          final diff = (myPref + otherPref - 4).abs();
+          if (diff == 0) {
+            score += 20; // Perfect Role Match
+          } else if (diff == 1) {
+            score += 10; // Good Role Match
+          } else if (myPref == 2 || otherPref == 2) {
+            score += 5; // Versatile matches are always okay
           }
         }
       }

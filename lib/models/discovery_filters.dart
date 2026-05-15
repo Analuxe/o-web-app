@@ -6,6 +6,7 @@ class DiscoveryFilters {
   List<String> selectedKinks;
   List<String> selectedRoles;
   List<String> selectedIntents;
+  List<String> selectedRelationshipStatuses;
 
   DiscoveryFilters({
     this.maxDistance = 50.0,
@@ -13,9 +14,11 @@ class DiscoveryFilters {
     List<String>? selectedKinks,
     List<String>? selectedRoles,
     List<String>? selectedIntents,
+    List<String>? selectedRelationshipStatuses,
   }) : selectedKinks = selectedKinks ?? [],
        selectedRoles = selectedRoles ?? [],
-       selectedIntents = selectedIntents ?? [];
+       selectedIntents = selectedIntents ?? [],
+       selectedRelationshipStatuses = selectedRelationshipStatuses ?? [];
 
   DiscoveryFilters copyWith({
     double? maxDistance,
@@ -23,6 +26,7 @@ class DiscoveryFilters {
     List<String>? selectedKinks,
     List<String>? selectedRoles,
     List<String>? selectedIntents,
+    List<String>? selectedRelationshipStatuses,
   }) {
     return DiscoveryFilters(
       maxDistance: maxDistance ?? this.maxDistance,
@@ -30,6 +34,7 @@ class DiscoveryFilters {
       selectedKinks: selectedKinks ?? List.from(this.selectedKinks),
       selectedRoles: selectedRoles ?? List.from(this.selectedRoles),
       selectedIntents: selectedIntents ?? List.from(this.selectedIntents),
+      selectedRelationshipStatuses: selectedRelationshipStatuses ?? List.from(this.selectedRelationshipStatuses),
     );
   }
 }

@@ -41,7 +41,7 @@ class _CategorizedTagSelectorState extends State<CategorizedTagSelector> {
     showDialog(
       context: context,
       builder: (context) {
-        double sliderValue = 1.0;
+        double sliderValue = 2.0;
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
@@ -64,9 +64,9 @@ class _CategorizedTagSelectorState extends State<CategorizedTagSelector> {
                     child: Slider(
                       value: sliderValue,
                       min: 0,
-                      max: 2,
-                      divisions: 2,
-                      label: sliderValue == 0 ? 'Bottom' : (sliderValue == 1 ? 'Versatile' : 'Top'),
+                      max: 4,
+                      divisions: 4,
+                      label: UserTag.getRoleFromPref(sliderValue.toInt()),
                       onChanged: (val) => setDialogState(() => sliderValue = val),
                     ),
                   ),
@@ -75,9 +75,11 @@ class _CategorizedTagSelectorState extends State<CategorizedTagSelector> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('Bottom', style: TextStyle(color: sliderValue == 0 ? OTheme.neonPink : Colors.white24, fontSize: 10, fontWeight: FontWeight.bold)),
-                        Text('Versatile', style: TextStyle(color: sliderValue == 1 ? OTheme.neonPink : Colors.white24, fontSize: 10, fontWeight: FontWeight.bold)),
-                        Text('Top', style: TextStyle(color: sliderValue == 2 ? OTheme.neonPink : Colors.white24, fontSize: 10, fontWeight: FontWeight.bold)),
+                        _rungLabel('Bottom', sliderValue == 0),
+                        _rungLabel('Vers-B', sliderValue == 1),
+                        _rungLabel('Vers', sliderValue == 2),
+                        _rungLabel('Vers-T', sliderValue == 3),
+                        _rungLabel('Top', sliderValue == 4),
                       ],
                     ),
                   ),
@@ -103,6 +105,17 @@ class _CategorizedTagSelectorState extends State<CategorizedTagSelector> {
           },
         );
       },
+    );
+  }
+
+  Widget _rungLabel(String text, bool isActive) {
+    return Text(
+      text,
+      style: TextStyle(
+        color: isActive ? OTheme.neonPink : Colors.white24,
+        fontSize: 9,
+        fontWeight: FontWeight.bold,
+      ),
     );
   }
 

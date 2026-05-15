@@ -149,7 +149,7 @@ class _FilterSidebarState extends State<FilterSidebar> {
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: ['Top', 'Versatile', 'Bottom'].map((role) {
+              children: ['Top', 'Vers-Top', 'Versatile', 'Vers-Bottom', 'Bottom'].map((role) {
                 return _FilterChip(
                   label: role,
                   isSelected: _localFilters.selectedRoles.contains(role),
@@ -161,6 +161,30 @@ class _FilterSidebarState extends State<FilterSidebar> {
                           ? (List<String>.from(_localFilters.selectedRoles)..remove(role))
                           : (List<String>.from(_localFilters.selectedRoles)..add(role))
                       ));
+                    }
+                  },
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 32),
+            const _FilterLabel(label: 'Relationship Status'),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: ['Single', 'LTR', 'Poly'].map((status) {
+                return _FilterChip(
+                  label: status,
+                  isSelected: _localFilters.selectedRelationshipStatuses.contains(status),
+                  onTap: () {
+                    final statuses = List<String>.from(_localFilters.selectedRelationshipStatuses);
+                    if (statuses.contains(status)) {
+                      statuses.remove(status);
+                    } else {
+                      statuses.add(status);
+                    }
+                    setState(() => _localFilters = _localFilters.copyWith(selectedRelationshipStatuses: statuses));
+                    if (!widget.isDrawer) {
+                      widget.onChanged(_localFilters.copyWith(selectedRelationshipStatuses: statuses));
                     }
                   },
                 );

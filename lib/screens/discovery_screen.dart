@@ -207,11 +207,18 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> {
                             final profileRoles = (p.labels ?? []).map((l) {
                               final parts = l.split(':');
                               if (parts.length < 2) return '';
-                              final pref = int.tryParse(parts[1]) ?? 1;
-                              return pref == 0 ? 'Bottom' : (pref == 1 ? 'Versatile' : 'Top');
+                              final pref = int.tryParse(parts[1]) ?? 2;
+                              return UserTag.getRoleFromPref(pref);
                             }).toSet();
                             final matchesRole = _filters.selectedRoles.any((r) => profileRoles.contains(r));
                             if (!matchesRole) return false;
+                          }
+
+                          // 5. Relationship Status Filter
+                          if (_filters.selectedRelationshipStatuses.isNotEmpty) {
+                            if (p.relationshipStatus == null || !_filters.selectedRelationshipStatuses.contains(p.relationshipStatus)) {
+                              return false;
+                            }
                           }
 
                           return true;

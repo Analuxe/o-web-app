@@ -25,6 +25,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _bioController = TextEditingController();
   final _zipcodeController = TextEditingController();
   String? _selectedPronouns;
+  String? _selectedRelationshipStatus;
   List<String> _selectedInterests = [];
   List<String> _galleryUrls = [];
   final Map<String, TextEditingController> _promptControllers = {};
@@ -58,6 +59,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             _bioController.text = profile.bio ?? '';
             _zipcodeController.text = profile.zipcode ?? '';
             _selectedPronouns = profile.pronouns;
+            _selectedRelationshipStatus = profile.relationshipStatus;
             _selectedInterests = List.from(profile.interests ?? []);
 
             final prompts = profile.prompts ?? {};
@@ -96,6 +98,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       'bio': _bioController.text.isEmpty ? null : _bioController.text,
       'zipcode': _zipcodeController.text.trim(),
       'pronouns': _selectedPronouns,
+      'relationship_status': _selectedRelationshipStatus,
       'interests': _selectedInterests,
       'gallery_urls': _galleryUrls,
       'prompts': prompts,
@@ -413,6 +416,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         _profile?.pronouns ?? 'Not set',
                         style: TextStyle(
                           color: _profile?.pronouns != null ? Colors.white : Colors.white24,
+                          fontSize: 16,
+                        ),
+                      ),
+                    const SizedBox(height: 24),
+    
+                    // Relationship Status
+                    _buildLabel('Relationship Status'),
+                    if (_isEditing)
+                      DropdownButtonFormField<String>(
+                        initialValue: _selectedRelationshipStatus,
+                        dropdownColor: OTheme.deepCharcoal,
+                        decoration: _inputDecoration(),
+                        items: ['Single', 'LTR', 'Poly'].map((s) =>
+                          DropdownMenuItem(value: s, child: Text(s, style: const TextStyle(color: Colors.white)))
+                        ).toList(),
+                        onChanged: (val) => setState(() => _selectedRelationshipStatus = val),
+                      )
+                    else
+                      Text(
+                        _profile?.relationshipStatus ?? 'Not set',
+                        style: TextStyle(
+                          color: _profile?.relationshipStatus != null ? Colors.white : Colors.white24,
                           fontSize: 16,
                         ),
                       ),

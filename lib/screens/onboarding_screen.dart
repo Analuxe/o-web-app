@@ -21,6 +21,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final _bioController = TextEditingController();
   final _zipcodeController = TextEditingController();
   String? _selectedPronouns;
+  String? _selectedRelationshipStatus;
   final List<String> _selectedInterests = [];
   bool _isSaving = false;
   bool _isHumanVerified = false;
@@ -47,6 +48,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           _bioController.text = profile.bio ?? '';
           _zipcodeController.text = profile.zipcode ?? '';
           _selectedPronouns = profile.pronouns;
+          _selectedRelationshipStatus = profile.relationshipStatus;
           if (profile.interests != null) {
             _selectedInterests.addAll(profile.interests!);
           }
@@ -190,6 +192,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         'bio': _bioController.text.trim(),
         'zipcode': _zipcodeController.text.trim(),
         'pronouns': _selectedPronouns,
+        'relationship_status': _selectedRelationshipStatus,
         'interests': _selectedInterests,
         'latitude': _currentPosition?.latitude,
         'longitude': _currentPosition?.longitude,
@@ -387,6 +390,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             child: Text(p, style: const TextStyle(color: Colors.white)),
           )).toList(),
           onChanged: (val) => setState(() => _selectedPronouns = val),
+        ),
+        const SizedBox(height: 20),
+        DropdownButtonFormField<String>(
+          initialValue: _selectedRelationshipStatus,
+          dropdownColor: OTheme.deepCharcoal,
+          decoration: _inputDecoration('Relationship Status'),
+          items: ['Single', 'LTR', 'Poly'].map((s) => DropdownMenuItem(
+            value: s,
+            child: Text(s, style: const TextStyle(color: Colors.white)),
+          )).toList(),
+          onChanged: (val) => setState(() => _selectedRelationshipStatus = val),
         ),
         const SizedBox(height: 20),
         _buildField('Bio', _bioController, 'A short note about you...', maxLines: 3),
