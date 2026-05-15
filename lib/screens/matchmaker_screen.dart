@@ -6,6 +6,7 @@ import 'dart:async';
 import 'dart:math';
 import 'package:o_web/models/discovery_filters.dart';
 import 'package:o_web/widgets/filter_sidebar.dart';
+import 'package:o_web/models/tags.dart';
 import 'package:geolocator/geolocator.dart';
 
 class MatchmakerScreen extends StatefulWidget {
