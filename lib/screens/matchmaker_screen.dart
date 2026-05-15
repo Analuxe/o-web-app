@@ -521,7 +521,7 @@ class _MatchmakerScreenState extends State<MatchmakerScreen> with SingleTickerPr
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             _UserCircle(
-              url: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&q=80',
+              url: myProfile?.avatarUrl ?? 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&q=80',
               size: isMobile ? 80 : 120,
             ),
             Container(

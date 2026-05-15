@@ -32,6 +32,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _instagramController = TextEditingController();
   final _twitterController = TextEditingController();
   bool _isUploading = false;
+  int _currentPhotoIndex = 0;
+
+  List<String> get _allPhotos {
+    final photos = <String>[];
+    if (_profile?.avatarUrl != null) photos.add(_profile!.avatarUrl!);
+    photos.addAll(_galleryUrls);
+    return photos;
+  }
+
+  void _handlePhotoTap(TapUpDetails details, double width) {
+    final photos = _allPhotos;
+    if (photos.length <= 1) return;
+
+    setState(() {
+      if (details.localPosition.dx > width / 2) {
+        _currentPhotoIndex = (_currentPhotoIndex + 1) % photos.length;
+      } else {
+        _currentPhotoIndex = (_currentPhotoIndex - 1 + photos.length) % photos.length;
+      }
+    });
+  }
 
 
   @override
@@ -41,38 +62,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _loadProfile() async {
-    final String? myId = SupabaseService.client.auth.currentUser?.id;
-    final bool isMe = widget.userId == null || widget.userId == myId;
+    setState(() => _isLoading = true);
+    try {
+      final String? myId = SupabaseService.client.auth.currentUser?.id;
+      final bool isMe = widget.userId == null || widget.userId == myId;
 
-    final profile = isMe 
-        ? await SupabaseService.getMyProfile() 
-        : await SupabaseService.getProfile(widget.userId!);
+      final profile = isMe 
+          ? await SupabaseService.getMyProfile() 
+          : await SupabaseService.getProfile(widget.userId!);
 
-    if (mounted) {
-      setState(() {
-        _profile = profile;
-        _isLoading = false;
-        if (profile != null) {
-          _galleryUrls = List.from(profile.galleryUrls ?? []);
-          if (isMe) {
-            _displayNameController.text = profile.displayName ?? '';
-            _bioController.text = profile.bio ?? '';
-            _zipcodeController.text = profile.zipcode ?? '';
-            _selectedPronouns = profile.pronouns;
-            _selectedRelationshipStatus = profile.relationshipStatus;
-            _selectedInterests = List.from(profile.interests ?? []);
+      if (mounted) {
+        setState(() {
+          _profile = profile;
+          if (profile != null) {
+            _galleryUrls = List.from(profile.galleryUrls ?? []);
+            if (isMe) {
+              _displayNameController.text = profile.displayName ?? '';
+              _bioController.text = profile.bio ?? '';
+              _zipcodeController.text = profile.zipcode ?? '';
+              _selectedPronouns = profile.pronouns;
+              _selectedRelationshipStatus = profile.relationshipStatus;
+              _selectedInterests = List.from(profile.interests ?? []);
 
-            final prompts = profile.prompts ?? {};
-            for (final key in prompts.keys) {
-              _promptControllers[key] = TextEditingController(text: prompts[key]);
+              final prompts = profile.prompts ?? {};
+              for (final key in prompts.keys) {
+                _promptControllers[key] = TextEditingController(text: prompts[key]);
+              }
+
+              final socialLinks = profile.socialLinks ?? {};
+              _instagramController.text = socialLinks['instagram'] ?? '';
+              _twitterController.text = socialLinks['x'] ?? '';
             }
-
-            final socialLinks = profile.socialLinks ?? {};
-            _instagramController.text = socialLinks['instagram'] ?? '';
-            _twitterController.text = socialLinks['x'] ?? '';
           }
-        }
-      });
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading profile: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -82,30 +109,55 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return;
     }
 
-    final Map<String, dynamic> prompts = {};
-    _promptControllers.forEach((key, controller) {
-      if (controller.text.trim().isNotEmpty) {
-        prompts[key] = controller.text.trim();
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final Map<String, dynamic> prompts = {};
+      _promptControllers.forEach((key, controller) {
+        if (controller.text.trim().isNotEmpty) {
+          prompts[key] = controller.text.trim();
+        }
+      });
+
+      final Map<String, dynamic> socialLinks = {};
+      if (_instagramController.text.trim().isNotEmpty) socialLinks['instagram'] = _instagramController.text.trim();
+      if (_twitterController.text.trim().isNotEmpty) socialLinks['x'] = _twitterController.text.trim();
+
+      final fullData = {
+        'display_name': _displayNameController.text.isEmpty ? null : _displayNameController.text,
+        'bio': _bioController.text.isEmpty ? null : _bioController.text,
+        'zipcode': _zipcodeController.text.trim(),
+        'pronouns': _selectedPronouns,
+        'relationship_status': _selectedRelationshipStatus,
+        'interests': _selectedInterests,
+        'gallery_urls': _galleryUrls,
+        'prompts': prompts,
+        'social_links': socialLinks,
+      };
+
+      await SupabaseService.updateProfile(fullData);
+      
+      await _loadProfile();
+      if (mounted) {
+        setState(() {
+          _isEditing = false;
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profile updated!'), backgroundColor: Colors.green),
+        );
       }
-    });
-
-    final Map<String, dynamic> socialLinks = {};
-    if (_instagramController.text.trim().isNotEmpty) socialLinks['instagram'] = _instagramController.text.trim();
-    if (_twitterController.text.trim().isNotEmpty) socialLinks['x'] = _twitterController.text.trim();
-
-    await SupabaseService.updateProfile({
-      'display_name': _displayNameController.text.isEmpty ? null : _displayNameController.text,
-      'bio': _bioController.text.isEmpty ? null : _bioController.text,
-      'zipcode': _zipcodeController.text.trim(),
-      'pronouns': _selectedPronouns,
-      'relationship_status': _selectedRelationshipStatus,
-      'interests': _selectedInterests,
-      'gallery_urls': _galleryUrls,
-      'prompts': prompts,
-      'social_links': socialLinks,
-    });
-    await _loadProfile();
-    setState(() => _isEditing = false);
+    } catch (e) {
+      debugPrint('Save Error: $e');
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Save failed: $e'), backgroundColor: Colors.redAccent),
+        );
+      }
+    }
   }
 
   Future<void> _pickImage() async {
@@ -183,28 +235,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator(color: OTheme.neonPink));
+    if (_isLoading && _profile == null) {
+      return const Scaffold(
+        backgroundColor: OTheme.black,
+        body: Center(child: CircularProgressIndicator(color: OTheme.neonPink)),
+      );
     }
 
     final String? myId = SupabaseService.client.auth.currentUser?.id;
     final bool isMe = widget.userId == null || widget.userId == myId;
     final bool isMobile = MediaQuery.of(context).size.width < 600;
 
-    return SingleChildScrollView(
-      padding: EdgeInsets.all(isMobile ? 20 : 32),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Flex(
-            direction: isMobile ? Axis.vertical : Axis.horizontal,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: isMobile ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+    return Scaffold(
+      backgroundColor: OTheme.black,
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: EdgeInsets.all(isMobile ? 20 : 32),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                isMe ? 'My Profile' : (_profile?.displayName ?? 'Profile'), 
-                style: Theme.of(context).textTheme.displayLarge?.copyWith(fontSize: isMobile ? 28 : 32)
-              ),
+            Flex(
+              direction: isMobile ? Axis.vertical : Axis.horizontal,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: isMobile ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+              children: [
+                Text(
+                  isMe ? 'My Profile' : (_profile?.displayName ?? 'Profile'), 
+                  style: Theme.of(context).textTheme.displayLarge?.copyWith(fontSize: isMobile ? 28 : 32)
+                ),
               if (isMe) ...[
                 if (!_isEditing)
                   Padding(
@@ -228,8 +286,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                         const SizedBox(width: 12),
                         ElevatedButton(
-                          onPressed: _saveProfile,
-                          child: const Text('Save Changes'),
+                          onPressed: _isLoading ? null : _saveProfile,
+                          child: _isLoading 
+                            ? const SizedBox(
+                                width: 20, 
+                                height: 20, 
+                                child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2)
+                              ) 
+                            : const Text('Save Changes'),
                         ),
                       ],
                     ),
@@ -263,41 +327,79 @@ class _ProfileScreenState extends State<ProfileScreen> {
             direction: isMobile ? Axis.vertical : Axis.horizontal,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Avatar Column
+              // Photo Carousel Header
               Center(
                 child: Column(
                   children: [
-                    Container(
-                      width: isMobile ? 140 : 180,
-                      height: isMobile ? 140 : 180,
-                      decoration: BoxDecoration(
-                        color: OTheme.deepCharcoal,
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: Colors.white10),
-                        image: _profile?.avatarUrl != null
-                            ? DecorationImage(image: NetworkImage(_profile!.avatarUrl!), fit: BoxFit.cover)
-                            : null,
-                      ),
-                      child: _isUploading 
-                          ? const Center(child: CircularProgressIndicator(color: OTheme.neonPink))
-                          : (_profile?.avatarUrl == null
-                              ? Center(
-                                  child: Padding(
-                                    padding: EdgeInsets.all(isMobile ? 30 : 40.0),
-                                    child: Image.asset(
-                                      'assets/logo.png',
-                                      color: OTheme.neonPink.withValues(alpha: 0.3),
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final photos = _allPhotos;
+                        return GestureDetector(
+                          onTapUp: (details) => _handlePhotoTap(details, isMobile ? 140 : 180),
+                          child: Stack(
+                            children: [
+                              Container(
+                                width: isMobile ? 140 : 180,
+                                height: isMobile ? 140 : 180,
+                                decoration: BoxDecoration(
+                                  color: OTheme.deepCharcoal,
+                                  borderRadius: BorderRadius.circular(24),
+                                  border: Border.all(color: Colors.white10),
+                                  image: photos.isNotEmpty
+                                      ? DecorationImage(
+                                          image: NetworkImage(photos[_currentPhotoIndex % photos.length]), 
+                                          fit: BoxFit.cover
+                                        )
+                                      : null,
+                                ),
+                                child: _isUploading 
+                                    ? const Center(child: CircularProgressIndicator(color: OTheme.neonPink))
+                                    : (photos.isEmpty
+                                        ? Center(
+                                            child: Padding(
+                                              padding: EdgeInsets.all(isMobile ? 30 : 40.0),
+                                              child: Image.asset(
+                                                'assets/logo.png',
+                                                color: OTheme.neonPink.withValues(alpha: 0.3),
+                                              ),
+                                            ),
+                                          )
+                                        : null),
+                              ),
+                              if (photos.length > 1)
+                                Positioned(
+                                  top: 8,
+                                  left: 8,
+                                  right: 8,
+                                  child: Row(
+                                    children: List.generate(
+                                      photos.length,
+                                      (index) => Expanded(
+                                        child: Container(
+                                          height: 2,
+                                          margin: const EdgeInsets.symmetric(horizontal: 2),
+                                          decoration: BoxDecoration(
+                                            color: index == _currentPhotoIndex 
+                                                ? OTheme.neonPink 
+                                                : Colors.white24,
+                                            borderRadius: BorderRadius.circular(1),
+                                          ),
+                                        ),
+                                      ),
                                     ),
                                   ),
-                                )
-                              : null),
+                                ),
+                            ],
+                          ),
+                        );
+                      }
                     ),
                     if (isMe) ...[
                       const SizedBox(height: 16),
                       OutlinedButton.icon(
                         onPressed: _isUploading ? null : _pickImage,
                         icon: const Icon(Icons.upload_file, size: 16),
-                        label: Text(_isUploading ? 'Uploading...' : 'Upload Photo'),
+                        label: Text(_isUploading ? 'Uploading...' : 'Update Main Photo'),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: OTheme.neonPink,
                           side: const BorderSide(color: OTheme.neonPink),
@@ -400,7 +502,67 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     const SizedBox(height: 24),
     
                     // Pronouns
-                    _buildLabel('Pronouns'),
+                    const SizedBox(height: 32),
+
+                    // Photo Gallery
+                    _buildLabel('Photo Gallery'),
+                    if (_galleryUrls.isNotEmpty || _isEditing)
+                      GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 3,
+                          crossAxisSpacing: 8,
+                          mainAxisSpacing: 8,
+                        ),
+                        itemCount: _isEditing ? (_galleryUrls.length < 6 ? _galleryUrls.length + 1 : 6) : _galleryUrls.length,
+                        itemBuilder: (context, index) {
+                          if (_isEditing && index == _galleryUrls.length) {
+                            return InkWell(
+                              onTap: _pickGalleryImage,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.05),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: Colors.white10),
+                                ),
+                                child: const Icon(Icons.add_photo_alternate, color: Colors.white54, size: 32),
+                              ),
+                            );
+                          }
+                          return Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: Image.network(_galleryUrls[index], fit: BoxFit.cover),
+                              ),
+                              if (_isEditing)
+                                Positioned(
+                                  top: 4,
+                                  right: 4,
+                                  child: InkWell(
+                                    onTap: () => _removeGalleryImage(index),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(4),
+                                      decoration: const BoxDecoration(
+                                        color: Colors.black54,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(Icons.close, color: Colors.white, size: 16),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          );
+                        },
+                      )
+                    else
+                      const Text('No photos in gallery', style: TextStyle(color: Colors.white24, fontSize: 16)),
+
+                    const SizedBox(height: 32),
+                    
+                    _buildLabel('About'),
                     if (_isEditing)
                       DropdownButtonFormField<String>(
                         initialValue: _selectedPronouns,
@@ -517,64 +679,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         const Text('No icebreakers set', style: TextStyle(color: Colors.white24, fontSize: 16)),
                     ],
                     
-                    const SizedBox(height: 32),
-                    
-                    // Photo Gallery
-                    _buildLabel('Photo Gallery'),
-                    if (_galleryUrls.isNotEmpty || _isEditing)
-                      GridView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 3,
-                          crossAxisSpacing: 8,
-                          mainAxisSpacing: 8,
-                        ),
-                        itemCount: _isEditing ? (_galleryUrls.length < 6 ? _galleryUrls.length + 1 : 6) : _galleryUrls.length,
-                        itemBuilder: (context, index) {
-                          if (_isEditing && index == _galleryUrls.length) {
-                            return InkWell(
-                              onTap: _pickGalleryImage,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.05),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: Colors.white10),
-                                ),
-                                child: const Icon(Icons.add_photo_alternate, color: Colors.white54, size: 32),
-                              ),
-                            );
-                          }
-                          return Stack(
-                            fit: StackFit.expand,
-                            children: [
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(12),
-                                child: Image.network(_galleryUrls[index], fit: BoxFit.cover),
-                              ),
-                              if (_isEditing)
-                                Positioned(
-                                  top: 4,
-                                  right: 4,
-                                  child: InkWell(
-                                    onTap: () => _removeGalleryImage(index),
-                                    child: Container(
-                                      padding: const EdgeInsets.all(4),
-                                      decoration: const BoxDecoration(
-                                        color: Colors.black54,
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: const Icon(Icons.close, color: Colors.white, size: 16),
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          );
-                        },
-                      )
-                    else
-                      const Text('No photos in gallery', style: TextStyle(color: Colors.white24, fontSize: 16)),
-
+                    const SizedBox(height: 16),
                   ],
                 ),
               ),
@@ -582,8 +687,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ],
       ),
-    );
-  }
+    ),
+  ),
+);
+}
 
   Widget _buildLabel(String label) {
     return Padding(
