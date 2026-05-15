@@ -65,7 +65,7 @@ class OTheme {
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
       ),
     ),
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       color: deepCharcoal,
       elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),

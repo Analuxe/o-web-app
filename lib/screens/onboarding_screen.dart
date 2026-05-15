@@ -379,7 +379,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         const Text('Tell us about your frequency.', style: TextStyle(color: Colors.white54)),
         const SizedBox(height: 32),
         DropdownButtonFormField<String>(
-          value: _selectedPronouns,
+          initialValue: _selectedPronouns,
           dropdownColor: OTheme.deepCharcoal,
           decoration: _inputDecoration('Pronouns'),
           items: ['He/Him', 'She/Her', 'They/Them', 'Other'].map((p) => DropdownMenuItem(

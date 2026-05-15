@@ -400,7 +400,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     _buildLabel('Pronouns'),
                     if (_isEditing)
                       DropdownButtonFormField<String>(
-                        value: _selectedPronouns,
+                        initialValue: _selectedPronouns,
                         dropdownColor: OTheme.deepCharcoal,
                         decoration: _inputDecoration(),
                         items: ['He/Him', 'She/Her', 'They/Them', 'Other'].map((p) =>
