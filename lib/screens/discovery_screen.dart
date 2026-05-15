@@ -431,6 +431,29 @@ class UserCard extends StatefulWidget {
 
 class _UserCardState extends State<UserCard> {
   bool _isExtended = false;
+  int _currentPhotoIndex = 0;
+
+  List<String> get _allPhotos {
+    final photos = <String>[];
+    if (widget.profile.avatarUrl != null) photos.add(widget.profile.avatarUrl!);
+    if (widget.profile.galleryUrls != null) photos.addAll(widget.profile.galleryUrls!);
+    return photos;
+  }
+
+  void _handlePhotoTap(TapUpDetails details, double width) {
+    final photos = _allPhotos;
+    if (photos.length <= 1) return;
+
+    if (details.localPosition.dx < width / 2) {
+      if (_currentPhotoIndex > 0) {
+        setState(() => _currentPhotoIndex--);
+      }
+    } else {
+      if (_currentPhotoIndex < photos.length - 1) {
+        setState(() => _currentPhotoIndex++);
+      }
+    }
+  }
 
   void _handleBlock() async {
     await SupabaseService.blockUser(widget.profile.id);
@@ -527,26 +550,64 @@ class _UserCardState extends State<UserCard> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
-                  child: Container(
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      image: widget.profile.avatarUrl != null 
-                        ? DecorationImage(image: NetworkImage(widget.profile.avatarUrl!), fit: BoxFit.cover)
-                        : null,
-                      gradient: widget.profile.avatarUrl == null ? LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          OTheme.neonPink.withOpacity(0.2),
-                          OTheme.black.withOpacity(0.8),
-                        ],
-                      ) : null,
-                    ),
-                    child: widget.profile.avatarUrl == null ? const Icon(
-                      Icons.person,
-                      size: 64,
-                      color: OTheme.neonPink,
-                    ) : null,
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final photos = _allPhotos;
+                      final currentPhotoUrl = photos.isNotEmpty ? photos[_currentPhotoIndex] : null;
+
+                      return GestureDetector(
+                        onTapUp: (details) => _handlePhotoTap(details, constraints.maxWidth),
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            Container(
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                image: currentPhotoUrl != null 
+                                  ? DecorationImage(image: NetworkImage(currentPhotoUrl), fit: BoxFit.cover)
+                                  : null,
+                                gradient: currentPhotoUrl == null ? LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    OTheme.neonPink.withOpacity(0.2),
+                                    OTheme.black.withOpacity(0.8),
+                                  ],
+                                ) : null,
+                              ),
+                              child: currentPhotoUrl == null ? const Icon(
+                                Icons.person,
+                                size: 64,
+                                color: OTheme.neonPink,
+                              ) : null,
+                            ),
+                            if (photos.length > 1)
+                              Positioned(
+                                top: 8,
+                                left: 8,
+                                right: 8,
+                                child: Row(
+                                  children: List.generate(
+                                    photos.length,
+                                    (index) => Expanded(
+                                      child: Container(
+                                        margin: const EdgeInsets.symmetric(horizontal: 2),
+                                        height: 3,
+                                        decoration: BoxDecoration(
+                                          color: index == _currentPhotoIndex 
+                                            ? Colors.white 
+                                            : Colors.white.withOpacity(0.3),
+                                          borderRadius: BorderRadius.circular(2),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      );
+                    }
                   ),
                 ),
                 Padding(

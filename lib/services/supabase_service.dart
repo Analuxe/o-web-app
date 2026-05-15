@@ -131,6 +131,18 @@ class SupabaseService {
         .getPublicUrl(path);
   }
 
+  static Future<String> uploadChatMedia(String userId, Uint8List bytes, String fileName) async {
+    final path = '$userId/$fileName';
+    
+    await client.storage
+        .from('chat_media')
+        .uploadBinary(path, bytes);
+
+    return client.storage
+        .from('chat_media')
+        .getPublicUrl(path);
+  }
+
   // Messaging Logic
   static Stream<List<Map<String, dynamic>>> getMessagesStream(String otherUserId) {
     // Security: RLS policies on the 'messages' table now ensure that we only 
@@ -143,13 +155,17 @@ class SupabaseService {
         .order('created_at', ascending: true);
   }
 
-  static Future<void> sendMessage(String receiverId, String content) async {
+  static Future<void> sendMessage(String receiverId, String content, {String? mediaUrl, String? mediaType}) async {
     final myId = client.auth.currentUser!.id;
-    await client.from('messages').insert({
+    final payload = {
       'sender_id': myId,
       'receiver_id': receiverId,
       'content': content,
-    });
+    };
+    if (mediaUrl != null) payload['media_url'] = mediaUrl;
+    if (mediaType != null) payload['media_type'] = mediaType;
+    
+    await client.from('messages').insert(payload);
   }
 
   static Future<List<Map<String, dynamic>>> getMyChats() async {

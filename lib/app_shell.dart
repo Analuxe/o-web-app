@@ -124,64 +124,73 @@ class SideNavBar extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 48),
-          _NavButton(
-            icon: Icons.home_outlined,
-            label: 'Hub',
-            path: '/hub',
-            isSelected: GoRouterState.of(context).uri.path == '/hub',
-            onTap: isDrawer ? () => Navigator.pop(context) : null,
-          ),
-          _NavButton(
-            icon: Icons.explore_outlined,
-            label: 'Discovery',
-            path: '/discovery',
-            isSelected: GoRouterState.of(context).uri.path == '/discovery',
-            onTap: isDrawer ? () => Navigator.pop(context) : null,
-          ),
-          _NavButton(
-            icon: Icons.chat_bubble_outline,
-            label: 'Messaging',
-            path: '/messaging',
-            isSelected: GoRouterState.of(context).uri.path == '/messaging',
-            onTap: isDrawer ? () => Navigator.pop(context) : null,
-          ),
-          _NavButton(
-            icon: Icons.auto_awesome_outlined,
-            label: 'Matchmaker',
-            path: '/matchmaker',
-            isSelected: GoRouterState.of(context).uri.path == '/matchmaker',
-            onTap: isDrawer ? () => Navigator.pop(context) : null,
-          ),
-          if (isAdmin)
-            _NavButton(
-              icon: Icons.admin_panel_settings_outlined,
-              label: 'Admin Console',
-              path: '/admin',
-              isSelected: GoRouterState.of(context).uri.path == '/admin',
-              onTap: isDrawer ? () => Navigator.pop(context) : null,
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _NavButton(
+                    icon: Icons.home_outlined,
+                    label: 'Hub',
+                    path: '/hub',
+                    isSelected: GoRouterState.of(context).uri.path == '/hub',
+                    onTap: isDrawer ? () => Navigator.pop(context) : null,
+                  ),
+                  _NavButton(
+                    icon: Icons.explore_outlined,
+                    label: 'Discovery',
+                    path: '/discovery',
+                    isSelected: GoRouterState.of(context).uri.path == '/discovery',
+                    onTap: isDrawer ? () => Navigator.pop(context) : null,
+                  ),
+                  _NavButton(
+                    icon: Icons.chat_bubble_outline,
+                    label: 'Messaging',
+                    path: '/messaging',
+                    isSelected: GoRouterState.of(context).uri.path == '/messaging',
+                    onTap: isDrawer ? () => Navigator.pop(context) : null,
+                  ),
+                  _NavButton(
+                    icon: Icons.auto_awesome_outlined,
+                    label: 'Matchmaker',
+                    path: '/matchmaker',
+                    isSelected: GoRouterState.of(context).uri.path == '/matchmaker',
+                    onTap: isDrawer ? () => Navigator.pop(context) : null,
+                  ),
+                  if (isAdmin)
+                    _NavButton(
+                      icon: Icons.admin_panel_settings_outlined,
+                      label: 'Admin Console',
+                      path: '/admin',
+                      isSelected: GoRouterState.of(context).uri.path == '/admin',
+                      onTap: isDrawer ? () => Navigator.pop(context) : null,
+                    ),
+                  const SizedBox(height: 32),
+                  _NavButton(
+                    icon: Icons.person_outline,
+                    label: 'Profile',
+                    path: '/profile',
+                    isSelected: GoRouterState.of(context).uri.path == '/profile',
+                    onTap: isDrawer ? () => Navigator.pop(context) : null,
+                  ),
+                  _NavButton(
+                    icon: Icons.settings_outlined,
+                    label: 'Settings',
+                    path: '/settings',
+                    isSelected: GoRouterState.of(context).uri.path == '/settings',
+                    onTap: isDrawer ? () => Navigator.pop(context) : null,
+                  ),
+                  const SizedBox(height: 16),
+                  _NavButton(
+                    icon: Icons.logout_rounded,
+                    label: 'Sign Out',
+                    path: '/login', // Path won't be used as we override onTap
+                    isSelected: false,
+                    onTap: onSignOut,
+                  ),
+                ],
+              ),
             ),
-          const Spacer(),
-          _NavButton(
-            icon: Icons.person_outline,
-            label: 'Profile',
-            path: '/profile',
-            isSelected: GoRouterState.of(context).uri.path == '/profile',
-            onTap: isDrawer ? () => Navigator.pop(context) : null,
-          ),
-          _NavButton(
-            icon: Icons.settings_outlined,
-            label: 'Settings',
-            path: '/settings',
-            isSelected: GoRouterState.of(context).uri.path == '/settings',
-            onTap: isDrawer ? () => Navigator.pop(context) : null,
-          ),
-          const SizedBox(height: 16),
-          _NavButton(
-            icon: Icons.logout_rounded,
-            label: 'Sign Out',
-            path: '/login', // Path won't be used as we override onTap
-            isSelected: false,
-            onTap: onSignOut,
           ),
         ],
       ),
@@ -297,4 +306,3 @@ class TopNavBar extends StatelessWidget {
     );
   }
 }
-

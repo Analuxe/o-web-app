@@ -3,6 +3,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:o_web/theme.dart';
 import 'package:o_web/services/supabase_service.dart';
 import 'package:o_web/widgets/report_dialog.dart';
+import 'package:o_web/models/profile.dart';
+import 'package:image_picker/image_picker.dart';
 
 class MessagingScreen extends StatefulWidget {
   final String? initialProfileId;
@@ -177,6 +179,33 @@ class _MessagingScreenState extends State<MessagingScreen> {
   void _handleRequest(String requestId, String status) async {
     await SupabaseService.respondToMatchRequest(requestId, status);
     _loadProfileAndChats(); 
+  }
+
+  bool _isUploadingImage = false;
+
+  void _pickAndSendImage() async {
+    if (_selectedProfile == null) return;
+    
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+    
+    if (image != null) {
+      setState(() => _isUploadingImage = true);
+      try {
+        final bytes = await image.readAsBytes();
+        final fileName = '${DateTime.now().millisecondsSinceEpoch}_${image.name}';
+        final myId = SupabaseService.client.auth.currentUser!.id;
+        final url = await SupabaseService.uploadChatMedia(myId, bytes, fileName);
+        await SupabaseService.sendMessage(_selectedProfile!.id, '', mediaUrl: url, mediaType: 'image');
+      } catch (e) {
+        debugPrint('Error uploading image: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error sending image: $e')));
+        }
+      } finally {
+        if (mounted) setState(() => _isUploadingImage = false);
+      }
+    }
   }
 
   void _sendMessage() async {
@@ -416,7 +445,12 @@ class _MessagingScreenState extends State<MessagingScreen> {
                 itemCount: conversationMessages.length,
                 itemBuilder: (context, index) {
                   final m = conversationMessages[index];
-                  return ChatMessage(text: m['content'], isMe: m['sender_id'] == SupabaseService.client.auth.currentUser!.id);
+                  return ChatMessage(
+                    text: m['content'] ?? '', 
+                    isMe: m['sender_id'] == SupabaseService.client.auth.currentUser!.id,
+                    mediaUrl: m['media_url'],
+                    mediaType: m['media_type'],
+                  );
                 },
               );
             }
@@ -489,6 +523,13 @@ class _MessagingScreenState extends State<MessagingScreen> {
 
   Widget _buildInput() {
     return Container(padding: const EdgeInsets.all(24), child: Row(children: [
+      IconButton(
+        icon: _isUploadingImage 
+            ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: OTheme.neonPink, strokeWidth: 2))
+            : const Icon(Icons.add_photo_alternate, color: OTheme.neonPink),
+        onPressed: _isUploadingImage ? null : _pickAndSendImage,
+      ),
+      const SizedBox(width: 8),
       Expanded(child: TextField(controller: _messageController, onSubmitted: (_) => _sendMessage(), decoration: InputDecoration(hintText: 'Type a message...', filled: true, fillColor: OTheme.deepCharcoal, border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none), contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12)))),
       const SizedBox(width: 16),
       FloatingActionButton(onPressed: _sendMessage, backgroundColor: OTheme.neonPink, child: const Icon(Icons.send, color: Colors.black)),
@@ -509,9 +550,41 @@ class _MessagingScreenState extends State<MessagingScreen> {
 class ChatMessage extends StatelessWidget {
   final String text;
   final bool isMe;
-  const ChatMessage({super.key, required this.text, required this.isMe});
+  final String? mediaUrl;
+  final String? mediaType;
+  const ChatMessage({super.key, required this.text, required this.isMe, this.mediaUrl, this.mediaType});
+
   @override
   Widget build(BuildContext context) {
-    return Align(alignment: isMe ? Alignment.centerRight : Alignment.centerLeft, child: Container(margin: const EdgeInsets.only(bottom: 16), padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), decoration: BoxDecoration(color: isMe ? OTheme.neonPink : OTheme.deepCharcoal, borderRadius: BorderRadius.circular(16).copyWith(bottomRight: isMe ? const Radius.circular(0) : const Radius.circular(16), bottomLeft: isMe ? const Radius.circular(16) : const Radius.circular(0))), constraints: const BoxConstraints(maxWidth: 400), child: Text(text, style: TextStyle(color: isMe ? Colors.black : Colors.white))));
+    return Align(
+      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft, 
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16), 
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), 
+        decoration: BoxDecoration(
+          color: isMe ? OTheme.neonPink : OTheme.deepCharcoal, 
+          borderRadius: BorderRadius.circular(16).copyWith(
+            bottomRight: isMe ? const Radius.circular(0) : const Radius.circular(16), 
+            bottomLeft: isMe ? const Radius.circular(16) : const Radius.circular(0)
+          )
+        ), 
+        constraints: const BoxConstraints(maxWidth: 400), 
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (mediaUrl != null && mediaType == 'image') ...[
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.network(mediaUrl!, fit: BoxFit.cover),
+              ),
+              if (text.isNotEmpty) const SizedBox(height: 8),
+            ],
+            if (text.isNotEmpty)
+              Text(text, style: TextStyle(color: isMe ? Colors.black : Colors.white)),
+          ],
+        )
+      )
+    );
   }
 }
