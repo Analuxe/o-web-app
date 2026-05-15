@@ -553,23 +553,56 @@ class ChatMessage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isProposal = mediaType == 'proposal';
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft, 
       child: Container(
         margin: const EdgeInsets.only(bottom: 16), 
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), 
         decoration: BoxDecoration(
-          color: isMe ? OTheme.neonPink : OTheme.deepCharcoal, 
+          color: isProposal ? null : (isMe ? OTheme.neonPink : OTheme.deepCharcoal),
+          gradient: isProposal 
+            ? const LinearGradient(
+                colors: [OTheme.neonPink, Color(0xFFFF69B4)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              )
+            : null,
           borderRadius: BorderRadius.circular(16).copyWith(
             bottomRight: isMe ? const Radius.circular(0) : const Radius.circular(16), 
             bottomLeft: isMe ? const Radius.circular(16) : const Radius.circular(0)
-          )
+          ),
+          boxShadow: isProposal ? [
+            BoxShadow(
+              color: OTheme.neonPink.withValues(alpha: 0.3),
+              blurRadius: 8,
+              spreadRadius: 2,
+            )
+          ] : null,
         ), 
         constraints: const BoxConstraints(maxWidth: 400), 
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (isProposal) ...[
+              const Row(
+                children: [
+                  Icon(Icons.auto_awesome, color: Colors.white, size: 16),
+                  SizedBox(width: 8),
+                  Text(
+                    'O ADMIN PROPOSAL',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+            ],
             if (mediaUrl != null && mediaType == 'image') ...[
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
@@ -578,7 +611,14 @@ class ChatMessage extends StatelessWidget {
               if (text.isNotEmpty) const SizedBox(height: 8),
             ],
             if (text.isNotEmpty)
-              Text(text, style: TextStyle(color: isMe ? Colors.black : Colors.white)),
+              Text(
+                text, 
+                style: TextStyle(
+                  color: isProposal ? Colors.white : (isMe ? Colors.black : Colors.white), 
+                  fontSize: 16,
+                  fontWeight: isProposal ? FontWeight.bold : FontWeight.normal,
+                )
+              ),
           ],
         )
       )

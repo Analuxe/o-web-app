@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:o_web/theme.dart';
 import 'package:o_web/services/supabase_service.dart';
-import 'package:o_web/screens/discovery_swipe_tab.dart';
+
 import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:o_web/widgets/report_dialog.dart';
@@ -14,24 +14,16 @@ class DiscoveryScreen extends StatefulWidget {
   State<DiscoveryScreen> createState() => _DiscoveryScreenState();
 }
 
-class _DiscoveryScreenState extends State<DiscoveryScreen> with SingleTickerProviderStateMixin {
+class _DiscoveryScreenState extends State<DiscoveryScreen> {
   Profile? _myProfile;
-  TabController? _tabController;
   Position? _currentPosition;
   bool _isLoadingLocation = true;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
     _loadMyProfile();
     _determinePosition();
-  }
-
-  @override
-  void dispose() {
-    _tabController?.dispose();
-    super.dispose();
   }
 
   Future<void> _loadMyProfile() async {
@@ -161,29 +153,7 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> with SingleTickerProv
                         ),
                     ],
                   ),
-                  const SizedBox(height: 32),
-                  
-                  // TabBar Section
-                  Container(
-                    height: 50,
-                    decoration: BoxDecoration(
-                      border: Border(bottom: BorderSide(color: Colors.white.withValues(alpha: 0.05))),
-                    ),
-                    child: TabBar(
-                      controller: _tabController,
-                      indicatorColor: OTheme.neonPink,
-                      indicatorWeight: 3,
-                      labelColor: Colors.white,
-                      unselectedLabelColor: Colors.white24,
-                      labelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 1),
-                      dividerColor: Colors.transparent,
-                      tabs: const [
-                        Tab(text: 'GRID VIEW'),
-                        Tab(text: 'SWIPE MODE'),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
+
                   
                   // Content Section
                   Expanded(
@@ -210,36 +180,24 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> with SingleTickerProv
                           }).toList();
                         }
 
-                        return TabBarView(
-                          controller: _tabController,
-                          children: [
-                            // Grid Tab
-                            profiles.isEmpty 
-                              ? _buildEmptyState("No vines nearby.")
-                              : GridView.builder(
-                                  padding: const EdgeInsets.only(bottom: 100),
-                                  gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                                    maxCrossAxisExtent: width < 600 ? 200 : 300,
-                                    childAspectRatio: 0.75,
-                                    crossAxisSpacing: width < 600 ? 12 : 24,
-                                    mainAxisSpacing: width < 600 ? 12 : 24,
-                                  ),
-                                  itemCount: profiles.length,
-                                  itemBuilder: (context, index) => UserCard(
-                                    profile: profiles[index],
-                                    isCurrentUserVerified: _myProfile?.isVerified ?? false,
-                                    canMessageAnyone: _myProfile?.canMessageAnyone ?? false,
-                                  ),
-                                ),
-                            // Swipe Tab
-                            profiles.isEmpty
-                              ? _buildEmptyState("No more vines to swipe.")
-                              : DiscoverySwipeTab(
-                                  profiles: profiles,
-                                  isCurrentUserVerified: _myProfile?.isVerified ?? false,
-                                  canMessageAnyone: _myProfile?.canMessageAnyone ?? false,
-                                ),
-                          ],
+                        if (profiles.isEmpty) {
+                          return _buildEmptyState("No vines nearby.");
+                        }
+
+                        return GridView.builder(
+                          padding: const EdgeInsets.only(bottom: 100),
+                          gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                            maxCrossAxisExtent: width < 600 ? 200 : 300,
+                            childAspectRatio: 0.75,
+                            crossAxisSpacing: width < 600 ? 12 : 24,
+                            mainAxisSpacing: width < 600 ? 12 : 24,
+                          ),
+                          itemCount: profiles.length,
+                          itemBuilder: (context, index) => UserCard(
+                            profile: profiles[index],
+                            isCurrentUserVerified: _myProfile?.isVerified ?? false,
+                            canMessageAnyone: _myProfile?.canMessageAnyone ?? false,
+                          ),
                         );
                       },
                     ),
@@ -325,16 +283,27 @@ class FilterSidebar extends StatelessWidget {
             activeColor: OTheme.neonPink,
           ),
           const SizedBox(height: 32),
-          const _FilterLabel(label: 'Identity Labels'),
+          const _FilterLabel(label: 'Kink'),
           const Wrap(
             spacing: 8,
             runSpacing: 8,
             children: [
-              _FilterChip(label: 'Gay', isSelected: true),
-              _FilterChip(label: 'Bi', isSelected: false),
-              _FilterChip(label: 'Trans', isSelected: false),
-              _FilterChip(label: 'Queer', isSelected: true),
-              _FilterChip(label: 'Non-binary', isSelected: false),
+              _FilterChip(label: 'Leather', isSelected: true),
+              _FilterChip(label: 'Rubber/Latex', isSelected: false),
+              _FilterChip(label: 'BDSM', isSelected: false),
+              _FilterChip(label: 'Puppy Play', isSelected: false),
+              _FilterChip(label: 'Uniforms', isSelected: true),
+            ],
+          ),
+          const SizedBox(height: 32),
+          const _FilterLabel(label: 'Role'),
+          const Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _FilterChip(label: 'Top', isSelected: true),
+              _FilterChip(label: 'Versatile', isSelected: false),
+              _FilterChip(label: 'Bottom', isSelected: false),
             ],
           ),
           const SizedBox(height: 48),

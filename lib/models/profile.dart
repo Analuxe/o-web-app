@@ -116,4 +116,49 @@ class Profile {
   bool get canMessageAnyone {
     return isPremium || isAdmin || isMod;
   }
+
+  int getCompatibilityScore(Profile other) {
+    int score = 0;
+    
+    // 1. Shared Interests
+    if (interests != null && other.interests != null) {
+      final shared = interests!.toSet().intersection(other.interests!.toSet());
+      score += shared.length * 10;
+    }
+    
+    // 2. Role Matching (Sliding Sexual Tags)
+    if (labels != null && other.labels != null) {
+      for (final myTag in labels!) {
+        final parts = myTag.split(':');
+        if (parts.length < 2) continue;
+        
+        final kink = parts[0];
+        final myPref = int.tryParse(parts[1]) ?? 1;
+        
+        // Find matching kink in other profile
+        final otherTag = other.labels!.firstWhere(
+          (t) => t.startsWith('$kink:'),
+          orElse: () => '',
+        );
+        
+        if (otherTag.isNotEmpty) {
+          final otherParts = otherTag.split(':');
+          final otherPref = int.tryParse(otherParts[1]) ?? 1;
+          
+          // Matching Logic:
+          // 0 (Bottom) matches 2 (Top)
+          // 2 (Top) matches 0 (Bottom)
+          // 1 (Vers) matches anyone
+          if ((myPref == 0 && otherPref == 2) || 
+              (myPref == 2 && otherPref == 0) || 
+              (myPref == 1 || otherPref == 1)) {
+            score += 15; // Good match for a kink
+          }
+        }
+      }
+    }
+    
+    // Normalize to a percentage-like score or just return raw
+    return score;
+  }
 }

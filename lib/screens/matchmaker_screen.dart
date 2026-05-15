@@ -3,6 +3,7 @@ import 'package:o_web/theme.dart';
 import 'package:o_web/services/supabase_service.dart';
 import 'dart:async';
 import 'dart:math';
+import 'package:o_web/screens/discovery_swipe_tab.dart';
 
 class MatchmakerScreen extends StatefulWidget {
   const MatchmakerScreen({super.key});
@@ -11,21 +12,33 @@ class MatchmakerScreen extends StatefulWidget {
   State<MatchmakerScreen> createState() => _MatchmakerScreenState();
 }
 
-class _MatchmakerScreenState extends State<MatchmakerScreen> {
+class _MatchmakerScreenState extends State<MatchmakerScreen> with SingleTickerProviderStateMixin {
+  TabController? _tabController;
   bool isSearching = false;
+  Profile? myProfile;
   Profile? matchedProfile;
+  int matchScore = 0;
   int distanceRange = 25;
   List<String> selectedIntents = ['Singles', 'Hookups'];
   bool isLoadingSettings = true;
+  bool isConfirming = false;
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
     _loadSettings();
+  }
+
+  @override
+  void dispose() {
+    _tabController?.dispose();
+    super.dispose();
   }
 
   Future<void> _loadSettings() async {
     try {
+      myProfile = await SupabaseService.getMyProfile();
       final optIn = await SupabaseService.getMatchmakerOptIn();
       if (optIn != null && mounted) {
         setState(() {
@@ -74,6 +87,9 @@ class _MatchmakerScreenState extends State<MatchmakerScreen> {
           if (candidates.isNotEmpty) {
             // Pick a random candidate for the "Match" experience
             matchedProfile = candidates[Random().nextInt(candidates.length)];
+            if (myProfile != null) {
+              matchScore = myProfile!.getCompatibilityScore(matchedProfile!);
+            }
           }
         });
       }
@@ -88,11 +104,90 @@ class _MatchmakerScreenState extends State<MatchmakerScreen> {
     }
   }
 
+  Future<void> _handleConfirmDate() async {
+    if (matchedProfile == null) return;
+    
+    setState(() => isConfirming = true);
+    try {
+      const proposal = '🐷 O Admin Proposal: How about meeting up on Friday at 8:00 PM? No pressure — just good energy.';
+      await SupabaseService.sendProposal(matchedProfile!.id, proposal);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Proposal sent! Check your messages to coordinate.'),
+            backgroundColor: OTheme.neonPink,
+          ),
+        );
+        setState(() => matchedProfile = null);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error sending proposal: $e'), backgroundColor: Colors.redAccent),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => isConfirming = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
     final isMobile = width < 600;
 
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Matchmaker',
+              style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                fontSize: width < 600 ? 28 : 42,
+                fontWeight: FontWeight.w900,
+                letterSpacing: -1,
+              ),
+            ),
+            const SizedBox(height: 32),
+            Container(
+              height: 50,
+              decoration: BoxDecoration(
+                border: Border(bottom: BorderSide(color: Colors.white.withValues(alpha: 0.05))),
+              ),
+              child: TabBar(
+                controller: _tabController,
+                indicatorColor: OTheme.neonPink,
+                indicatorWeight: 3,
+                labelColor: Colors.white,
+                unselectedLabelColor: Colors.white24,
+                labelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 1),
+                dividerColor: Colors.transparent,
+                tabs: const [
+                  Tab(text: 'O ADMIN MATCH'),
+                  Tab(text: 'SWIPE MODE'),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildMatchmakerContent(isMobile),
+                  _buildSwipeTab(isMobile),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMatchmakerContent(bool isMobile) {
     return SingleChildScrollView(
       child: Center(
         child: Container(
@@ -109,6 +204,35 @@ class _MatchmakerScreenState extends State<MatchmakerScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildSwipeTab(bool isMobile) {
+    return StreamBuilder<List<Map<String, dynamic>>>(
+      stream: SupabaseService.getNearbyVines(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}', style: const TextStyle(color: Colors.white54)));
+        }
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator(color: OTheme.neonPink));
+        }
+        
+        var profiles = snapshot.data!
+            .map((json) => Profile.fromJson(json))
+            .where((p) => p.id != SupabaseService.client.auth.currentUser?.id)
+            .toList();
+
+        if (profiles.isEmpty) {
+          return const Center(child: Text("No more vines to swipe.", style: TextStyle(color: Colors.white24, fontSize: 16)));
+        }
+
+        return DiscoverySwipeTab(
+          profiles: profiles,
+          isCurrentUserVerified: myProfile?.isVerified ?? false,
+          canMessageAnyone: myProfile?.canMessageAnyone ?? false,
+        );
+      },
     );
   }
 
@@ -217,6 +341,19 @@ class _MatchmakerScreenState extends State<MatchmakerScreen> {
           "It's a Match!",
           style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: OTheme.neonPink),
         ),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: OTheme.neonPink.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: OTheme.neonPink),
+          ),
+          child: Text(
+            '${min(99, 60 + matchScore)}% MATCH',
+            style: const TextStyle(color: OTheme.neonPink, fontWeight: FontWeight.w900, fontSize: 14),
+          ),
+        ),
         const SizedBox(height: 40),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -273,11 +410,13 @@ class _MatchmakerScreenState extends State<MatchmakerScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             ElevatedButton(
-              onPressed: () {},
+              onPressed: isConfirming ? null : _handleConfirmDate,
               style: ElevatedButton.styleFrom(
                 minimumSize: Size(isMobile ? double.infinity : 200, 56),
               ),
-              child: const Text('Confirm Date'),
+              child: isConfirming 
+                ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
+                : const Text('Confirm Date'),
             ),
             if (isMobile) const SizedBox(height: 12) else const SizedBox(width: 24),
             OutlinedButton(

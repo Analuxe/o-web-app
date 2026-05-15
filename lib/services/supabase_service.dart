@@ -182,6 +182,10 @@ class SupabaseService {
     await client.from('messages').insert(payload);
   }
 
+  static Future<void> sendProposal(String receiverId, String content) async {
+    await sendMessage(receiverId, content, mediaType: 'proposal');
+  }
+
   static Future<List<Map<String, dynamic>>> getMyChats() async {
     // This fetches unique profiles you've interacted with
     final response = await client.rpc('get_my_chats');
