@@ -313,6 +313,37 @@ class _AuthForm extends StatelessWidget {
             ),
           ],
         ),
+        if (isSignUp) ...[
+          const SizedBox(height: 16),
+          Wrap(
+            alignment: WrapAlignment.center,
+            children: [
+              const Text(
+                'By signing up you agree to our ',
+                style: TextStyle(color: Colors.white24, fontSize: 12),
+              ),
+              GestureDetector(
+                onTap: () => context.push('/legal/terms'),
+                child: const Text(
+                  'Terms of Service',
+                  style: TextStyle(color: Colors.white38, fontSize: 12, decoration: TextDecoration.underline),
+                ),
+              ),
+              const Text(
+                ' and ',
+                style: TextStyle(color: Colors.white24, fontSize: 12),
+              ),
+              GestureDetector(
+                onTap: () => context.push('/legal/privacy'),
+                child: const Text(
+                  'Privacy Policy',
+                  style: TextStyle(color: Colors.white38, fontSize: 12, decoration: TextDecoration.underline),
+                ),
+              ),
+              const Text('.', style: TextStyle(color: Colors.white24, fontSize: 12)),
+            ],
+          ),
+        ],
       ],
     );
   }

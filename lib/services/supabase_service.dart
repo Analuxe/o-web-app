@@ -110,6 +110,23 @@ class SupabaseService {
     }
   }
 
+  static Stream<Profile?> getProfileStream(String id) {
+    return client
+        .from('profiles')
+        .stream(primaryKey: ['id'])
+        .eq('id', id)
+        .map((data) => data.isNotEmpty ? Profile.fromJson(data.first) : null);
+  }
+
+  static Stream<List<Profile>> getProfilesStream(List<String> ids) {
+    if (ids.isEmpty) return Stream.value([]);
+    return client
+        .from('profiles')
+        .stream(primaryKey: ['id'])
+        .inFilter('id', ids)
+        .map((data) => data.map((json) => Profile.fromJson(json)).toList());
+  }
+
   static Future<void> updateOnlineStatus(bool isOnline) async {
     final user = client.auth.currentUser;
     if (user == null) return;
@@ -128,8 +145,16 @@ class SupabaseService {
     final user = client.auth.currentUser;
     if (user == null) return;
 
+    // Security: Strip privileged fields to prevent self-promotion attacks.
+    // These fields should only be modified via admin RPCs or service-role operations.
+    final sanitized = Map<String, dynamic>.from(updates);
+    sanitized.remove('is_admin');
+    sanitized.remove('is_verified');
+    sanitized.remove('is_vip');
+    sanitized.remove('is_mod');
+
     final fullUpdates = {
-      ...updates, 
+      ...sanitized, 
       'id': user.id,
     };
 
@@ -471,7 +496,20 @@ class SupabaseService {
   }
 
   static Future<void> promoteToAdmin(String username) async {
-    // Only a super-admin should be calling this via the UI
+    // Security: Verify the CALLER is an admin before allowing promotion.
+    final caller = client.auth.currentUser;
+    if (caller == null) throw Exception('Not authenticated');
+
+    final callerProfile = await client
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', caller.id)
+        .maybeSingle();
+
+    if (callerProfile == null || callerProfile['is_admin'] != true) {
+      throw Exception('Unauthorized: only admins can promote users.');
+    }
+
     final response = await client
         .from('profiles')
         .select('id')

@@ -234,7 +234,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _buildSettingTile(
                 icon: Icons.lock_outline,
                 title: 'Change Password',
-                onTap: () {},
+                onTap: () => context.push('/forgot-password'),
               ),
               _buildSettingTile(
                 icon: Icons.download_outlined,
@@ -254,12 +254,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _buildSettingTile(
                 icon: Icons.description_outlined,
                 title: 'Terms of Service',
-                onTap: () {},
+                onTap: () => context.push('/legal/terms'),
               ),
               _buildSettingTile(
                 icon: Icons.privacy_tip_outlined,
                 title: 'Privacy Policy',
-                onTap: () {},
+                onTap: () => context.push('/legal/privacy'),
               ),
             ]),
             

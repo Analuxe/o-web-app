@@ -14,6 +14,7 @@ import 'package:o_web/screens/matchmaker_screen.dart';
 import 'package:o_web/screens/onboarding_screen.dart';
 import 'package:o_web/screens/settings_screen.dart';
 import 'package:o_web/screens/hub_screen.dart';
+import 'package:o_web/screens/legal_screen.dart';
 import 'package:o_web/services/supabase_service.dart';
 
 void main() async {
@@ -121,6 +122,14 @@ final _router = GoRouter(
         GoRoute(
           path: '/settings',
           builder: (context, state) => const SettingsScreen(),
+        ),
+        GoRoute(
+          path: '/legal/terms',
+          builder: (context, state) => const LegalScreen(doc: LegalDoc.termsOfService),
+        ),
+        GoRoute(
+          path: '/legal/privacy',
+          builder: (context, state) => const LegalScreen(doc: LegalDoc.privacyPolicy),
         ),
         GoRoute(
           path: '/matchmaker',

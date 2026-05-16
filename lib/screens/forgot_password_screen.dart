@@ -54,7 +54,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       ),
       body: Center(
         child: Container(
-          maxWidth: 450,
+          constraints: const BoxConstraints(maxWidth: 450),
           padding: EdgeInsets.symmetric(horizontal: isMobile ? 32 : 40),
           child: _isSuccess ? _buildSuccess() : _buildForm(),
         ),

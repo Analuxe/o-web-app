@@ -425,39 +425,60 @@ class _MessagingScreenState extends State<MessagingScreen> {
               selected: _selectedProfile?.id == profile.id,
               selectedTileColor: OTheme.neonPink.withValues(alpha: 0.1),
               contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-              leading: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  CircleAvatar(
-                    backgroundImage: profile.avatarUrl != null ? NetworkImage(profile.avatarUrl!) : null,
-                    backgroundColor: OTheme.deepCharcoal,
-                    child: profile.avatarUrl == null ? const Icon(Icons.person, color: OTheme.neonPink) : null,
-                  ),
-                  if (unread > 0)
-                    Positioned(
-                      right: -4,
-                      top: -4,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: OTheme.neonPink,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: OTheme.neonPink.withValues(alpha: 0.6),
-                              blurRadius: 6,
-                            ),
-                          ],
-                        ),
-                        constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
-                        child: Text(
-                          unread > 9 ? '9+' : '$unread',
-                          style: const TextStyle(color: Colors.black, fontSize: 10, fontWeight: FontWeight.w900),
-                          textAlign: TextAlign.center,
-                        ),
+              leading: StreamBuilder<Profile?>(
+                stream: SupabaseService.getProfileStream(profile.id),
+                initialData: profile,
+                builder: (context, profileSnapshot) {
+                  final liveProfile = profileSnapshot.data ?? profile;
+                  return Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      CircleAvatar(
+                        backgroundImage: liveProfile.avatarUrl != null ? NetworkImage(liveProfile.avatarUrl!) : null,
+                        backgroundColor: OTheme.deepCharcoal,
+                        child: liveProfile.avatarUrl == null ? const Icon(Icons.person, color: OTheme.neonPink) : null,
                       ),
-                    ),
-                ],
+                      if (liveProfile.isOnline)
+                        Positioned(
+                          right: 0,
+                          bottom: 0,
+                          child: Container(
+                            width: 12,
+                            height: 12,
+                            decoration: BoxDecoration(
+                              color: Colors.green,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: OTheme.black, width: 2),
+                            ),
+                          ),
+                        ),
+                      if (unread > 0)
+                        Positioned(
+                          right: -4,
+                          top: -4,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: OTheme.neonPink,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: OTheme.neonPink.withValues(alpha: 0.6),
+                                  blurRadius: 6,
+                                ),
+                              ],
+                            ),
+                            constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+                            child: Text(
+                              unread > 9 ? '9+' : '$unread',
+                              style: const TextStyle(color: Colors.black, fontSize: 10, fontWeight: FontWeight.w900),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                    ],
+                  );
+                }
               ),
               title: Text(
                 profile.displayName ?? 'Unknown',
@@ -591,10 +612,46 @@ class _MessagingScreenState extends State<MessagingScreen> {
           if (isMobile) IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white70), onPressed: () => setState(() => _selectedProfile = null)),
           CircleAvatar(backgroundImage: _selectedProfile?.avatarUrl != null ? NetworkImage(_selectedProfile!.avatarUrl!) : null, backgroundColor: OTheme.deepCharcoal),
           const SizedBox(width: 16),
-          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(_selectedProfile?.displayName ?? 'User', style: const TextStyle(fontWeight: FontWeight.bold)),
-            const Text('Live', style: TextStyle(fontSize: 12, color: Colors.green)),
-          ]),
+          StreamBuilder<Profile?>(
+            stream: SupabaseService.getProfileStream(_selectedProfile!.id),
+            initialData: _selectedProfile,
+            builder: (context, snapshot) {
+              final profile = snapshot.data ?? _selectedProfile;
+              final isOnline = profile?.isOnline ?? false;
+              
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start, 
+                children: [
+                  Text(profile?.displayName ?? 'User', style: const TextStyle(fontWeight: FontWeight.bold)),
+                  Row(
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: isOnline ? Colors.green : Colors.white24,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        isOnline 
+                          ? 'Live' 
+                          : (profile?.lastActive != null 
+                              ? 'Last active ${_formatRelativeTime(profile!.lastActive!)}'
+                              : 'Offline'), 
+                        style: TextStyle(
+                          fontSize: 12, 
+                          color: isOnline ? Colors.green : Colors.white24,
+                          fontWeight: isOnline ? FontWeight.bold : FontWeight.normal,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              );
+            },
+          ),
           const Spacer(),
           IconButton(
             icon: const Icon(Icons.report_problem_outlined, color: Colors.white24, size: 20),
@@ -608,6 +665,15 @@ class _MessagingScreenState extends State<MessagingScreen> {
         ],
       ),
     );
+  }
+
+  String _formatRelativeTime(DateTime time) {
+    final diff = DateTime.now().difference(time);
+    if (diff.inSeconds < 60) return 'Just now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    if (diff.inDays < 7) return '${diff.inDays}d ago';
+    return '${time.day}/${time.month}/${time.year}';
   }
 
   Widget _buildInput() {

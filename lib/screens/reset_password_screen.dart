@@ -55,7 +55,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       backgroundColor: OTheme.black,
       body: Center(
         child: Container(
-          maxWidth: 450,
+          constraints: const BoxConstraints(maxWidth: 450),
           padding: EdgeInsets.symmetric(horizontal: isMobile ? 32 : 40),
           child: _isSuccess ? _buildSuccess() : _buildForm(),
         ),
@@ -130,12 +130,12 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   }
 
   Widget _buildSuccess() {
-    return Column(
+    return const Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        const Icon(Icons.check_circle_outline, size: 80, color: Colors.greenAccent),
-        const SizedBox(height: 32),
-        const Text(
+        Icon(Icons.check_circle_outline, size: 80, color: Colors.greenAccent),
+        SizedBox(height: 32),
+        Text(
           'Password Updated',
           style: TextStyle(
             fontSize: 32,
@@ -143,14 +143,14 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
             color: Colors.white,
           ),
         ),
-        const SizedBox(height: 16),
-        const Text(
+        SizedBox(height: 16),
+        Text(
           'Your password has been successfully updated. Redirecting you to the hub...',
           textAlign: TextAlign.center,
           style: TextStyle(color: Colors.white54, fontSize: 16),
         ),
-        const SizedBox(height: 40),
-        const CircularProgressIndicator(color: OTheme.neonPink),
+        SizedBox(height: 40),
+        CircularProgressIndicator(color: OTheme.neonPink),
       ],
     );
   }

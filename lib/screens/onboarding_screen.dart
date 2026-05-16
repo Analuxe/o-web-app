@@ -134,6 +134,27 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         return;
       }
 
+      // Security: Enforce 18+ age requirement (ToS §1, Privacy Policy §9)
+      final age = int.tryParse(_ageController.text.trim());
+      if (age == null || age < 18) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('You must be at least 18 years old to use O.'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+        return;
+      }
+      if (age > 120) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please enter a valid age.'),
+            backgroundColor: Colors.orangeAccent,
+          ),
+        );
+        return;
+      }
+
       if (!_hasAgreedToLegal) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
