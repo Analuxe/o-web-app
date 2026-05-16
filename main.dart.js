@@ -125332,23 +125332,27 @@ return A.f6(!1,q,!0,A.au(r,A.f5(s.c,n,r,p),B.m,r,r,new A.aE(B.o,r,m,r,l,r,B.bv),
 A.uz.prototype={
 ah(){return new A.ND(new A.cL(B.aA,$.al()))}}
 A.ND.prototype={
-FX(){var s=0,r=A.v(t.H),q,p=2,o=[],n=[],m=this,l,k,j,i
+FX(){var s=0,r=A.v(t.H),q,p=2,o=[],n=[],m=this,l,k,j,i,h
 var $async$FX=A.q(function(a,b){if(a===1){o.push(b)
-s=p}for(;;)switch(s){case 0:j=m.d
-if(j.a.a.length===0){m.H(new A.aLA(m))
+s=p}for(;;)switch(s){case 0:i=m.d
+if(i.a.a.length===0){m.H(new A.aLA(m))
 s=1
 break}m.H(new A.aLB(m))
 p=4
 s=7
-return A.k(A.aBm(j.a.a),$async$FX)
+return A.k(A.aBm(i.a.a),$async$FX)
 case 7:m.H(new A.aLC(m))
 n.push(6)
 s=5
 break
 case 4:p=3
-i=o.pop()
-l=A.Y(i)
-m.H(new A.aLD(m,l))
+h=o.pop()
+l=A.Y(h)
+i={}
+j=i.a=J.cU(l)
+if(B.e.n(j,"429"))i.a="Too many requests. Please wait a few minutes before trying again."
+else if(B.e.n(j,"Email not found"))i.a="No account found with this email address."
+m.H(new A.aLD(i,m))
 n.push(6)
 s=5
 break
@@ -125391,7 +125395,7 @@ A.aLC.prototype={
 $0(){return this.a.r=!0},
 $S:0}
 A.aLD.prototype={
-$0(){return this.a.f=J.cU(this.b)},
+$0(){return this.b.f=this.a.a},
 $S:0}
 A.aLE.prototype={
 $0(){return this.a.e=!1},
@@ -127960,27 +127964,31 @@ A.wk.prototype={
 ah(){var s=$.al()
 return new A.Pl(new A.cL(B.aA,s),new A.cL(B.aA,s))}}
 A.Pl.prototype={
-GQ(){var s=0,r=A.v(t.H),q,p=2,o=[],n=[],m=this,l,k,j,i,h
+GQ(){var s=0,r=A.v(t.H),q,p=2,o=[],n=[],m=this,l,k,j,i,h,g
 var $async$GQ=A.q(function(a,b){if(a===1){o.push(b)
-s=p}for(;;)switch(s){case 0:j=m.d
-i=j.a.a
-if(i.length===0){m.H(new A.aTR(m))
+s=p}for(;;)switch(s){case 0:i=m.d
+h=i.a.a
+if(h.length===0){m.H(new A.aTR(m))
 s=1
-break}if(i!==m.e.a.a){m.H(new A.aTS(m))
+break}if(h!==m.e.a.a){m.H(new A.aTS(m))
 s=1
 break}m.H(new A.aTT(m))
 p=4
 s=7
-return A.k(A.aBu(j.a.a),$async$GQ)
+return A.k(A.aBu(i.a.a),$async$GQ)
 case 7:m.H(new A.aTU(m))
 A.hN(B.k2,new A.aTV(m),t.P)
 n.push(6)
 s=5
 break
 case 4:p=3
-h=o.pop()
-l=A.Y(h)
-m.H(new A.aTW(m,l))
+g=o.pop()
+l=A.Y(g)
+i={}
+j=i.a=J.cU(l)
+if(B.e.n(j,"429"))i.a="Too many attempts. Please wait a few minutes."
+else if(B.e.n(j,"Auth session missing"))i.a="Your reset link has expired or is invalid. Please request a new one."
+m.H(new A.aTW(i,m))
 n.push(6)
 s=5
 break
@@ -128031,7 +128039,7 @@ $0(){var s=this.a.c
 if(s!=null)A.f3(s).lt("/hub",null)},
 $S:12}
 A.aTW.prototype={
-$0(){return this.a.r=J.cU(this.b)},
+$0(){return this.b.r=this.a.a},
 $S:0}
 A.aTX.prototype={
 $0(){return this.a.f=!1},
