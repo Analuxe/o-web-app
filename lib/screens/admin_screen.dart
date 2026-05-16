@@ -327,6 +327,8 @@ class _AdminScreenState extends State<AdminScreen> {
                         );
                         _loadStats();
                         _loadUnvalidatedUsers();
+                        _loadVerifications();
+                        _loadReputationAlerts();
                       } catch (e) {
                         if (!context.mounted) return;
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -340,6 +342,34 @@ class _AdminScreenState extends State<AdminScreen> {
                       backgroundColor: OTheme.neonPink.withValues(alpha: 0.1),
                       foregroundColor: OTheme.neonPink,
                       side: const BorderSide(color: OTheme.neonPink),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  ElevatedButton.icon(
+                    onPressed: () async {
+                      try {
+                        await DummyDataService.clearDummyData();
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Dummy Data Cleared Successfully'), backgroundColor: Colors.orange),
+                        );
+                        _loadStats();
+                        _loadUnvalidatedUsers();
+                        _loadVerifications();
+                        _loadReputationAlerts();
+                      } catch (e) {
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Error clearing data: $e'), backgroundColor: Colors.redAccent),
+                        );
+                      }
+                    },
+                    icon: const Icon(Icons.delete_sweep, size: 16),
+                    label: const Text('Clear UAT Data'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white.withValues(alpha: 0.1),
+                      foregroundColor: Colors.white70,
+                      side: const BorderSide(color: Colors.white24),
                     ),
                   ),
                   const SizedBox(width: 12),
