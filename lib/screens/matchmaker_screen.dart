@@ -322,14 +322,18 @@ class _MatchmakerScreenState extends State<MatchmakerScreen> with SingleTickerPr
   }
 
   Widget _buildSwipeTab(bool isMobile) {
-    return FutureBuilder<Set<String>>(
-      future: SupabaseService.getInteractedUserIds(),
-      builder: (context, interactedSnapshot) {
-        if (!interactedSnapshot.hasData) {
+    return FutureBuilder<List<Set<String>>>(
+      future: Future.wait([
+        SupabaseService.getInteractedUserIds(),
+        SupabaseService.getBlockedUserIds(),
+      ]),
+      builder: (context, futureSnapshot) {
+        if (!futureSnapshot.hasData) {
           return const Center(child: CircularProgressIndicator(color: OTheme.neonPink));
         }
         
-        final interactedIds = interactedSnapshot.data!;
+        final interactedIds = futureSnapshot.data![0];
+        final blockedIds = futureSnapshot.data![1];
 
         return StreamBuilder<List<Map<String, dynamic>>>(
           stream: SupabaseService.getNearbyVines(),
@@ -344,6 +348,7 @@ class _MatchmakerScreenState extends State<MatchmakerScreen> with SingleTickerPr
             var profiles = snapshot.data!
                 .map((json) => Profile.fromJson(json))
                 .where((p) => p.id != SupabaseService.client.auth.currentUser?.id && !interactedIds.contains(p.id))
+                .where((p) => !blockedIds.contains(p.id))
                 .toList();
     
             // APPLY FILTERS

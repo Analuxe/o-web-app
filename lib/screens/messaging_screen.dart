@@ -52,6 +52,7 @@ class _MessagingScreenState extends State<MessagingScreen> {
 
       final myProfile = await SupabaseService.getMyProfile();
       final chatData = await SupabaseService.getMyChats();
+      final blockedIds = await SupabaseService.getBlockedUserIds();
       
       // Fetch pending match requests
       final requestData = await SupabaseService.client
@@ -60,7 +61,10 @@ class _MessagingScreenState extends State<MessagingScreen> {
           .eq('receiver_id', SupabaseService.client.auth.currentUser!.id)
           .eq('status', 'pending');
 
-      final chats = chatData.map((json) => Profile.fromJson(json)).toList();
+      final chats = chatData
+          .map((json) => Profile.fromJson(json))
+          .where((p) => !blockedIds.contains(p.id))
+          .toList();
       Profile? selectedProfile;
       bool showRequests = _showRequests;
 
@@ -106,7 +110,9 @@ class _MessagingScreenState extends State<MessagingScreen> {
           _myProfile = myProfile;
           _chats = chats;
           _selectedProfile = selectedProfile;
-          _matchRequests = List<Map<String, dynamic>>.from(requestData);
+          _matchRequests = List<Map<String, dynamic>>.from(requestData)
+              .where((r) => r['sender'] != null && !blockedIds.contains(r['sender']['id']))
+              .toList();
           _showRequests = showRequests;
           _isLoadingChats = false;
           _isLoadingProfile = false;
@@ -161,10 +167,12 @@ class _MessagingScreenState extends State<MessagingScreen> {
           .limit(10);
       
       final myId = SupabaseService.client.auth.currentUser?.id;
+      final blockedIds = await SupabaseService.getBlockedUserIds();
       setState(() {
         _searchResults = (results as List)
             .map((json) => Profile.fromJson(json))
-            .where((p) => p.id != myId) // Filter out current user
+            .where((p) => p.id != myId)
+            .where((p) => !blockedIds.contains(p.id))
             .toList();
         _isSearching = false;
       });

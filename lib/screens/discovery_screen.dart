@@ -22,6 +22,7 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> with SingleTickerProv
   bool _isLoadingLocation = true;
   DiscoveryFilters _filters = DiscoveryFilters();
   late TabController _tabController;
+  Set<String> _blockedIds = {};
 
   @override
   void initState() {
@@ -29,6 +30,7 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> with SingleTickerProv
     _tabController = TabController(length: 2, vsync: this);
     _loadMyProfile();
     _determinePosition();
+    _loadBlockedIds();
   }
 
   @override
@@ -44,6 +46,11 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> with SingleTickerProv
         _myProfile = profile;
       });
     }
+  }
+
+  Future<void> _loadBlockedIds() async {
+    final ids = await SupabaseService.getBlockedUserIds();
+    if (mounted) setState(() => _blockedIds = ids);
   }
 
   Future<void> _determinePosition() async {
@@ -263,6 +270,7 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> with SingleTickerProv
         var profiles = snapshot.data!
             .map((json) => Profile.fromJson(json))
             .where((p) => p.id != SupabaseService.client.auth.currentUser?.id)
+            .where((p) => !_blockedIds.contains(p.id))
             .toList();
 
         // APPLY FILTERS
@@ -308,6 +316,10 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> with SingleTickerProv
             profile: profiles[index],
             isCurrentUserVerified: _myProfile?.isVerified ?? false,
             canMessageAnyone: _myProfile?.canMessageAnyone ?? false,
+            onBlocked: () {
+              SupabaseService.invalidateBlockCache();
+              _loadBlockedIds();
+            },
           ),
         );
       },
@@ -329,6 +341,7 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> with SingleTickerProv
         var profiles = snapshot.data!
             .map((json) => Profile.fromJson(json))
             .where((p) => p.id != SupabaseService.client.auth.currentUser?.id)
+            .where((p) => !_blockedIds.contains(p.id))
             .toList();
 
         // Apply non-distance filters only
@@ -385,6 +398,10 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> with SingleTickerProv
             distanceMiles: (_currentPosition != null && profiles[index].latitude != null && profiles[index].longitude != null)
                 ? _calculateDistance(profiles[index].latitude!, profiles[index].longitude!)
                 : null,
+            onBlocked: () {
+              SupabaseService.invalidateBlockCache();
+              _loadBlockedIds();
+            },
           ),
         );
       },
@@ -411,12 +428,14 @@ class UserCard extends StatefulWidget {
   final bool isCurrentUserVerified;
   final bool canMessageAnyone;
   final double? distanceMiles;
+  final VoidCallback? onBlocked;
   const UserCard({
     super.key, 
     required this.profile, 
     this.isCurrentUserVerified = false,
     this.canMessageAnyone = false,
     this.distanceMiles,
+    this.onBlocked,
   });
 
   @override
@@ -455,6 +474,7 @@ class _UserCardState extends State<UserCard> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('User Blocked'), backgroundColor: Colors.redAccent),
       );
+      widget.onBlocked?.call();
     }
   }
 

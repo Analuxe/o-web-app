@@ -249,6 +249,52 @@ class SupabaseService {
       'blocker_id': myId,
       'blocked_id': targetUserId,
     });
+    // Invalidate any cached block list
+    _cachedBlockedIds = null;
+  }
+
+  /// Cached block list to avoid re-fetching on every stream tick.
+  static Set<String>? _cachedBlockedIds;
+
+  /// Returns IDs of users blocked in BOTH directions (I blocked them OR they blocked me).
+  static Future<Set<String>> getBlockedUserIds() async {
+    if (_cachedBlockedIds != null) return _cachedBlockedIds!;
+
+    final myId = client.auth.currentUser?.id;
+    if (myId == null) return {};
+
+    try {
+      // People I blocked
+      final iBlocked = await client
+          .from('blocked_users')
+          .select('blocked_id')
+          .eq('blocker_id', myId);
+
+      // People who blocked me
+      final blockedMe = await client
+          .from('blocked_users')
+          .select('blocker_id')
+          .eq('blocked_id', myId);
+
+      final ids = <String>{};
+      for (final row in iBlocked) {
+        ids.add(row['blocked_id'] as String);
+      }
+      for (final row in blockedMe) {
+        ids.add(row['blocker_id'] as String);
+      }
+
+      _cachedBlockedIds = ids;
+      return ids;
+    } catch (e) {
+      debugPrint('Error fetching blocked users: $e');
+      return {};
+    }
+  }
+
+  /// Call this to force a refresh of the cached block list (e.g. after blocking someone).
+  static void invalidateBlockCache() {
+    _cachedBlockedIds = null;
   }
 
   static Future<void> reportUser(String targetUserId, String reason, String details) async {

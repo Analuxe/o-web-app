@@ -288,9 +288,7 @@ class TopNavBar extends StatelessWidget {
   });
 
   void _showNotificationCenter(BuildContext context) {
-    final RenderBox button = context.findRenderObject() as RenderBox;
     final overlay = Overlay.of(context);
-    final position = button.localToGlobal(Offset.zero);
 
     late OverlayEntry entry;
     entry = OverlayEntry(
