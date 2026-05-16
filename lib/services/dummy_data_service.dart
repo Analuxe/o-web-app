@@ -297,7 +297,7 @@ class DummyDataService {
     // 2. Hub Posts
     final dummyPosts = [
       {
-        'id': 'h0000000-0000-0000-0000-000000000001',
+        'id': 'a0000000-0000-0000-0000-000000000001',
         'title': 'Welcome to the New O Web',
         'subtitle': 'Experience the full power of O on your desktop. Faster, sleeker, and more intuitive.',
         'image_url': 'https://images.unsplash.com/photo-1614850523296-d8c1af93d400?auto=format&fit=crop&q=80&w=1000',
@@ -306,7 +306,7 @@ class DummyDataService {
         'created_at': now.toIso8601String(),
       },
       {
-        'id': 'h0000000-0000-0000-0000-000000000002',
+        'id': 'a0000000-0000-0000-0000-000000000002',
         'title': 'Enhanced Privacy Controls',
         'subtitle': 'We\'ve added more granular controls over who can see your profile details.',
         'tag': 'SECURITY',
@@ -314,7 +314,7 @@ class DummyDataService {
         'created_at': now.subtract(const Duration(days: 1)).toIso8601String(),
       },
       {
-        'id': 'h0000000-0000-0000-0000-000000000003',
+        'id': 'a0000000-0000-0000-0000-000000000003',
         'title': 'FistFest 2026: Official Partner',
         'subtitle': 'O is proud to be the official networking partner for FistFest this year. Get ready for exclusive events!',
         'image_url': 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=1000',
@@ -323,7 +323,7 @@ class DummyDataService {
         'created_at': now.toIso8601String(),
       },
       {
-        'id': 'h0000000-0000-0000-0000-000000000004',
+        'id': 'a0000000-0000-0000-0000-000000000004',
         'title': 'O Premium: Coming Soon',
         'subtitle': 'Unlock exclusive features like unlimited swipes, priority matching, and advanced filters.',
         'tag': 'PREMIUM',
@@ -537,6 +537,6 @@ class DummyDataService {
     
     // 4. Delete the dummy profiles and posts themselves
     await _client.from('profiles').delete().like('id', 'd0000000-%');
-    await _client.from('hub_posts').delete().like('id', 'h0000000-%');
+    await _client.from('hub_posts').delete().like('id', 'a0000000-%');
   }
 }
