@@ -1,3 +1,4 @@
+import 'package:o_web/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:o_web/theme.dart';
 import 'package:o_web/app_shell.dart';
@@ -38,12 +39,12 @@ final _router = GoRouter(
 
     // Check if profile is complete
     Profile? profile;
-    debugPrint('NAV: Checking profile for user: ${SupabaseService.client.auth.currentUser?.id}');
+    safeLog('NAV: Checking profile for user: ${SupabaseService.client.auth.currentUser?.id}');
     try {
       profile = await SupabaseService.getMyProfile().timeout(const Duration(seconds: 3));
-      debugPrint('NAV: Profile fetch success: ${profile != null}');
+      safeLog('NAV: Profile fetch success: ${profile != null}');
     } catch (e) {
-      debugPrint('NAV: Profile fetch FAILED: $e');
+      safeLog('NAV: Profile fetch FAILED: $e');
     }
 
     final bool isOnboarding = state.matchedLocation == '/onboarding';

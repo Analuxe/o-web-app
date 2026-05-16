@@ -1,3 +1,4 @@
+import 'package:o_web/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:o_web/theme.dart';
 import 'package:o_web/services/supabase_service.dart';
@@ -28,6 +29,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   bool _isVerifyingHuman = false;
   bool _isLoadingProfile = true;
   bool _hasAgreedToLegal = false;
+  bool _hasConsentedToSensitiveData = false;
   Position? _currentPosition;
 
   @override
@@ -67,7 +69,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         });
       }
     } catch (e) {
-      debugPrint('Error loading existing profile: $e');
+      safeLog('Error loading existing profile: $e');
     } finally {
       if (mounted) {
         setState(() => _isLoadingProfile = false);
@@ -95,11 +97,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             });
           }
         } catch (e) {
-          debugPrint("Geocoding failed: $e");
+          safeLog("Geocoding failed: $e");
         }
       }
     } catch (e) {
-      debugPrint("Location capture failed: $e");
+      safeLog("Location capture failed: $e");
     }
   }
 
@@ -165,6 +167,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         return;
       }
 
+      // P3 (GDPR Article 9): Require explicit consent for sensitive data processing
+      if (!_hasConsentedToSensitiveData) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('You must consent to sensitive data processing to use O.'),
+            backgroundColor: Colors.orangeAccent,
+          ),
+        );
+        return;
+      }
+
       setState(() => _isCheckingUsername = true);
       try {
         final isAvailable = await SupabaseService.isUsernameAvailable(username);
@@ -180,7 +193,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           return;
         }
       } catch (e) {
-        debugPrint('Username check failed: $e');
+        safeLog('Username check failed: $e');
       } finally {
         if (mounted) {
           setState(() => _isCheckingUsername = false);
@@ -225,7 +238,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         GoRouter.of(context).go('/discovery');
       }
     } catch (e) {
-      debugPrint('Onboarding failed: $e');
+      safeLog('Onboarding failed: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -385,6 +398,28 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       ),
                     ],
                   ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        // P3 (GDPR Article 9): Explicit consent for special-category data
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Checkbox(
+              value: _hasConsentedToSensitiveData,
+              onChanged: (val) => setState(() => _hasConsentedToSensitiveData = val ?? false),
+              activeColor: OTheme.neonPink,
+              side: const BorderSide(color: Colors.white24),
+            ),
+            Expanded(
+              child: GestureDetector(
+                onTap: () => setState(() => _hasConsentedToSensitiveData = !_hasConsentedToSensitiveData),
+                child: const Text(
+                  'I consent to O processing my sexual orientation, preferences, and related intimate data for matchmaking and discovery purposes.',
+                  style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.4),
                 ),
               ),
             ),

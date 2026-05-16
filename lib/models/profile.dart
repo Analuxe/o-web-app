@@ -1,6 +1,4 @@
 
-import 'dart:math' as math;
-
 class Profile {
   final String id;
   final String? username;
@@ -26,6 +24,7 @@ class Profile {
   final bool isPremium;
   final int thumbsDownCount;
   final bool isOnline;
+  final bool isDiscoverable;
   final DateTime? lastActive;
 
   Profile({
@@ -53,6 +52,7 @@ class Profile {
     this.isPremium = false,
     this.thumbsDownCount = 0,
     this.isOnline = false,
+    this.isDiscoverable = true,
     this.lastActive,
   });
 
@@ -86,6 +86,7 @@ class Profile {
           ? (json['reputation_reports'] is List ? (json['reputation_reports'] as List).length : 0)
           : 0,
       isOnline: json['is_online'] ?? false,
+      isDiscoverable: json['is_discoverable'] ?? true,
       lastActive: json['last_active'] != null ? DateTime.parse(json['last_active']) : null,
     );
   }
@@ -132,6 +133,7 @@ class Profile {
       'is_mod': isMod,
       'is_premium': isPremium,
       'is_online': isOnline,
+      'is_discoverable': isDiscoverable,
       if (lastActive != null) 'last_active': lastActive!.toIso8601String(),
     };
   }

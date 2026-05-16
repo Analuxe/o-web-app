@@ -15,6 +15,7 @@ class _AuthScreenState extends State<AuthScreen> {
   late bool isSignUp;
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   bool _isLoading = false;
   String? _error;
 
@@ -22,6 +23,14 @@ class _AuthScreenState extends State<AuthScreen> {
   void initState() {
     super.initState();
     isSignUp = widget.isSignUp;
+  }
+
+  /// Security: Validates password meets minimum strength requirements.
+  String? _validatePassword(String password) {
+    if (password.length < 8) return 'Password must be at least 8 characters.';
+    if (!password.contains(RegExp(r'[A-Z]'))) return 'Password must contain at least one uppercase letter.';
+    if (!password.contains(RegExp(r'[0-9]'))) return 'Password must contain at least one number.';
+    return null;
   }
 
   Future<void> _handleAuth() async {
@@ -32,6 +41,17 @@ class _AuthScreenState extends State<AuthScreen> {
 
     try {
       if (isSignUp) {
+        // H3: Validate password strength
+        final strengthError = _validatePassword(_passwordController.text);
+        if (strengthError != null) {
+          setState(() { _error = strengthError; _isLoading = false; });
+          return;
+        }
+        // H2: Validate confirm password matches
+        if (_passwordController.text != _confirmPasswordController.text) {
+          setState(() { _error = 'Passwords do not match.'; _isLoading = false; });
+          return;
+        }
         await SupabaseService.signUp(_emailController.text, _passwordController.text);
       } else {
         await SupabaseService.signIn(_emailController.text, _passwordController.text);
@@ -82,6 +102,7 @@ class _AuthScreenState extends State<AuthScreen> {
               error: _error,
               emailController: _emailController,
               passwordController: _passwordController,
+              confirmPasswordController: _confirmPasswordController,
               onAuth: _handleAuth,
               onToggleAuth: () => setState(() => isSignUp = !isSignUp),
             ),
@@ -134,6 +155,7 @@ class _AuthScreenState extends State<AuthScreen> {
               error: _error,
               emailController: _emailController,
               passwordController: _passwordController,
+              confirmPasswordController: _confirmPasswordController,
               onAuth: _handleAuth,
               onToggleAuth: () => setState(() => isSignUp = !isSignUp),
             ),
@@ -196,6 +218,7 @@ class _AuthForm extends StatelessWidget {
   final String? error;
   final TextEditingController emailController;
   final TextEditingController passwordController;
+  final TextEditingController? confirmPasswordController;
   final VoidCallback onAuth;
   final VoidCallback onToggleAuth;
 
@@ -205,6 +228,7 @@ class _AuthForm extends StatelessWidget {
     this.error,
     required this.emailController,
     required this.passwordController,
+    this.confirmPasswordController,
     required this.onAuth,
     required this.onToggleAuth,
   });
@@ -276,10 +300,11 @@ class _AuthForm extends StatelessWidget {
         ],
         if (isSignUp) ...[
           const SizedBox(height: 24),
-          const _AuthField(
+          _AuthField(
             label: 'Confirm Password', 
             hint: '••••••••', 
-            isPassword: true
+            isPassword: true,
+            controller: confirmPasswordController,
           ),
         ],
         const SizedBox(height: 40),

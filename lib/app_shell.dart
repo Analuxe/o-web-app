@@ -1,3 +1,4 @@
+import 'package:o_web/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -47,7 +48,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   }
 
   Future<void> _checkAdminStatus() async {
-    debugPrint('NAV: Checking Admin Status in AppShell');
+    safeLog('NAV: Checking Admin Status in AppShell');
     try {
       final profile = await SupabaseService.getMyProfile().timeout(const Duration(seconds: 3));
       if (mounted) {
@@ -55,10 +56,10 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
           _isAdmin = profile?.isAdmin ?? false;
           _isLoading = false;
         });
-        debugPrint('NAV: Admin status: $_isAdmin');
+        safeLog('NAV: Admin status: $_isAdmin');
       }
     } catch (e) {
-      debugPrint('NAV: Admin check FAILED: $e');
+      safeLog('NAV: Admin check FAILED: $e');
       if (mounted) setState(() => _isLoading = false);
     }
   }
@@ -71,7 +72,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
         context.go('/login');
       }
     } catch (e) {
-      debugPrint('Sign-out error: $e');
+      safeLog('Sign-out error: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error signing out: $e'), backgroundColor: Colors.redAccent),

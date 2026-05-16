@@ -1,3 +1,4 @@
+import 'package:o_web/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:o_web/theme.dart';
@@ -64,7 +65,7 @@ class _ReportDialogState extends State<ReportDialog> {
         );
       }
     } catch (e) {
-      debugPrint('REPORT ERROR: $e');
+      safeLog('REPORT ERROR: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

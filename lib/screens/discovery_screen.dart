@@ -271,6 +271,7 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> with SingleTickerProv
             .map((json) => Profile.fromJson(json))
             .where((p) => p.id != SupabaseService.client.auth.currentUser?.id)
             .where((p) => !_blockedIds.contains(p.id))
+            .where((p) => p.isDiscoverable) // P4: Respect profile pause
             .toList();
 
         // APPLY FILTERS
@@ -343,6 +344,7 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> with SingleTickerProv
             .map((json) => Profile.fromJson(json))
             .where((p) => p.id != SupabaseService.client.auth.currentUser?.id)
             .where((p) => !_blockedIds.contains(p.id))
+            .where((p) => p.isDiscoverable) // P4: Respect profile pause
             .toList();
 
         // Apply non-distance filters only

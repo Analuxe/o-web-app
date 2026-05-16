@@ -1,3 +1,4 @@
+import 'package:o_web/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:o_web/theme.dart';
 import 'package:o_web/services/supabase_service.dart';
@@ -97,7 +98,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         });
       }
     } catch (e) {
-      debugPrint('Error loading profile: $e');
+      safeLog('Error loading profile: $e');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -150,7 +151,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         );
       }
     } catch (e) {
-      debugPrint('Save Error: $e');
+      safeLog('Save Error: $e');
       if (mounted) {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(

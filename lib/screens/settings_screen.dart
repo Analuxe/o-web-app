@@ -16,6 +16,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _zipcodeController = TextEditingController();
   bool _isLoading = true;
   bool _isSaving = false;
+  bool _isDiscoverable = true;
 
   @override
   void initState() {
@@ -28,6 +29,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (mounted) {
       setState(() {
         _zipcodeController.text = profile?.zipcode ?? '';
+        _isDiscoverable = profile?.isDiscoverable ?? true;
         _isLoading = false;
       });
     }
@@ -186,6 +188,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(height: 48),
             
             _buildSection('Discovery & Location', [
+              // P4: Profile Pause / Visibility Toggle
+              SwitchListTile(
+                title: const Text('Visible in Discovery', style: TextStyle(color: Colors.white)),
+                subtitle: Text(
+                  _isDiscoverable 
+                      ? 'Your profile appears in discovery feeds'
+                      : 'Your profile is hidden from all discovery feeds',
+                  style: TextStyle(
+                    color: _isDiscoverable ? Colors.white38 : Colors.orangeAccent.withValues(alpha: 0.7),
+                    fontSize: 12,
+                  ),
+                ),
+                value: _isDiscoverable,
+                activeColor: OTheme.neonPink,
+                onChanged: (val) async {
+                  setState(() => _isDiscoverable = val);
+                  await SupabaseService.updateProfile({'is_discoverable': val});
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(val ? 'Profile is now visible' : 'Profile is now hidden from discovery'),
+                        backgroundColor: val ? Colors.green : Colors.orangeAccent,
+                      ),
+                    );
+                  }
+                },
+              ),
+              const Divider(color: Colors.white10, height: 1),
               Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(

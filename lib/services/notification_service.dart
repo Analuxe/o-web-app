@@ -1,3 +1,4 @@
+import 'package:o_web/utils/logger.dart';
 // ignore: depend_on_referenced_packages
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -36,12 +37,12 @@ class NotificationService {
       FirebaseMessaging.onBackgroundMessage(
           _firebaseMessagingBackgroundHandler);
     } catch (e) {
-      debugPrint("Firebase initialization skipped or failed: $e");
+      safeLog("Firebase initialization skipped or failed: $e");
     }
   }
 
   static Future<void> _firebaseMessagingBackgroundHandler(
       RemoteMessage message) async {
-    debugPrint("Handling background message: ${message.messageId}");
+    safeLog("Handling background message: ${message.messageId}");
   }
 }

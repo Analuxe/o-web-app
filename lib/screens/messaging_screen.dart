@@ -1,3 +1,4 @@
+import 'package:o_web/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:o_web/theme.dart';
@@ -30,7 +31,7 @@ class _MessagingScreenState extends State<MessagingScreen> {
   @override
   void initState() {
     super.initState();
-    debugPrint('MSG: initState. initialProfileId: ${widget.initialProfileId}');
+    safeLog('MSG: initState. initialProfileId: ${widget.initialProfileId}');
     _loadProfileAndChats();
   }
 
@@ -38,13 +39,13 @@ class _MessagingScreenState extends State<MessagingScreen> {
   void didUpdateWidget(MessagingScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.initialProfileId != oldWidget.initialProfileId) {
-      debugPrint('MSG: initialProfileId changed from ${oldWidget.initialProfileId} to ${widget.initialProfileId}');
+      safeLog('MSG: initialProfileId changed from ${oldWidget.initialProfileId} to ${widget.initialProfileId}');
       _loadProfileAndChats();
     }
   }
 
   Future<void> _loadProfileAndChats() async {
-    debugPrint('MSG: Starting load. ID: ${widget.initialProfileId}');
+    safeLog('MSG: Starting load. ID: ${widget.initialProfileId}');
     try {
       if (widget.initialProfileId != null) {
         setState(() => _isFetchingInitialProfile = true);
@@ -69,15 +70,15 @@ class _MessagingScreenState extends State<MessagingScreen> {
       bool showRequests = _showRequests;
 
       if (widget.initialProfileId != null) {
-        debugPrint('MSG: Resolving initial ID: ${widget.initialProfileId}');
+        safeLog('MSG: Resolving initial ID: ${widget.initialProfileId}');
         showRequests = false;
         final existing = chats.where((c) => c.id == widget.initialProfileId);
         
         if (existing.isNotEmpty) {
-          debugPrint('MSG: Found user in existing chats');
+          safeLog('MSG: Found user in existing chats');
           selectedProfile = existing.first;
         } else {
-          debugPrint('MSG: User not in recent chats. Fetching from database...');
+          safeLog('MSG: User not in recent chats. Fetching from database...');
           try {
             final data = await SupabaseService.client
                 .from('profiles')
@@ -85,14 +86,14 @@ class _MessagingScreenState extends State<MessagingScreen> {
                 .eq('id', widget.initialProfileId!)
                 .single();
             final profile = Profile.fromJson(data);
-            debugPrint('MSG: Successfully fetched ${profile.displayName}');
+            safeLog('MSG: Successfully fetched ${profile.displayName}');
             selectedProfile = profile;
             // Inject into the top of the chat list for immediate visibility
             if (!chats.any((c) => c.id == profile.id)) {
               chats.insert(0, profile);
             }
           } catch (e) {
-            debugPrint('MSG: Error fetching profile from DB: $e');
+            safeLog('MSG: Error fetching profile from DB: $e');
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text('Error: Could not find user ${widget.initialProfileId} in database.'), backgroundColor: Colors.redAccent),
@@ -123,9 +124,9 @@ class _MessagingScreenState extends State<MessagingScreen> {
           _isFetchingInitialProfile = false;
         });
       }
-      debugPrint('MSG: Load complete. Selected: ${_selectedProfile?.displayName ?? "NONE"}');
+      safeLog('MSG: Load complete. Selected: ${_selectedProfile?.displayName ?? "NONE"}');
     } catch (e) {
-      debugPrint('LOAD PROFILE ERROR: $e');
+      safeLog('LOAD PROFILE ERROR: $e');
       
       if (mounted) {
         setState(() {
@@ -142,7 +143,7 @@ class _MessagingScreenState extends State<MessagingScreen> {
   }
 
   void _openChat(Profile profile) {
-    debugPrint('MSG: Manually opening chat with ${profile.displayName}');
+    safeLog('MSG: Manually opening chat with ${profile.displayName}');
     // Mark their messages to us as read
     SupabaseService.markMessagesAsRead(profile.id);
     setState(() {
@@ -183,7 +184,7 @@ class _MessagingScreenState extends State<MessagingScreen> {
         _isSearching = false;
       });
     } catch (e) {
-      debugPrint('MSG: Search error: $e');
+      safeLog('MSG: Search error: $e');
       setState(() => _isSearching = false);
     }
   }
@@ -223,7 +224,7 @@ class _MessagingScreenState extends State<MessagingScreen> {
         final url = await SupabaseService.uploadChatMedia(myId, bytes, fileName);
         await SupabaseService.sendMessage(_selectedProfile!.id, '', mediaUrl: url, mediaType: 'image');
       } catch (e) {
-        debugPrint('Error uploading image: $e');
+        safeLog('Error uploading image: $e');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error sending image: $e')));
         }
@@ -237,7 +238,7 @@ class _MessagingScreenState extends State<MessagingScreen> {
     final content = _messageController.text;
     
     if (_selectedProfile == null) {
-      debugPrint('MSG: Cannot send. _selectedProfile is NULL');
+      safeLog('MSG: Cannot send. _selectedProfile is NULL');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Error: Profile is null. Cannot send message.'), backgroundColor: Colors.orangeAccent),
       );
@@ -245,7 +246,7 @@ class _MessagingScreenState extends State<MessagingScreen> {
     }
 
     if (content.isEmpty) {
-      debugPrint('MSG: Cannot send. Message content is EMPTY');
+      safeLog('MSG: Cannot send. Message content is EMPTY');
       return;
     }
 
@@ -254,10 +255,10 @@ class _MessagingScreenState extends State<MessagingScreen> {
     try {
       await SupabaseService.sendMessage(_selectedProfile!.id, content);
       SupabaseService.notifyNewMessage(_selectedProfile!.id);
-      debugPrint('MSG: Message sent successfully to ${_selectedProfile!.displayName}');
+      safeLog('MSG: Message sent successfully to ${_selectedProfile!.displayName}');
     } catch (e) {
       // Force output to both developer console and standard output
-      debugPrint('SEND MESSAGE ERROR: $e');
+      safeLog('SEND MESSAGE ERROR: $e');
       
       if (!mounted) return;
       

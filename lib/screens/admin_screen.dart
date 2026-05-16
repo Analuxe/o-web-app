@@ -1,3 +1,4 @@
+import 'package:o_web/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:o_web/theme.dart';
@@ -108,7 +109,7 @@ class _AdminScreenState extends State<AdminScreen> {
       final data = await SupabaseService.getPendingVerifications();
       setState(() => pendingVerifications = data);
     } catch (e) {
-      debugPrint('Error loading verifications: $e');
+      safeLog('Error loading verifications: $e');
     } finally {
       setState(() => isLoadingVerifications = false);
     }
@@ -164,7 +165,7 @@ class _AdminScreenState extends State<AdminScreen> {
         reputationAlerts.sort((a, b) => b.thumbsDownCount.compareTo(a.thumbsDownCount));
       });
     } catch (e) {
-      debugPrint('Error loading reputation: $e');
+      safeLog('Error loading reputation: $e');
     } finally {
       setState(() => isLoadingReputation = false);
     }

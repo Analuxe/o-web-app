@@ -1,3 +1,4 @@
+import 'package:o_web/utils/logger.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/foundation.dart';
 import 'package:o_web/models/profile.dart';
@@ -33,7 +34,7 @@ class SupabaseService {
           email = linkedEmail;
         }
       } catch (e) {
-        debugPrint('Secure lookup failed: $e');
+        safeLog('Secure lookup failed: $e');
         // Fallback to original identifier if RPC fails
       }
     }
@@ -105,7 +106,7 @@ class SupabaseService {
       if (data == null) return null;
       return Profile.fromJson(data);
     } catch (e) {
-      debugPrint('Error fetching profile $id: $e');
+      safeLog('Error fetching profile $id: $e');
       return null;
     }
   }
@@ -137,7 +138,7 @@ class SupabaseService {
         'last_active': DateTime.now().toIso8601String(),
       }).eq('id', user.id);
     } catch (e) {
-      debugPrint('Error updating online status: $e');
+      safeLog('Error updating online status: $e');
     }
   }
 
@@ -247,7 +248,7 @@ class SupabaseService {
           .eq('receiver_id', myId)
           .eq('is_read', false);
     } catch (e) {
-      debugPrint('Error marking messages as read: $e');
+      safeLog('Error marking messages as read: $e');
     }
   }
 
@@ -357,7 +358,7 @@ class SupabaseService {
       _cachedBlockedIds = ids;
       return ids;
     } catch (e) {
-      debugPrint('Error fetching blocked users: $e');
+      safeLog('Error fetching blocked users: $e');
       return {};
     }
   }
@@ -541,7 +542,7 @@ class SupabaseService {
       
       return (response as List).map((json) => HubPost.fromJson(json)).toList();
     } catch (e) {
-      debugPrint('Error fetching hub posts: $e');
+      safeLog('Error fetching hub posts: $e');
       return []; // Return empty if table doesn't exist yet
     }
   }
@@ -571,7 +572,7 @@ class SupabaseService {
           .from('hub_content')
           .getPublicUrl(path);
     } catch (e) {
-      debugPrint('Error uploading hub media: $e');
+      safeLog('Error uploading hub media: $e');
       rethrow;
     }
   }
@@ -706,7 +707,7 @@ class SupabaseService {
         'data': data ?? {},
       });
     } catch (e) {
-      debugPrint('Error creating notification: $e');
+      safeLog('Error creating notification: $e');
     }
   }
 

@@ -1,3 +1,4 @@
+import 'package:o_web/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:o_web/theme.dart';
 import 'package:o_web/services/supabase_service.dart';
@@ -54,7 +55,7 @@ class _MatchmakerScreenState extends State<MatchmakerScreen> with SingleTickerPr
         });
       }
     } catch (e) {
-      debugPrint('Error loading matchmaker settings: $e');
+      safeLog('Error loading matchmaker settings: $e');
     } finally {
       if (mounted) {
         setState(() => isLoadingSettings = false);
@@ -69,7 +70,7 @@ class _MatchmakerScreenState extends State<MatchmakerScreen> with SingleTickerPr
         setState(() => _currentPosition = position);
       }
     } catch (e) {
-      debugPrint('Error getting location: $e');
+      safeLog('Error getting location: $e');
     }
   }
 
@@ -99,7 +100,8 @@ class _MatchmakerScreenState extends State<MatchmakerScreen> with SingleTickerPr
       // Find candidates
       var candidates = await SupabaseService.findMatchmakerCandidates(_filters.maxDistance.toInt(), _filters.selectedIntents);
       
-      // Apply additional filters client-side (Age, Kink, Role)
+      // Apply additional filters client-side (Age, Kink, Role, Visibility)
+      candidates = candidates.where((p) => p.isDiscoverable).toList(); // P4: Respect profile pause
       candidates = candidates.where((p) {
         // Age Filter
         if (p.age != null) {
@@ -148,7 +150,7 @@ class _MatchmakerScreenState extends State<MatchmakerScreen> with SingleTickerPr
         });
       }
     } catch (e) {
-      debugPrint('Error finding matches: $e');
+      safeLog('Error finding matches: $e');
       if (mounted) {
         setState(() => isSearching = false);
         ScaffoldMessenger.of(context).showSnackBar(
