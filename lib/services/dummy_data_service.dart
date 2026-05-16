@@ -505,6 +505,18 @@ class DummyDataService {
         await _client.from('profile_views').upsert(view, onConflict: 'viewer_id, viewed_id');
       }
     }
+
+    // 9. Endorsements
+    if (currentUserId != null) {
+      final endorsements = [
+        {'endorser_id': 'd0000000-0000-0000-0000-000000000001', 'endorsed_id': currentUserId, 'status': 'approved', 'content': 'Amazing connection, highly recommend!', 'created_at': now.subtract(const Duration(days: 2)).toIso8601String()},
+        {'endorser_id': 'd0000000-0000-0000-0000-000000000003', 'endorsed_id': currentUserId, 'status': 'approved', 'content': 'Such a great guy to hang out with.', 'created_at': now.subtract(const Duration(days: 5)).toIso8601String()},
+        {'endorser_id': 'd0000000-0000-0000-0000-000000000004', 'endorsed_id': currentUserId, 'status': 'pending', 'content': 'Vouching for him!', 'created_at': now.subtract(const Duration(hours: 3)).toIso8601String()},
+      ];
+      for (var endorsement in endorsements) {
+        await _client.from('endorsements').upsert(endorsement, onConflict: 'endorser_id, endorsed_id');
+      }
+    }
   }
 
   static Future<void> clearDummyData() async {
@@ -512,6 +524,7 @@ class DummyDataService {
     await _client.from('messages').delete().or('sender_id.like.d0000000-%,receiver_id.like.d0000000-%');
     await _client.from('connections').delete().or('sender_id.like.d0000000-%,receiver_id.like.d0000000-%');
     await _client.from('profile_views').delete().or('viewer_id.like.d0000000-%,viewed_id.like.d0000000-%');
+    await _client.from('endorsements').delete().or('endorser_id.like.d0000000-%,endorsed_id.like.d0000000-%');
     
     // 2. Delete reports related to dummy users
     await _client.from('reports').delete().or('reporter_id.like.d0000000-%,reported_id.like.d0000000-%');

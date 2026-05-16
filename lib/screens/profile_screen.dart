@@ -35,6 +35,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _isUploading = false;
   int _currentPhotoIndex = 0;
 
+  List<Map<String, dynamic>> _endorsements = [];
+  bool _hasEndorsed = false;
+
   List<String> get _allPhotos {
     final photos = <String>[];
     if (_profile?.avatarUrl != null) photos.add(_profile!.avatarUrl!);
@@ -108,6 +111,71 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
 
+  void _showEndorseDialog() {
+    final controller = TextEditingController();
+    bool isSubmitting = false;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: OTheme.deepCharcoal,
+          title: Text('Endorse ${_profile?.displayName ?? 'User'}', style: const TextStyle(color: Colors.white)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Write a short vouch for this user. This will be visible on their profile after they approve it.', style: TextStyle(color: Colors.white54, fontSize: 14)),
+              const SizedBox(height: 16),
+              TextField(
+                controller: controller,
+                maxLines: 3,
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: 'e.g., Great connection, very respectful...',
+                  hintStyle: const TextStyle(color: Colors.white24),
+                  filled: true,
+                  fillColor: OTheme.pureBlack,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+            ),
+            ElevatedButton(
+              onPressed: isSubmitting ? null : () async {
+                if (controller.text.trim().isEmpty) return;
+                setDialogState(() => isSubmitting = true);
+                try {
+                  await SupabaseService.createEndorsement(widget.userId!, controller.text.trim());
+                  if (mounted) {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Endorsement request sent!')));
+                    setState(() => _hasEndorsed = true);
+                  }
+                } catch (e) {
+                  safeLog('Error endorsing: $e');
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+                  }
+                } finally {
+                  if (mounted) setDialogState(() => isSubmitting = false);
+                }
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: OTheme.neonPink),
+              child: isSubmitting 
+                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2))
+                  : const Text('Submit', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -126,6 +194,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       if (!isMe && widget.userId != null) {
         SupabaseService.logProfileView(widget.userId!);
+      }
+
+      final endorsements = await SupabaseService.getEndorsements(profile?.id ?? myId!);
+      bool hasEndorsed = false;
+      if (!isMe && widget.userId != null) {
+        hasEndorsed = await SupabaseService.hasEndorsed(widget.userId!);
       }
 
       if (mounted) {
@@ -151,6 +225,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               _twitterController.text = socialLinks['x'] ?? '';
             }
           }
+          _endorsements = endorsements;
+          _hasEndorsed = hasEndorsed;
         });
       }
     } catch (e) {
@@ -387,6 +463,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: OTheme.neonPink,
                         foregroundColor: Colors.black,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton.icon(
+                      onPressed: _hasEndorsed ? null : _showEndorseDialog,
+                      icon: Icon(_hasEndorsed ? Icons.how_to_reg : Icons.thumb_up_alt_outlined, size: 18),
+                      label: Text(_hasEndorsed ? 'Pending/Endorsed' : 'Endorse'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _hasEndorsed ? Colors.white24 : OTheme.neonPink.withValues(alpha: 0.1),
+                        foregroundColor: _hasEndorsed ? Colors.white54 : OTheme.neonPink,
+                        side: _hasEndorsed ? BorderSide.none : const BorderSide(color: OTheme.neonPink),
                       ),
                     ),
                   ],
@@ -761,6 +848,50 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       else
                         const Text('No icebreakers set', style: TextStyle(color: Colors.white24, fontSize: 16)),
                     ],
+                    
+                    const SizedBox(height: 32),
+
+                    // Endorsements Section
+                    _buildLabel('Community Vouches (${_endorsements.length})'),
+                    if (_endorsements.isEmpty)
+                      const Text('No public endorsements yet.', style: TextStyle(color: Colors.white24, fontSize: 16))
+                    else
+                      Column(
+                        children: _endorsements.map((e) {
+                          final endorser = e['endorser'];
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 16),
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.05),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    CircleAvatar(
+                                      radius: 16,
+                                      backgroundImage: endorser['avatar_url'] != null ? NetworkImage(endorser['avatar_url']) : null,
+                                      backgroundColor: OTheme.deepCharcoal,
+                                      child: endorser['avatar_url'] == null ? const Icon(Icons.person, size: 16, color: OTheme.neonPink) : null,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(endorser['display_name'] ?? 'User', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                                    const SizedBox(width: 4),
+                                    if (endorser['is_verified'] == true) const Icon(Icons.verified, size: 14, color: Colors.blue),
+                                  ],
+                                ),
+                                if (e['content'] != null && e['content'].toString().isNotEmpty) ...[
+                                  const SizedBox(height: 8),
+                                  Text('"${e['content']}"', style: const TextStyle(color: Colors.white70, fontStyle: FontStyle.italic)),
+                                ],
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                      ),
                     
                     const SizedBox(height: 16),
                   ],

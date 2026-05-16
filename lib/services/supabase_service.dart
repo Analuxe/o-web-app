@@ -886,4 +886,99 @@ class SupabaseService {
       },
     );
   }
+
+  // --- Endorsements ---
+
+  static Future<bool> hasEndorsed(String targetId) async {
+    final me = client.auth.currentUser;
+    if (me == null) return false;
+    
+    final response = await client
+        .from('endorsements')
+        .select('id')
+        .eq('endorser_id', me.id)
+        .eq('endorsed_id', targetId)
+        .limit(1);
+    return response.isNotEmpty;
+  }
+  
+  static Future<void> createEndorsement(String endorsedId, String content) async {
+    final me = client.auth.currentUser;
+    if (me == null) throw Exception('Not authenticated');
+
+    await client.from('endorsements').insert({
+      'endorser_id': me.id,
+      'endorsed_id': endorsedId,
+      'content': content,
+      'status': 'pending',
+    });
+    
+    await notifyEndorsementRequest(endorsedId);
+  }
+
+  static Future<List<Map<String, dynamic>>> getEndorsements(String profileId) async {
+    final response = await client
+        .from('endorsements')
+        .select('*, endorser:profiles!endorser_id(*)')
+        .eq('endorsed_id', profileId)
+        .eq('status', 'approved')
+        .order('created_at', ascending: false);
+    return List<Map<String, dynamic>>.from(response);
+  }
+
+  static Future<List<Map<String, dynamic>>> getPendingEndorsementRequests() async {
+    final me = client.auth.currentUser;
+    if (me == null) throw Exception('Not authenticated');
+
+    final response = await client
+        .from('endorsements')
+        .select('*, endorser:profiles!endorser_id(*)')
+        .eq('endorsed_id', me.id)
+        .eq('status', 'pending')
+        .order('created_at', ascending: false);
+    return List<Map<String, dynamic>>.from(response);
+  }
+
+  static Future<void> respondToEndorsement(String endorsementId, String status) async {
+    await client
+        .from('endorsements')
+        .update({'status': status})
+        .eq('id', endorsementId);
+  }
+  
+  static Future<void> notifyEndorsementRequest(String targetUserId) async {
+    final me = await getMyProfile();
+    if (me == null) return;
+
+    await createNotification(
+      targetUserId: targetUserId,
+      type: 'endorsement_request',
+      title: 'New Endorsement',
+      body: '${me.displayName} wrote an endorsement for you. Review it now.',
+      data: {
+        'source_profile_id': me.id,
+        'source_display_name': me.displayName,
+        'source_avatar_url': me.avatarUrl,
+        'route': '/messaging',
+      },
+    );
+  }
+
+  static Future<void> notifyEndorsementAccepted(String targetUserId) async {
+    final me = await getMyProfile();
+    if (me == null) return;
+
+    await createNotification(
+      targetUserId: targetUserId,
+      type: 'endorsement_accepted',
+      title: 'Endorsement Approved',
+      body: '${me.displayName} approved your endorsement!',
+      data: {
+        'source_profile_id': me.id,
+        'source_display_name': me.displayName,
+        'source_avatar_url': me.avatarUrl,
+        'route': '/profile/${me.id}',
+      },
+    );
+  }
 }

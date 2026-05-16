@@ -63,6 +63,9 @@ class _MessagingScreenState extends State<MessagingScreen> {
           .select('*, sender:profiles!sender_id(id, display_name, avatar_url, username)')
           .eq('receiver_id', SupabaseService.client.auth.currentUser!.id)
           .eq('status', 'pending');
+          
+      // Fetch pending endorsement requests
+      final endorsementData = await SupabaseService.getPendingEndorsementRequests();
 
       final chats = chatData
           .map((json) => Profile.fromJson(json))
@@ -119,7 +122,17 @@ class _MessagingScreenState extends State<MessagingScreen> {
           _selectedProfile = selectedProfile;
           _matchRequests = List<Map<String, dynamic>>.from(requestData)
               .where((r) => r['sender'] != null && !blockedIds.contains(r['sender']['id']))
+              .map((r) => {...r, 'request_type': 'match'})
               .toList();
+              
+          _matchRequests.addAll(endorsementData
+              .where((r) => r['endorser'] != null && !blockedIds.contains(r['endorser']['id']))
+              .map((r) => {...r, 'request_type': 'endorsement'})
+              .toList());
+              
+          // Sort requests by created_at descending
+          _matchRequests.sort((a, b) => (b['created_at'] as String).compareTo(a['created_at'] as String));
+              
           _showRequests = showRequests;
           _isLoadingChats = false;
           _isLoadingProfile = false;
@@ -197,7 +210,7 @@ class _MessagingScreenState extends State<MessagingScreen> {
     // Notify the sender that their request was accepted
     if (status == 'accepted') {
       // Find the sender ID from the request data
-      final request = _matchRequests.firstWhere((r) => r['id'] == requestId, orElse: () => {});
+      final request = _matchRequests.firstWhere((r) => r['id'] == requestId && r['request_type'] == 'match', orElse: () => {});
       if (request.isNotEmpty && request['sender'] != null) {
         final senderId = request['sender']['id'] as String?;
         if (senderId != null) {
@@ -207,6 +220,22 @@ class _MessagingScreenState extends State<MessagingScreen> {
     }
     
     _loadProfileAndChats(); 
+  }
+
+  void _handleEndorsementRequest(String endorsementId, String status) async {
+    await SupabaseService.respondToEndorsement(endorsementId, status);
+    
+    if (status == 'approved') {
+      final request = _matchRequests.firstWhere((r) => r['id'] == endorsementId && r['request_type'] == 'endorsement', orElse: () => {});
+      if (request.isNotEmpty && request['endorser'] != null) {
+        final endorserId = request['endorser']['id'] as String?;
+        if (endorserId != null) {
+          SupabaseService.notifyEndorsementAccepted(endorserId);
+        }
+      }
+    }
+    
+    _loadProfileAndChats();
   }
 
   bool _isUploadingImage = false;
@@ -556,17 +585,35 @@ class _MessagingScreenState extends State<MessagingScreen> {
       itemCount: _matchRequests.length,
       itemBuilder: (context, index) {
         final request = _matchRequests[index];
-        final sender = request['sender'];
+        final isEndorsement = request['request_type'] == 'endorsement';
+        final sender = isEndorsement ? request['endorser'] : request['sender'];
+        
         return ListTile(
           contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
           leading: CircleAvatar(backgroundImage: sender['avatar_url'] != null ? NetworkImage(sender['avatar_url']) : null, backgroundColor: OTheme.deepCharcoal),
           title: Text(sender['display_name'] ?? 'Unknown', style: const TextStyle(color: Colors.white)),
-          subtitle: Text('@${sender['username']}', style: const TextStyle(color: Colors.white54, fontSize: 12)),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(isEndorsement ? 'Wants to vouch for you' : 'Sent a match request', style: TextStyle(color: isEndorsement ? OTheme.neonPink : Colors.white54, fontSize: 12, fontWeight: FontWeight.bold)),
+              if (isEndorsement && request['content'] != null && request['content'].toString().isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4.0),
+                  child: Text('"${request['content']}"', style: const TextStyle(color: Colors.white70, fontStyle: FontStyle.italic, fontSize: 12)),
+                ),
+            ],
+          ),
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              IconButton(icon: const Icon(Icons.check_circle, color: Colors.greenAccent), onPressed: () => _handleRequest(request['id'], 'accepted')),
-              IconButton(icon: const Icon(Icons.cancel, color: Colors.redAccent), onPressed: () => _handleRequest(request['id'], 'declined')),
+              IconButton(
+                icon: const Icon(Icons.check_circle, color: Colors.greenAccent), 
+                onPressed: () => isEndorsement ? _handleEndorsementRequest(request['id'], 'approved') : _handleRequest(request['id'], 'accepted')
+              ),
+              IconButton(
+                icon: const Icon(Icons.cancel, color: Colors.redAccent), 
+                onPressed: () => isEndorsement ? _handleEndorsementRequest(request['id'], 'rejected') : _handleRequest(request['id'], 'declined')
+              ),
             ],
           ),
         );
