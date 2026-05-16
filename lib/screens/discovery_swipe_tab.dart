@@ -46,36 +46,33 @@ class _DiscoverySwipeTabState extends State<DiscoverySwipeTab> {
         SwipeItem(
           content: profile,
           likeAction: () {
+            // RIGHT SWIPE - Send match or message
             if (widget.canMessageAnyone) {
               context.go('/messaging?id=${profile.id}');
             } else {
               SupabaseService.extendVine(profile.id);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text("Match Request Sent to ${profile.displayName}!"),
-                      const SizedBox(height: 4),
-                      const Text(
-                        'Note: Recipients only allow requests if interested.',
-                        style: TextStyle(fontSize: 10, color: Colors.white70),
-                      ),
-                    ],
-                  ),
+                  content: Text("Match Request Sent to ${profile.displayName}!"),
                   backgroundColor: OTheme.neonPink,
-                  duration: const Duration(seconds: 3),
+                  duration: const Duration(seconds: 2),
                 ),
               );
             }
           },
           nopeAction: () {
-            // Just move to next
+            // LEFT SWIPE - Skip and remove from flow
+            SupabaseService.skipUser(profile.id);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text("${profile.displayName} removed from your flow."),
+                backgroundColor: Colors.white24,
+                duration: const Duration(seconds: 1),
+              ),
+            );
           },
           superlikeAction: () {
              SupabaseService.extendVine(profile.id);
-             // Maybe a special effect here?
           },
         ),
       );

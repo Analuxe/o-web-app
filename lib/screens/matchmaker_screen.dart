@@ -322,81 +322,92 @@ class _MatchmakerScreenState extends State<MatchmakerScreen> with SingleTickerPr
   }
 
   Widget _buildSwipeTab(bool isMobile) {
-    return StreamBuilder<List<Map<String, dynamic>>>(
-      stream: SupabaseService.getNearbyVines(),
-      builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          return Center(child: Text('Error: ${snapshot.error}', style: const TextStyle(color: Colors.white54)));
-        }
-        if (!snapshot.hasData) {
+    return FutureBuilder<Set<String>>(
+      future: SupabaseService.getInteractedUserIds(),
+      builder: (context, interactedSnapshot) {
+        if (!interactedSnapshot.hasData) {
           return const Center(child: CircularProgressIndicator(color: OTheme.neonPink));
         }
         
-        var profiles = snapshot.data!
-            .map((json) => Profile.fromJson(json))
-            .where((p) => p.id != SupabaseService.client.auth.currentUser?.id)
-            .toList();
+        final interactedIds = interactedSnapshot.data!;
 
-        // APPLY FILTERS
-        profiles = profiles.where((p) {
-          // 1. Distance Filter
-          if (_currentPosition != null) {
-            if (p.latitude == null || p.longitude == null) return false;
-            final distance = _calculateDistance(p.latitude!, p.longitude!);
-            if (distance > _filters.maxDistance) return false;
-          }
-
-          // 2. Age Filter
-          if (p.age != null) {
-            if (p.age! < _filters.ageRange.start || p.age! > _filters.ageRange.end) return false;
-          }
-
-          // 3. Kink Filter
-          if (_filters.selectedKinks.isNotEmpty) {
-            final profileKinks = (p.labels ?? []).map((l) => l.split(':')[0]).toSet();
-            final matchesKink = _filters.selectedKinks.any((k) => profileKinks.contains(k));
-            if (!matchesKink) return false;
-          }
-
-          // 4. Role Filter
-          if (_filters.selectedRoles.isNotEmpty) {
-            final profileRoles = (p.labels ?? []).map((l) {
-              final parts = l.split(':');
-              if (parts.length < 2) return '';
-              final pref = int.tryParse(parts[1]) ?? 2;
-              return UserTag.getRoleFromPref(pref);
-            }).toSet();
-            final matchesRole = _filters.selectedRoles.any((r) => profileRoles.contains(r));
-            if (!matchesRole) return false;
-          }
-
-          // 5. Relationship Status Filter
-          if (_filters.selectedRelationshipStatuses.isNotEmpty) {
-            if (p.relationshipStatus == null || !_filters.selectedRelationshipStatuses.contains(p.relationshipStatus)) {
-              return false;
+        return StreamBuilder<List<Map<String, dynamic>>>(
+          stream: SupabaseService.getNearbyVines(),
+          builder: (context, snapshot) {
+            if (snapshot.hasError) {
+              return Center(child: Text('Error: ${snapshot.error}', style: const TextStyle(color: Colors.white54)));
             }
-          }
-
-          // 6. Intent Filter
-          if (_filters.selectedIntents.isNotEmpty) {
-            final profileIntents = (p.interests ?? []).toSet();
-            final matchesIntent = _filters.selectedIntents.any((i) => profileIntents.contains(i));
-            if (!matchesIntent) return false;
-          }
-
-          return true;
-        }).toList();
-
-        if (profiles.isEmpty) {
-          return const Center(child: Text("No vines match your filters.", style: TextStyle(color: Colors.white24, fontSize: 16)));
-        }
-
-        return DiscoverySwipeTab(
-          profiles: profiles,
-          isCurrentUserVerified: myProfile?.isVerified ?? false,
-          canMessageAnyone: myProfile?.canMessageAnyone ?? false,
+            if (!snapshot.hasData) {
+              return const Center(child: CircularProgressIndicator(color: OTheme.neonPink));
+            }
+            
+            var profiles = snapshot.data!
+                .map((json) => Profile.fromJson(json))
+                .where((p) => p.id != SupabaseService.client.auth.currentUser?.id && !interactedIds.contains(p.id))
+                .toList();
+    
+            // APPLY FILTERS
+            profiles = profiles.where((p) {
+              // 1. Distance Filter
+              if (_currentPosition != null) {
+                if (p.latitude == null || p.longitude == null) return false;
+                final distance = _calculateDistance(p.latitude!, p.longitude!);
+                if (distance > _filters.maxDistance) return false;
+              }
+    
+              // 2. Age Filter
+              if (p.age != null) {
+                if (p.age! < _filters.ageRange.start || p.age! > _filters.ageRange.end) return false;
+              }
+    
+              // 3. Kink Filter
+              if (_filters.selectedKinks.isNotEmpty) {
+                final profileKinks = (p.labels ?? []).map((l) => l.split(':')[0]).toSet();
+                final matchesKink = _filters.selectedKinks.any((k) => profileKinks.contains(k));
+                if (!matchesKink) return false;
+              }
+    
+              // 4. Role Filter
+              if (_filters.selectedRoles.isNotEmpty) {
+                final profileRoles = (p.labels ?? []).map((l) {
+                  final parts = l.split(':');
+                  if (parts.length < 2) return '';
+                  final pref = int.tryParse(parts[1]) ?? 2;
+                  return UserTag.getRoleFromPref(pref);
+                }).toSet();
+                final matchesRole = _filters.selectedRoles.any((r) => profileRoles.contains(r));
+                if (!matchesRole) return false;
+              }
+    
+              // 5. Relationship Status Filter
+              if (_filters.selectedRelationshipStatuses.isNotEmpty) {
+                if (p.relationshipStatus == null || !_filters.selectedRelationshipStatuses.contains(p.relationshipStatus)) {
+                  return false;
+                }
+              }
+    
+              // 6. Intent Filter
+              if (_filters.selectedIntents.isNotEmpty) {
+                final profileIntents = (p.interests ?? []).toSet();
+                final matchesIntent = _filters.selectedIntents.any((i) => profileIntents.contains(i));
+                if (!matchesIntent) return false;
+              }
+    
+              return true;
+            }).toList();
+    
+            if (profiles.isEmpty) {
+              return const Center(child: Text("No more vines in this flow.", style: TextStyle(color: Colors.white24, fontSize: 16)));
+            }
+    
+            return DiscoverySwipeTab(
+              profiles: profiles,
+              isCurrentUserVerified: myProfile?.isVerified ?? false,
+              canMessageAnyone: myProfile?.canMessageAnyone ?? false,
+            );
+          },
         );
-      },
+      }
     );
   }
 

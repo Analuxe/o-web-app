@@ -16,17 +16,25 @@ class DiscoveryScreen extends StatefulWidget {
   State<DiscoveryScreen> createState() => _DiscoveryScreenState();
 }
 
-class _DiscoveryScreenState extends State<DiscoveryScreen> {
+class _DiscoveryScreenState extends State<DiscoveryScreen> with SingleTickerProviderStateMixin {
   Profile? _myProfile;
   Position? _currentPosition;
   bool _isLoadingLocation = true;
   DiscoveryFilters _filters = DiscoveryFilters();
+  late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
     _loadMyProfile();
     _determinePosition();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadMyProfile() async {
@@ -113,7 +121,7 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Title Section
+                  // Title + Actions Row
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -163,87 +171,66 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> {
                     ],
                   ),
 
-                  
-                  // Content Section
+                  const SizedBox(height: 20),
+
+                  // Tab Bar
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.04),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+                    ),
+                    child: TabBar(
+                      controller: _tabController,
+                      indicator: BoxDecoration(
+                        color: OTheme.neonPink.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: OTheme.neonPink.withValues(alpha: 0.4)),
+                      ),
+                      indicatorSize: TabBarIndicatorSize.tab,
+                      dividerColor: Colors.transparent,
+                      labelColor: OTheme.neonPink,
+                      unselectedLabelColor: Colors.white38,
+                      labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                      unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.normal, fontSize: 13),
+                      padding: const EdgeInsets.all(6),
+                      tabs: const [
+                        Tab(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.near_me, size: 16),
+                              SizedBox(width: 8),
+                              Text('Nearby'),
+                            ],
+                          ),
+                        ),
+                        Tab(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.public, size: 16),
+                              SizedBox(width: 8),
+                              Text('Global'),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Tab Content
                   Expanded(
-                    child: StreamBuilder<List<Map<String, dynamic>>>(
-                      stream: SupabaseService.getNearbyVines(),
-                      builder: (context, snapshot) {
-                        if (snapshot.hasError) {
-                          return Center(child: Text('Error: ${snapshot.error}', style: const TextStyle(color: Colors.white54)));
-                        }
-                        if (!snapshot.hasData || (_isLoadingLocation && _currentPosition == null)) {
-                          return const Center(child: CircularProgressIndicator(color: OTheme.neonPink));
-                        }
-                        
-                        var profiles = snapshot.data!
-                            .map((json) => Profile.fromJson(json))
-                            .where((p) => p.id != SupabaseService.client.auth.currentUser?.id)
-                            .toList();
-
-                        // APPLY FILTERS
-                        profiles = profiles.where((p) {
-                          // 1. Distance Filter
-                          if (_currentPosition != null) {
-                            if (p.latitude == null || p.longitude == null) return false;
-                            final distance = _calculateDistance(p.latitude!, p.longitude!);
-                            if (distance > _filters.maxDistance) return false;
-                          }
-
-                          // 2. Age Filter
-                          if (p.age != null) {
-                            if (p.age! < _filters.ageRange.start || p.age! > _filters.ageRange.end) return false;
-                          }
-
-                          // 3. Kink Filter
-                          if (_filters.selectedKinks.isNotEmpty) {
-                            final profileKinks = (p.labels ?? []).map((l) => l.split(':')[0]).toSet();
-                            final matchesKink = _filters.selectedKinks.any((k) => profileKinks.contains(k));
-                            if (!matchesKink) return false;
-                          }
-
-                          // 4. Role Filter
-                          if (_filters.selectedRoles.isNotEmpty) {
-                            final profileRoles = (p.labels ?? []).map((l) {
-                              final parts = l.split(':');
-                              if (parts.length < 2) return '';
-                              final pref = int.tryParse(parts[1]) ?? 2;
-                              return UserTag.getRoleFromPref(pref);
-                            }).toSet();
-                            final matchesRole = _filters.selectedRoles.any((r) => profileRoles.contains(r));
-                            if (!matchesRole) return false;
-                          }
-
-                          // 5. Relationship Status Filter
-                          if (_filters.selectedRelationshipStatuses.isNotEmpty) {
-                            if (p.relationshipStatus == null || !_filters.selectedRelationshipStatuses.contains(p.relationshipStatus)) {
-                              return false;
-                            }
-                          }
-
-                          return true;
-                        }).toList();
-
-                        if (profiles.isEmpty) {
-                          return _buildEmptyState("No vines match your filters.");
-                        }
-
-                        return GridView.builder(
-                          padding: const EdgeInsets.only(bottom: 100),
-                          gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                            maxCrossAxisExtent: width < 600 ? 200 : 300,
-                            childAspectRatio: 0.75,
-                            crossAxisSpacing: width < 600 ? 12 : 24,
-                            mainAxisSpacing: width < 600 ? 12 : 24,
-                          ),
-                          itemCount: profiles.length,
-                          itemBuilder: (context, index) => UserCard(
-                            profile: profiles[index],
-                            isCurrentUserVerified: _myProfile?.isVerified ?? false,
-                            canMessageAnyone: _myProfile?.canMessageAnyone ?? false,
-                          ),
-                        );
-                      },
+                    child: TabBarView(
+                      controller: _tabController,
+                      children: [
+                        _buildNearbyGrid(width),
+                        _buildGlobalGrid(width),
+                      ],
                     ),
                   ),
                 ],
@@ -260,6 +247,150 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> {
       ),
     );
   }
+
+  // ── NEARBY TAB (distance-filtered) ─────────────────────────────────────────
+  Widget _buildNearbyGrid(double width) {
+    return StreamBuilder<List<Map<String, dynamic>>>(
+      stream: SupabaseService.getNearbyVines(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}', style: const TextStyle(color: Colors.white54)));
+        }
+        if (!snapshot.hasData || (_isLoadingLocation && _currentPosition == null)) {
+          return const Center(child: CircularProgressIndicator(color: OTheme.neonPink));
+        }
+
+        var profiles = snapshot.data!
+            .map((json) => Profile.fromJson(json))
+            .where((p) => p.id != SupabaseService.client.auth.currentUser?.id)
+            .toList();
+
+        // APPLY FILTERS
+        profiles = profiles.where((p) {
+          if (_currentPosition != null) {
+            if (p.latitude == null || p.longitude == null) return false;
+            final distance = _calculateDistance(p.latitude!, p.longitude!);
+            if (distance > _filters.maxDistance) return false;
+          }
+          if (p.age != null) {
+            if (p.age! < _filters.ageRange.start || p.age! > _filters.ageRange.end) return false;
+          }
+          if (_filters.selectedKinks.isNotEmpty) {
+            final profileKinks = (p.labels ?? []).map((l) => l.split(':')[0]).toSet();
+            if (!_filters.selectedKinks.any((k) => profileKinks.contains(k))) return false;
+          }
+          if (_filters.selectedRoles.isNotEmpty) {
+            final profileRoles = (p.labels ?? []).map((l) {
+              final parts = l.split(':');
+              if (parts.length < 2) return '';
+              return UserTag.getRoleFromPref(int.tryParse(parts[1]) ?? 2);
+            }).toSet();
+            if (!_filters.selectedRoles.any((r) => profileRoles.contains(r))) return false;
+          }
+          if (_filters.selectedRelationshipStatuses.isNotEmpty) {
+            if (p.relationshipStatus == null || !_filters.selectedRelationshipStatuses.contains(p.relationshipStatus)) return false;
+          }
+          return true;
+        }).toList();
+
+        if (profiles.isEmpty) return _buildEmptyState("No vines near you. Try expanding your distance filter.");
+
+        return GridView.builder(
+          padding: const EdgeInsets.only(bottom: 100),
+          gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+            maxCrossAxisExtent: width < 600 ? 200 : 300,
+            childAspectRatio: 0.75,
+            crossAxisSpacing: width < 600 ? 12 : 24,
+            mainAxisSpacing: width < 600 ? 12 : 24,
+          ),
+          itemCount: profiles.length,
+          itemBuilder: (context, index) => UserCard(
+            profile: profiles[index],
+            isCurrentUserVerified: _myProfile?.isVerified ?? false,
+            canMessageAnyone: _myProfile?.canMessageAnyone ?? false,
+          ),
+        );
+      },
+    );
+  }
+
+  // ── GLOBAL TAB (no distance filter, sorted nearest first) ──────────────────
+  Widget _buildGlobalGrid(double width) {
+    return StreamBuilder<List<Map<String, dynamic>>>(
+      stream: SupabaseService.getNearbyVines(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}', style: const TextStyle(color: Colors.white54)));
+        }
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator(color: OTheme.neonPink));
+        }
+
+        var profiles = snapshot.data!
+            .map((json) => Profile.fromJson(json))
+            .where((p) => p.id != SupabaseService.client.auth.currentUser?.id)
+            .toList();
+
+        // Apply non-distance filters only
+        profiles = profiles.where((p) {
+          if (p.age != null) {
+            if (p.age! < _filters.ageRange.start || p.age! > _filters.ageRange.end) return false;
+          }
+          if (_filters.selectedKinks.isNotEmpty) {
+            final profileKinks = (p.labels ?? []).map((l) => l.split(':')[0]).toSet();
+            if (!_filters.selectedKinks.any((k) => profileKinks.contains(k))) return false;
+          }
+          if (_filters.selectedRoles.isNotEmpty) {
+            final profileRoles = (p.labels ?? []).map((l) {
+              final parts = l.split(':');
+              if (parts.length < 2) return '';
+              return UserTag.getRoleFromPref(int.tryParse(parts[1]) ?? 2);
+            }).toSet();
+            if (!_filters.selectedRoles.any((r) => profileRoles.contains(r))) return false;
+          }
+          if (_filters.selectedRelationshipStatuses.isNotEmpty) {
+            if (p.relationshipStatus == null || !_filters.selectedRelationshipStatuses.contains(p.relationshipStatus)) return false;
+          }
+          return true;
+        }).toList();
+
+        // Sort by distance (nearest first). Profiles without coordinates go to the end.
+        if (_currentPosition != null) {
+          profiles.sort((a, b) {
+            final distA = (a.latitude != null && a.longitude != null)
+                ? _calculateDistance(a.latitude!, a.longitude!)
+                : double.infinity;
+            final distB = (b.latitude != null && b.longitude != null)
+                ? _calculateDistance(b.latitude!, b.longitude!)
+                : double.infinity;
+            return distA.compareTo(distB);
+          });
+        }
+
+        if (profiles.isEmpty) return _buildEmptyState("No vines found globally.");
+
+        return GridView.builder(
+          padding: const EdgeInsets.only(bottom: 100),
+          gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+            maxCrossAxisExtent: width < 600 ? 200 : 300,
+            childAspectRatio: 0.75,
+            crossAxisSpacing: width < 600 ? 12 : 24,
+            mainAxisSpacing: width < 600 ? 12 : 24,
+          ),
+          itemCount: profiles.length,
+          itemBuilder: (context, index) => UserCard(
+            profile: profiles[index],
+            isCurrentUserVerified: _myProfile?.isVerified ?? false,
+            canMessageAnyone: _myProfile?.canMessageAnyone ?? false,
+            distanceMiles: (_currentPosition != null && profiles[index].latitude != null && profiles[index].longitude != null)
+                ? _calculateDistance(profiles[index].latitude!, profiles[index].longitude!)
+                : null,
+          ),
+        );
+      },
+    );
+  }
+
 
   Widget _buildEmptyState(String message) {
     return Center(
@@ -279,11 +410,13 @@ class UserCard extends StatefulWidget {
   final Profile profile;
   final bool isCurrentUserVerified;
   final bool canMessageAnyone;
+  final double? distanceMiles;
   const UserCard({
     super.key, 
     required this.profile, 
     this.isCurrentUserVerified = false,
     this.canMessageAnyone = false,
+    this.distanceMiles,
   });
 
   @override
@@ -528,7 +661,9 @@ class _UserCardState extends State<UserCard> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '${widget.profile.pronouns} • Nearby',
+                        widget.distanceMiles != null
+                            ? '${widget.profile.pronouns} • ${widget.distanceMiles!.toStringAsFixed(0)} mi away'
+                            : '${widget.profile.pronouns} • Nearby',
                         style: const TextStyle(
                           fontSize: 12,
                           color: Colors.white54,

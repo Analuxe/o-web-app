@@ -201,6 +201,16 @@ class SupabaseService {
     });
   }
 
+  static Future<void> skipUser(String targetUserId) async {
+    final myId = client.auth.currentUser!.id;
+    // Mark as 'skipped' so we can filter them out later
+    await client.from('connections').upsert({
+      'sender_id': myId,
+      'receiver_id': targetUserId,
+      'status': 'skipped',
+    });
+  }
+
   static Future<void> respondToMatchRequest(String requestId, String status) async {
     await client.from('connections').update({
       'status': status,
@@ -209,10 +219,25 @@ class SupabaseService {
   }
 
   static Stream<List<Map<String, dynamic>>> getConnectionsStream() {
+    final myId = client.auth.currentUser?.id;
+    if (myId == null) return const Stream.empty();
+    
     return client
         .from('connections')
         .stream(primaryKey: ['id'])
         .order('created_at', ascending: false);
+  }
+
+  static Future<Set<String>> getInteractedUserIds() async {
+    final myId = client.auth.currentUser?.id;
+    if (myId == null) return {};
+
+    final data = await client
+        .from('connections')
+        .select('receiver_id')
+        .eq('sender_id', myId);
+    
+    return (data as List).map((c) => c['receiver_id'] as String).toSet();
   }
 
   // Safety Logic
