@@ -124617,9 +124617,9 @@ case 11:case 8:s=12
 return A.k(A.fP(),$async$w7)
 case 12:k=a0
 h=k
-h=h==null?null:h.c
-if(h==null){h=k
 h=h==null?null:h.b
+if(h==null){h=k
+h=h==null?null:h.c
 e=h}else e=h
 j=e==null?"Explorer":e
 h=m.c
@@ -125524,8 +125524,8 @@ $S:0}
 A.aMs.prototype={
 $0(){var s=this.a,r=this.b,q=r==null,p=q?null:r.cy
 s.d=p===!0
-p=q?null:r.c
-if(p==null)r=q?null:r.b
+p=q?null:r.b
+if(p==null)r=q?null:r.c
 else r=p
 s.r=r==null?"Explorer":r
 s.e=this.c
