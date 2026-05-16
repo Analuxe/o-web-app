@@ -367,7 +367,7 @@ class DummyDataService {
       ];
 
       for (var conn in connections) {
-        await _client.from('connections').insert(conn);
+        await _client.from('connections').upsert(conn, onConflict: 'sender_id, receiver_id');
       }
 
       // Add messages for the accepted connection with Marcus
