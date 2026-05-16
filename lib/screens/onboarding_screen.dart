@@ -5,6 +5,7 @@ import 'package:o_web/services/supabase_service.dart';
 import 'package:go_router/go_router.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:o_web/widgets/tag_selector.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -88,16 +89,21 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         final position = await Geolocator.getCurrentPosition();
         setState(() => _currentPosition = position);
         
-        // Try to get zipcode from coordinates
-        try {
-          List<Placemark> placemarks = await placemarkFromCoordinates(position.latitude, position.longitude);
-          if (placemarks.isNotEmpty && placemarks.first.postalCode != null) {
-            setState(() {
-              _zipcodeController.text = placemarks.first.postalCode!;
-            });
+        // Reverse geocoding (finding zipcode from lat/lng) is not supported on Web via the geocoding package.
+        if (!kIsWeb) {
+          try {
+            List<Placemark> placemarks = await placemarkFromCoordinates(position.latitude, position.longitude);
+            if (placemarks.isNotEmpty) {
+              final zip = placemarks.first.postalCode;
+              if (zip != null && zip.isNotEmpty) {
+                setState(() {
+                  _zipcodeController.text = zip;
+                });
+              }
+            }
+          } catch (geocodingError) {
+            safeLog("Geocoding failed: $geocodingError");
           }
-        } catch (e) {
-          safeLog("Geocoding failed: $e");
         }
       }
     } catch (e) {

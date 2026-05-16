@@ -4,6 +4,7 @@ import 'package:o_web/services/supabase_service.dart';
 import 'package:go_router/go_router.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -46,11 +47,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (permission == LocationPermission.whileInUse || permission == LocationPermission.always) {
         final position = await Geolocator.getCurrentPosition();
         
-        List<Placemark> placemarks = await placemarkFromCoordinates(position.latitude, position.longitude);
-        if (placemarks.isNotEmpty && placemarks.first.postalCode != null) {
-          setState(() {
-            _zipcodeController.text = placemarks.first.postalCode!;
-          });
+        // Reverse geocoding (finding zipcode from lat/lng) is not supported on Web via the geocoding package.
+        // We'll try it on mobile/desktop, but skip or handle gracefully on web.
+        if (!kIsWeb) {
+          try {
+            List<Placemark> placemarks = await placemarkFromCoordinates(position.latitude, position.longitude);
+            if (placemarks.isNotEmpty) {
+              final zip = placemarks.first.postalCode;
+              if (zip != null && zip.isNotEmpty) {
+                setState(() {
+                  _zipcodeController.text = zip;
+                });
+              }
+            }
+          } catch (geocodingError) {
+            // Log it but don't fail the whole process - we still have the lat/lng
+            debugPrint('Geocoding failed: $geocodingError');
+          }
         }
         
         await SupabaseService.updateProfile({
@@ -61,9 +74,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Location updated successfully!'), backgroundColor: Colors.green),
+            const SnackBar(
+              content: Text('Location and coordinates updated!'), 
+              backgroundColor: Colors.green
+            ),
           );
         }
+      } else {
+        throw 'Location permission denied. Please enable it in settings.';
       }
     } catch (e) {
       if (mounted) {
@@ -201,11 +219,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ),
                 value: _isDiscoverable,
-                activeColor: OTheme.neonPink,
+                activeThumbColor: OTheme.neonPink,
                 onChanged: (val) async {
                   setState(() => _isDiscoverable = val);
                   await SupabaseService.updateProfile({'is_discoverable': val});
-                  if (mounted) {
+                  if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(val ? 'Profile is now visible' : 'Profile is now hidden from discovery'),

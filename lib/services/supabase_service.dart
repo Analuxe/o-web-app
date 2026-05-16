@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/foundation.dart';
 import 'package:o_web/models/profile.dart';
 import 'package:o_web/models/hub_post.dart';
+import 'package:o_web/services/moderation_service.dart';
 
 export 'package:o_web/models/profile.dart';
 export 'package:o_web/models/hub_post.dart';
@@ -165,6 +166,12 @@ class SupabaseService {
   }
 
   static Future<String> uploadAvatar(String userId, Uint8List bytes, String fileName) async {
+    // 1. Pre-moderation check
+    final isSafe = await ModerationService.isImageSafe(bytes);
+    if (!isSafe) {
+      throw Exception('Image rejected by safety filters. Please upload a compliant photo.');
+    }
+
     final path = '$userId/$fileName';
     
     await client.storage
@@ -177,6 +184,12 @@ class SupabaseService {
   }
 
   static Future<String> uploadGalleryImage(String userId, Uint8List bytes, String fileName) async {
+    // 1. Pre-moderation check
+    final isSafe = await ModerationService.isImageSafe(bytes);
+    if (!isSafe) {
+      throw Exception('Image rejected by safety filters. Please upload a compliant photo.');
+    }
+
     final path = '$userId/$fileName';
     
     await client.storage
@@ -189,6 +202,12 @@ class SupabaseService {
   }
 
   static Future<String> uploadChatMedia(String userId, Uint8List bytes, String fileName) async {
+    // 1. Pre-moderation check
+    final isSafe = await ModerationService.isImageSafe(bytes);
+    if (!isSafe) {
+      throw Exception('Image rejected by safety filters.');
+    }
+
     final path = '$userId/$fileName';
     
     await client.storage
@@ -213,7 +232,9 @@ class SupabaseService {
   }
 
   static Future<void> sendMessage(String receiverId, String content, {String? mediaUrl, String? mediaType}) async {
-    final myId = client.auth.currentUser!.id;
+    final user = client.auth.currentUser;
+    if (user == null) throw Exception('Authentication required to send messages.');
+    final myId = user.id;
     final payload = {
       'sender_id': myId,
       'receiver_id': receiverId,
@@ -266,7 +287,9 @@ class SupabaseService {
   }
 
   static Future<void> extendVine(String targetUserId) async {
-    final myId = client.auth.currentUser!.id;
+    final user = client.auth.currentUser;
+    if (user == null) return;
+    final myId = user.id;
     await client.from('connections').upsert({
       'sender_id': myId,
       'receiver_id': targetUserId,
@@ -275,7 +298,9 @@ class SupabaseService {
   }
 
   static Future<void> skipUser(String targetUserId) async {
-    final myId = client.auth.currentUser!.id;
+    final user = client.auth.currentUser;
+    if (user == null) return;
+    final myId = user.id;
     // Mark as 'skipped' so we can filter them out later
     await client.from('connections').upsert({
       'sender_id': myId,
@@ -315,7 +340,9 @@ class SupabaseService {
 
   // Safety Logic
   static Future<void> blockUser(String targetUserId) async {
-    final myId = client.auth.currentUser!.id;
+    final user = client.auth.currentUser;
+    if (user == null) return;
+    final myId = user.id;
     await client.from('blocked_users').insert({
       'blocker_id': myId,
       'blocked_id': targetUserId,
@@ -369,7 +396,9 @@ class SupabaseService {
   }
 
   static Future<void> reportUser(String targetUserId, String reason, String details) async {
-    final myId = client.auth.currentUser!.id;
+    final user = client.auth.currentUser;
+    if (user == null) return;
+    final myId = user.id;
     await client.from('reports').insert({
       'reporter_id': myId,
       'reported_id': targetUserId,
@@ -379,7 +408,9 @@ class SupabaseService {
   }
 
   static Future<void> submitThumbsDown(String targetUserId) async {
-    final myId = client.auth.currentUser!.id;
+    final user = client.auth.currentUser;
+    if (user == null) return;
+    final myId = user.id;
     
     // Check if report already exists to prevent duplicates
     final existing = await client.from('reputation_reports')
@@ -560,6 +591,12 @@ class SupabaseService {
   }
 
   static Future<String> uploadHubMedia(Uint8List bytes, String fileName) async {
+    // 1. Pre-moderation check
+    final isSafe = await ModerationService.isImageSafe(bytes);
+    if (!isSafe) {
+      throw Exception('Hub content must comply with platform safety guidelines.');
+    }
+
     final path = 'hub/${DateTime.now().millisecondsSinceEpoch}_$fileName';
     
     // Using dedicated 'hub_content' bucket for platform news and updates.

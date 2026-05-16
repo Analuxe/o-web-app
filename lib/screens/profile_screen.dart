@@ -406,6 +406,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           side: const BorderSide(color: OTheme.neonPink),
                         ),
                       ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Images are moderated for safety.',
+                        style: TextStyle(color: Colors.white24, fontSize: 10),
+                      ),
                     ],
                     if (_profile?.isVerified == true) ...[
                       const SizedBox(height: 12),
@@ -560,6 +565,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       )
                     else
                       const Text('No photos in gallery', style: TextStyle(color: Colors.white24, fontSize: 16)),
+
+                    const SizedBox(height: 8),
+                    const Text(
+                      'All gallery photos are subject to automated moderation.',
+                      style: TextStyle(color: Colors.white24, fontSize: 10),
+                    ),
 
                     const SizedBox(height: 32),
                     

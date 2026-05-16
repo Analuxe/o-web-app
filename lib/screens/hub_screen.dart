@@ -533,6 +533,11 @@ class _CreatePostDialogState extends State<_CreatePostDialog> {
                 ),
               ],
             ),
+            const SizedBox(height: 8),
+            const Text(
+              'Hub media is screened for platform compliance.',
+              style: TextStyle(color: Colors.white24, fontSize: 10),
+            ),
             if (_selectedFileBytes != null) ...[
               const SizedBox(height: 12),
               Container(

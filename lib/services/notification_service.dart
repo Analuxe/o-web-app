@@ -2,7 +2,6 @@ import 'package:o_web/utils/logger.dart';
 // ignore: depend_on_referenced_packages
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/foundation.dart';
 import 'package:o_web/services/supabase_service.dart';
 
 class NotificationService {
