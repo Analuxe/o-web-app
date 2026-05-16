@@ -2,9 +2,11 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/foundation.dart';
 import 'package:o_web/models/profile.dart';
 import 'package:o_web/models/hub_post.dart';
+import 'package:o_web/models/app_notification.dart';
 
 export 'package:o_web/models/profile.dart';
 export 'package:o_web/models/hub_post.dart';
+export 'package:o_web/models/app_notification.dart';
 
 class SupabaseService {
   static Future<void> initialize() async {
@@ -535,5 +537,138 @@ class SupabaseService {
       'messages_count': messages.length,
       'notice': 'This export contains your primary profile data and activity counts. For a full message log, contact support.',
     };
+  }
+
+  // ── Notification Logic ────────────────────────────────────────────────────
+
+  /// Real-time stream of all notifications for the current user.
+  static Stream<List<Map<String, dynamic>>> getNotificationsStream() {
+    final myId = client.auth.currentUser?.id;
+    if (myId == null) return const Stream.empty();
+
+    return client
+        .from('notifications')
+        .stream(primaryKey: ['id'])
+        .eq('user_id', myId)
+        .order('created_at', ascending: false);
+  }
+
+  /// Create a notification for another user.
+  static Future<void> createNotification({
+    required String targetUserId,
+    required String type,
+    required String title,
+    String? body,
+    Map<String, dynamic>? data,
+  }) async {
+    try {
+      await client.from('notifications').insert({
+        'user_id': targetUserId,
+        'type': type,
+        'title': title,
+        'body': body,
+        'data': data ?? {},
+      });
+    } catch (e) {
+      debugPrint('Error creating notification: $e');
+    }
+  }
+
+  /// Mark a single notification as read.
+  static Future<void> markNotificationRead(String notificationId) async {
+    await client
+        .from('notifications')
+        .update({'is_read': true})
+        .eq('id', notificationId);
+  }
+
+  /// Mark all of the current user's notifications as read.
+  static Future<void> markAllNotificationsRead() async {
+    final myId = client.auth.currentUser?.id;
+    if (myId == null) return;
+
+    await client
+        .from('notifications')
+        .update({'is_read': true})
+        .eq('user_id', myId)
+        .eq('is_read', false);
+  }
+
+  // ── Notification Convenience Methods ───────────────────────────────────
+
+  /// Notify a user that they received a match request.
+  static Future<void> notifyMatchRequest(String targetUserId) async {
+    final me = await getMyProfile();
+    if (me == null) return;
+
+    await createNotification(
+      targetUserId: targetUserId,
+      type: 'match_request',
+      title: 'New Match Request',
+      body: '${me.displayName} wants to connect with you.',
+      data: {
+        'source_profile_id': me.id,
+        'source_display_name': me.displayName,
+        'source_avatar_url': me.avatarUrl,
+        'route': '/messaging',
+      },
+    );
+  }
+
+  /// Notify a user that their match request was accepted.
+  static Future<void> notifyMatchAccepted(String targetUserId) async {
+    final me = await getMyProfile();
+    if (me == null) return;
+
+    await createNotification(
+      targetUserId: targetUserId,
+      type: 'match_accepted',
+      title: 'Match Accepted!',
+      body: '${me.displayName} accepted your request. Start chatting!',
+      data: {
+        'source_profile_id': me.id,
+        'source_display_name': me.displayName,
+        'source_avatar_url': me.avatarUrl,
+        'route': '/messaging?id=${me.id}',
+      },
+    );
+  }
+
+  /// Notify a user that they received a new message.
+  static Future<void> notifyNewMessage(String targetUserId) async {
+    final me = await getMyProfile();
+    if (me == null) return;
+
+    await createNotification(
+      targetUserId: targetUserId,
+      type: 'new_message',
+      title: 'New Message',
+      body: '${me.displayName} sent you a message.',
+      data: {
+        'source_profile_id': me.id,
+        'source_display_name': me.displayName,
+        'source_avatar_url': me.avatarUrl,
+        'route': '/messaging?id=${me.id}',
+      },
+    );
+  }
+
+  /// Notify a user that they received a date proposal.
+  static Future<void> notifyDateProposal(String targetUserId) async {
+    final me = await getMyProfile();
+    if (me == null) return;
+
+    await createNotification(
+      targetUserId: targetUserId,
+      type: 'date_proposal',
+      title: 'Date Proposal',
+      body: '${me.displayName} proposed a date!',
+      data: {
+        'source_profile_id': me.id,
+        'source_display_name': me.displayName,
+        'source_avatar_url': me.avatarUrl,
+        'route': '/messaging?id=${me.id}',
+      },
+    );
   }
 }

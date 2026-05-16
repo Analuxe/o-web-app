@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:o_web/theme.dart';
 import 'package:o_web/services/supabase_service.dart';
+import 'package:o_web/widgets/notification_center.dart';
 
 class AppShell extends StatefulWidget {
   final Widget child;
@@ -286,6 +287,39 @@ class TopNavBar extends StatelessWidget {
     this.isDesktop = false,
   });
 
+  void _showNotificationCenter(BuildContext context) {
+    final RenderBox button = context.findRenderObject() as RenderBox;
+    final overlay = Overlay.of(context);
+    final position = button.localToGlobal(Offset.zero);
+
+    late OverlayEntry entry;
+    entry = OverlayEntry(
+      builder: (context) => Stack(
+        children: [
+          // Tap-away dismissal scrim
+          Positioned.fill(
+            child: GestureDetector(
+              onTap: () => entry.remove(),
+              child: Container(color: Colors.black54),
+            ),
+          ),
+          // Notification panel
+          Positioned(
+            top: 72,
+            right: 24,
+            child: Material(
+              color: Colors.transparent,
+              child: NotificationCenter(
+                onClose: () => entry.remove(),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+    overlay.insert(entry);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -312,6 +346,62 @@ class TopNavBar extends StatelessWidget {
               height: 32,
             ),
           const Spacer(),
+
+          // Notification Bell with live unread badge
+          StreamBuilder<List<Map<String, dynamic>>>(
+            stream: SupabaseService.getNotificationsStream(),
+            builder: (context, snapshot) {
+              final unreadCount = (snapshot.data ?? [])
+                  .where((n) => n['is_read'] == false)
+                  .length;
+
+              return IconButton(
+                icon: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Icon(
+                      unreadCount > 0 ? Icons.notifications_active : Icons.notifications_none,
+                      color: unreadCount > 0 ? OTheme.neonPink : Colors.white54,
+                      size: 24,
+                    ),
+                    if (unreadCount > 0)
+                      Positioned(
+                        right: -6,
+                        top: -4,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: OTheme.neonPink,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: OTheme.neonPink.withValues(alpha: 0.5),
+                                blurRadius: 8,
+                                spreadRadius: 1,
+                              ),
+                            ],
+                          ),
+                          constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+                          child: Text(
+                            unreadCount > 9 ? '9+' : '$unreadCount',
+                            style: const TextStyle(
+                              color: Colors.black,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w900,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                tooltip: 'Notifications',
+                onPressed: () => _showNotificationCenter(context),
+              );
+            },
+          ),
+
+          const SizedBox(width: 8),
           IconButton(
             icon: const Icon(Icons.logout_rounded, color: OTheme.neonPink, size: 24),
             tooltip: 'Sign Out',

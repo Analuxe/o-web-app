@@ -473,6 +473,7 @@ class _UserCardState extends State<UserCard> {
   void _handleExtend() async {
     setState(() => _isExtended = true);
     await SupabaseService.extendVine(widget.profile.id);
+    SupabaseService.notifyMatchRequest(widget.profile.id);
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

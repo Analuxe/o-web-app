@@ -176,6 +176,19 @@ class _MessagingScreenState extends State<MessagingScreen> {
 
   void _handleRequest(String requestId, String status) async {
     await SupabaseService.respondToMatchRequest(requestId, status);
+    
+    // Notify the sender that their request was accepted
+    if (status == 'accepted') {
+      // Find the sender ID from the request data
+      final request = _matchRequests.firstWhere((r) => r['id'] == requestId, orElse: () => {});
+      if (request.isNotEmpty && request['sender'] != null) {
+        final senderId = request['sender']['id'] as String?;
+        if (senderId != null) {
+          SupabaseService.notifyMatchAccepted(senderId);
+        }
+      }
+    }
+    
     _loadProfileAndChats(); 
   }
 
@@ -226,6 +239,7 @@ class _MessagingScreenState extends State<MessagingScreen> {
     
     try {
       await SupabaseService.sendMessage(_selectedProfile!.id, content);
+      SupabaseService.notifyNewMessage(_selectedProfile!.id);
       debugPrint('MSG: Message sent successfully to ${_selectedProfile!.displayName}');
     } catch (e) {
       // Force output to both developer console and standard output

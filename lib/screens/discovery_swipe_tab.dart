@@ -51,6 +51,7 @@ class _DiscoverySwipeTabState extends State<DiscoverySwipeTab> {
               context.go('/messaging?id=${profile.id}');
             } else {
               SupabaseService.extendVine(profile.id);
+              SupabaseService.notifyMatchRequest(profile.id);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text("Match Request Sent to ${profile.displayName}!"),
@@ -73,6 +74,7 @@ class _DiscoverySwipeTabState extends State<DiscoverySwipeTab> {
           },
           superlikeAction: () {
              SupabaseService.extendVine(profile.id);
+             SupabaseService.notifyMatchRequest(profile.id);
           },
         ),
       );
