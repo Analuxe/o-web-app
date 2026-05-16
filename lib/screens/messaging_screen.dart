@@ -5,6 +5,7 @@ import 'package:o_web/theme.dart';
 import 'package:o_web/services/supabase_service.dart';
 import 'package:o_web/widgets/report_dialog.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:go_router/go_router.dart';
 
 class MessagingScreen extends StatefulWidget {
   final String? initialProfileId;
