@@ -166,12 +166,22 @@ class SideNavBar extends StatelessWidget {
                     isSelected: GoRouterState.of(context).uri.path == '/discovery',
                     onTap: isDrawer ? () => Navigator.pop(context) : null,
                   ),
-                  _NavButton(
-                    icon: Icons.chat_bubble_outline,
-                    label: 'Messaging',
-                    path: '/messaging',
-                    isSelected: GoRouterState.of(context).uri.path == '/messaging',
-                    onTap: isDrawer ? () => Navigator.pop(context) : null,
+                  StreamBuilder<List<Map<String, dynamic>>>(
+                    stream: SupabaseService.getUnreadMessagesStream(),
+                    builder: (context, snapshot) {
+                      int unread = 0;
+                      if (snapshot.hasData) {
+                        unread = snapshot.data!.where((m) => m['is_read'] == false).length;
+                      }
+                      return _NavButton(
+                        icon: Icons.chat_bubble_outline,
+                        label: 'Messaging',
+                        path: '/messaging',
+                        isSelected: GoRouterState.of(context).uri.path == '/messaging',
+                        onTap: isDrawer ? () => Navigator.pop(context) : null,
+                        badge: unread,
+                      );
+                    },
                   ),
                   _NavButton(
                     icon: Icons.auto_awesome_outlined,
@@ -227,6 +237,7 @@ class _NavButton extends StatelessWidget {
   final String path;
   final bool isSelected;
   final VoidCallback? onTap;
+  final int badge;
 
   const _NavButton({
     required this.icon,
@@ -234,6 +245,7 @@ class _NavButton extends StatelessWidget {
     required this.path,
     required this.isSelected,
     this.onTap,
+    this.badge = 0,
   });
 
   @override
@@ -260,14 +272,38 @@ class _NavButton extends StatelessWidget {
                 size: 24,
               ),
               const SizedBox(width: 16),
-              Text(
-                label,
-                style: TextStyle(
-                  color: isSelected ? OTheme.neonPink : Colors.white70,
-                  fontSize: 16,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    color: isSelected ? OTheme.neonPink : Colors.white70,
+                    fontSize: 16,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                  ),
                 ),
               ),
+              if (badge > 0)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: OTheme.neonPink,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: OTheme.neonPink.withValues(alpha: 0.5),
+                        blurRadius: 6,
+                      ),
+                    ],
+                  ),
+                  child: Text(
+                    badge > 99 ? '99+' : '$badge',
+                    style: const TextStyle(
+                      color: Colors.black,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
             ],
           ),
         ),

@@ -106,6 +106,10 @@ class _MessagingScreenState extends State<MessagingScreen> {
       }
 
       if (mounted) {
+        // Mark messages as read for the auto-selected conversation
+        if (selectedProfile != null) {
+          SupabaseService.markMessagesAsRead(selectedProfile.id);
+        }
         setState(() {
           _myProfile = myProfile;
           _chats = chats;
@@ -139,6 +143,8 @@ class _MessagingScreenState extends State<MessagingScreen> {
 
   void _openChat(Profile profile) {
     debugPrint('MSG: Manually opening chat with ${profile.displayName}');
+    // Mark their messages to us as read
+    SupabaseService.markMessagesAsRead(profile.id);
     setState(() {
       _selectedProfile = profile;
       _searchController.clear();
@@ -394,22 +400,83 @@ class _MessagingScreenState extends State<MessagingScreen> {
 
   Widget _buildChatsList() {
     if (_chats.isEmpty) return const Center(child: Text('No conversations yet', style: TextStyle(color: Colors.white24)));
-    return ListView.builder(
-      itemCount: _chats.length,
-      itemBuilder: (context, index) {
-        final profile = _chats[index];
-        return ListTile(
-          selected: _selectedProfile?.id == profile.id,
-          selectedTileColor: OTheme.neonPink.withValues(alpha: 0.1),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-          leading: CircleAvatar(
-            backgroundImage: profile.avatarUrl != null ? NetworkImage(profile.avatarUrl!) : null,
-            backgroundColor: OTheme.deepCharcoal,
-            child: profile.avatarUrl == null ? const Icon(Icons.person, color: OTheme.neonPink) : null,
-          ),
-          title: Text(profile.displayName ?? 'Unknown', style: const TextStyle(color: Colors.white)),
-          subtitle: const Text('Direct Message', style: TextStyle(color: Colors.white54, fontSize: 12)),
-          onTap: () => _openChat(profile),
+    
+    return StreamBuilder<List<Map<String, dynamic>>>(
+      stream: SupabaseService.getUnreadMessagesStream(),
+      builder: (context, unreadSnapshot) {
+        // Build a map of sender_id -> unread count
+        final unreadCounts = <String, int>{};
+        if (unreadSnapshot.hasData) {
+          for (final msg in unreadSnapshot.data!) {
+            if (msg['is_read'] == false) {
+              final senderId = msg['sender_id'] as String;
+              unreadCounts[senderId] = (unreadCounts[senderId] ?? 0) + 1;
+            }
+          }
+        }
+
+        return ListView.builder(
+          itemCount: _chats.length,
+          itemBuilder: (context, index) {
+            final profile = _chats[index];
+            final unread = unreadCounts[profile.id] ?? 0;
+            
+            return ListTile(
+              selected: _selectedProfile?.id == profile.id,
+              selectedTileColor: OTheme.neonPink.withValues(alpha: 0.1),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+              leading: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  CircleAvatar(
+                    backgroundImage: profile.avatarUrl != null ? NetworkImage(profile.avatarUrl!) : null,
+                    backgroundColor: OTheme.deepCharcoal,
+                    child: profile.avatarUrl == null ? const Icon(Icons.person, color: OTheme.neonPink) : null,
+                  ),
+                  if (unread > 0)
+                    Positioned(
+                      right: -4,
+                      top: -4,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: OTheme.neonPink,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: OTheme.neonPink.withValues(alpha: 0.6),
+                              blurRadius: 6,
+                            ),
+                          ],
+                        ),
+                        constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+                        child: Text(
+                          unread > 9 ? '9+' : '$unread',
+                          style: const TextStyle(color: Colors.black, fontSize: 10, fontWeight: FontWeight.w900),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              title: Text(
+                profile.displayName ?? 'Unknown',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: unread > 0 ? FontWeight.bold : FontWeight.normal,
+                ),
+              ),
+              subtitle: Text(
+                unread > 0 ? '$unread new message${unread == 1 ? '' : 's'}' : 'Direct Message',
+                style: TextStyle(
+                  color: unread > 0 ? OTheme.neonPink : Colors.white54,
+                  fontSize: 12,
+                  fontWeight: unread > 0 ? FontWeight.w600 : FontWeight.normal,
+                ),
+              ),
+              onTap: () => _openChat(profile),
+            );
+          },
         );
       },
     );
@@ -464,11 +531,14 @@ class _MessagingScreenState extends State<MessagingScreen> {
                 itemCount: conversationMessages.length,
                 itemBuilder: (context, index) {
                   final m = conversationMessages[index];
+                  final isMe = m['sender_id'] == SupabaseService.client.auth.currentUser!.id;
                   return ChatMessage(
                     text: m['content'] ?? '', 
-                    isMe: m['sender_id'] == SupabaseService.client.auth.currentUser!.id,
+                    isMe: isMe,
                     mediaUrl: m['media_url'],
                     mediaType: m['media_type'],
+                    isRead: isMe ? (m['is_read'] ?? false) : null,
+                    isLastFromMe: isMe && index == conversationMessages.length - 1,
                   );
                 },
               );
@@ -571,78 +641,118 @@ class ChatMessage extends StatelessWidget {
   final bool isMe;
   final String? mediaUrl;
   final String? mediaType;
-  const ChatMessage({super.key, required this.text, required this.isMe, this.mediaUrl, this.mediaType});
+  final bool? isRead;
+  final bool isLastFromMe;
+  const ChatMessage({
+    super.key,
+    required this.text,
+    required this.isMe,
+    this.mediaUrl,
+    this.mediaType,
+    this.isRead,
+    this.isLastFromMe = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     final isProposal = mediaType == 'proposal';
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft, 
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 16), 
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), 
-        decoration: BoxDecoration(
-          color: isProposal ? null : (isMe ? OTheme.neonPink : OTheme.deepCharcoal),
-          gradient: isProposal 
-            ? const LinearGradient(
-                colors: [OTheme.neonPink, Color(0xFFFF69B4)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              )
-            : null,
-          borderRadius: BorderRadius.circular(16).copyWith(
-            bottomRight: isMe ? const Radius.circular(0) : const Radius.circular(16), 
-            bottomLeft: isMe ? const Radius.circular(16) : const Radius.circular(0)
-          ),
-          boxShadow: isProposal ? [
-            BoxShadow(
-              color: OTheme.neonPink.withValues(alpha: 0.3),
-              blurRadius: 8,
-              spreadRadius: 2,
-            )
-          ] : null,
-        ), 
-        constraints: const BoxConstraints(maxWidth: 400), 
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (isProposal) ...[
-              const Row(
-                children: [
-                  Icon(Icons.auto_awesome, color: Colors.white, size: 16),
-                  SizedBox(width: 8),
+      child: Column(
+        crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        children: [
+          Container(
+            margin: EdgeInsets.only(bottom: isLastFromMe ? 4 : 16), 
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), 
+            decoration: BoxDecoration(
+              color: isProposal ? null : (isMe ? OTheme.neonPink : OTheme.deepCharcoal),
+              gradient: isProposal 
+                ? const LinearGradient(
+                    colors: [OTheme.neonPink, Color(0xFFFF69B4)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  )
+                : null,
+              borderRadius: BorderRadius.circular(16).copyWith(
+                bottomRight: isMe ? const Radius.circular(0) : const Radius.circular(16), 
+                bottomLeft: isMe ? const Radius.circular(16) : const Radius.circular(0)
+              ),
+              boxShadow: isProposal ? [
+                BoxShadow(
+                  color: OTheme.neonPink.withValues(alpha: 0.3),
+                  blurRadius: 8,
+                  spreadRadius: 2,
+                )
+              ] : null,
+            ), 
+            constraints: const BoxConstraints(maxWidth: 400), 
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (isProposal) ...[
+                  const Row(
+                    children: [
+                      Icon(Icons.auto_awesome, color: Colors.white, size: 16),
+                      SizedBox(width: 8),
+                      Text(
+                        'O ADMIN PROPOSAL',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.0,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                if (mediaUrl != null && mediaType == 'image') ...[
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(mediaUrl!, fit: BoxFit.cover),
+                  ),
+                  if (text.isNotEmpty) const SizedBox(height: 8),
+                ],
+                if (text.isNotEmpty)
                   Text(
-                    'O ADMIN PROPOSAL',
+                    text, 
                     style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1.0,
+                      color: isProposal ? Colors.white : (isMe ? Colors.black : Colors.white), 
+                      fontSize: 16,
+                      fontWeight: isProposal ? FontWeight.bold : FontWeight.normal,
+                    )
+                  ),
+              ],
+            )
+          ),
+          // Read receipt indicator — only shown on the last message sent by the current user
+          if (isMe && isLastFromMe) ...[
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16, right: 4),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    isRead == true ? Icons.done_all : Icons.done,
+                    size: 14,
+                    color: isRead == true ? OTheme.neonPink : Colors.white38,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    isRead == true ? 'Seen' : 'Sent',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: isRead == true ? OTheme.neonPink : Colors.white24,
+                      fontWeight: isRead == true ? FontWeight.w600 : FontWeight.normal,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
-            ],
-            if (mediaUrl != null && mediaType == 'image') ...[
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.network(mediaUrl!, fit: BoxFit.cover),
-              ),
-              if (text.isNotEmpty) const SizedBox(height: 8),
-            ],
-            if (text.isNotEmpty)
-              Text(
-                text, 
-                style: TextStyle(
-                  color: isProposal ? Colors.white : (isMe ? Colors.black : Colors.white), 
-                  fontSize: 16,
-                  fontWeight: isProposal ? FontWeight.bold : FontWeight.normal,
-                )
-              ),
+            ),
           ],
-        )
+        ],
       )
     );
   }

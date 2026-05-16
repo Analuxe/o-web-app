@@ -194,6 +194,36 @@ class SupabaseService {
     return List<Map<String, dynamic>>.from(response);
   }
 
+  /// Mark all messages from a specific sender as read (call when opening a conversation).
+  static Future<void> markMessagesAsRead(String senderUserId) async {
+    final myId = client.auth.currentUser?.id;
+    if (myId == null) return;
+
+    try {
+      await client
+          .from('messages')
+          .update({'is_read': true})
+          .eq('sender_id', senderUserId)
+          .eq('receiver_id', myId)
+          .eq('is_read', false);
+    } catch (e) {
+      debugPrint('Error marking messages as read: $e');
+    }
+  }
+
+  /// Stream the full messages table for read-receipt calculations.
+  /// Returns only messages where the current user is the receiver and is_read is false.
+  static Stream<List<Map<String, dynamic>>> getUnreadMessagesStream() {
+    final myId = client.auth.currentUser?.id;
+    if (myId == null) return const Stream.empty();
+
+    return client
+        .from('messages')
+        .stream(primaryKey: ['id'])
+        .eq('receiver_id', myId)
+        .order('created_at', ascending: false);
+  }
+
   static Future<void> extendVine(String targetUserId) async {
     final myId = client.auth.currentUser!.id;
     await client.from('connections').upsert({
