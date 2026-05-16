@@ -314,6 +314,7 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> with SingleTickerProv
           itemCount: profiles.length,
           itemBuilder: (context, index) => UserCard(
             profile: profiles[index],
+            myProfile: _myProfile,
             isCurrentUserVerified: _myProfile?.isVerified ?? false,
             canMessageAnyone: _myProfile?.canMessageAnyone ?? false,
             onBlocked: () {
@@ -393,6 +394,7 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> with SingleTickerProv
           itemCount: profiles.length,
           itemBuilder: (context, index) => UserCard(
             profile: profiles[index],
+            myProfile: _myProfile,
             isCurrentUserVerified: _myProfile?.isVerified ?? false,
             canMessageAnyone: _myProfile?.canMessageAnyone ?? false,
             distanceMiles: (_currentPosition != null && profiles[index].latitude != null && profiles[index].longitude != null)
@@ -425,6 +427,7 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> with SingleTickerProv
 
 class UserCard extends StatefulWidget {
   final Profile profile;
+  final Profile? myProfile;
   final bool isCurrentUserVerified;
   final bool canMessageAnyone;
   final double? distanceMiles;
@@ -432,6 +435,7 @@ class UserCard extends StatefulWidget {
   const UserCard({
     super.key, 
     required this.profile, 
+    this.myProfile,
     this.isCurrentUserVerified = false,
     this.canMessageAnyone = false,
     this.distanceMiles,
@@ -739,6 +743,71 @@ class _UserCardState extends State<UserCard> {
                   ),
                 ),
               ),
+            // Compatibility Score Badge
+            if (widget.myProfile != null) ...[
+              Builder(
+                builder: (context) {
+                  final rawScore = widget.myProfile!.getCompatibilityScore(widget.profile);
+                  if (rawScore <= 0) return const SizedBox.shrink();
+                  
+                  // Normalize: cap at 100, treat anything 80+ as excellent
+                  final percent = (rawScore.clamp(0, 100)) / 100.0;
+                  final displayScore = (percent * 100).round();
+                  
+                  // Color based on score level
+                  final Color scoreColor;
+                  if (displayScore >= 70) {
+                    scoreColor = const Color(0xFFFFD700); // Gold — great match
+                  } else if (displayScore >= 40) {
+                    scoreColor = OTheme.neonPink; // Pink — good match
+                  } else {
+                    scoreColor = Colors.white54; // Neutral — low match
+                  }
+
+                  return Positioned(
+                    top: 12,
+                    right: 12,
+                    child: Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.black.withValues(alpha: 0.7),
+                        boxShadow: displayScore >= 40 ? [
+                          BoxShadow(
+                            color: scoreColor.withValues(alpha: 0.4),
+                            blurRadius: 8,
+                          ),
+                        ] : null,
+                      ),
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          SizedBox(
+                            width: 38,
+                            height: 38,
+                            child: CircularProgressIndicator(
+                              value: percent,
+                              strokeWidth: 3,
+                              backgroundColor: Colors.white.withValues(alpha: 0.1),
+                              valueColor: AlwaysStoppedAnimation<Color>(scoreColor),
+                            ),
+                          ),
+                          Text(
+                            '$displayScore',
+                            style: TextStyle(
+                              color: scoreColor,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
           ],
         ),
       ),

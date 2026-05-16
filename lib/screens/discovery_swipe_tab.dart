@@ -6,12 +6,14 @@ import 'package:go_router/go_router.dart';
 
 class DiscoverySwipeTab extends StatefulWidget {
   final List<Profile> profiles;
+  final Profile? myProfile;
   final bool isCurrentUserVerified;
   final bool canMessageAnyone;
 
   const DiscoverySwipeTab({
     super.key,
     required this.profiles,
+    this.myProfile,
     this.isCurrentUserVerified = false,
     this.canMessageAnyone = false,
   });
@@ -130,7 +132,7 @@ class _DiscoverySwipeTabState extends State<DiscoverySwipeTab> {
                     matchEngine: _matchEngine!,
                     itemBuilder: (BuildContext context, int index) {
                       final profile = _swipeItems[index].content as Profile;
-                      return _SwipeCard(profile: profile);
+                      return _SwipeCard(profile: profile, myProfile: widget.myProfile);
                     },
                     onStackFinished: () {
                       setState(() {
@@ -179,8 +181,9 @@ class _DiscoverySwipeTabState extends State<DiscoverySwipeTab> {
 
 class _SwipeCard extends StatefulWidget {
   final Profile profile;
+  final Profile? myProfile;
 
-  const _SwipeCard({required this.profile});
+  const _SwipeCard({required this.profile, this.myProfile});
 
   @override
   State<_SwipeCard> createState() => _SwipeCardState();
@@ -286,6 +289,68 @@ class _SwipeCardState extends State<_SwipeCard> {
                         ),
                       ),
                     ),
+                  ),
+                // Compatibility Score Badge
+                if (widget.myProfile != null)
+                  Builder(
+                    builder: (context) {
+                      final rawScore = widget.myProfile!.getCompatibilityScore(profile);
+                      if (rawScore <= 0) return const SizedBox.shrink();
+                      
+                      final percent = (rawScore.clamp(0, 100)) / 100.0;
+                      final displayScore = (percent * 100).round();
+                      
+                      final Color scoreColor;
+                      if (displayScore >= 70) {
+                        scoreColor = const Color(0xFFFFD700);
+                      } else if (displayScore >= 40) {
+                        scoreColor = OTheme.neonPink;
+                      } else {
+                        scoreColor = Colors.white54;
+                      }
+
+                      return Positioned(
+                        top: 32,
+                        right: 16,
+                        child: Container(
+                          width: 52,
+                          height: 52,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.black.withValues(alpha: 0.7),
+                            boxShadow: displayScore >= 40 ? [
+                              BoxShadow(
+                                color: scoreColor.withValues(alpha: 0.4),
+                                blurRadius: 10,
+                              ),
+                            ] : null,
+                          ),
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              SizedBox(
+                                width: 44,
+                                height: 44,
+                                child: CircularProgressIndicator(
+                                  value: percent,
+                                  strokeWidth: 3,
+                                  backgroundColor: Colors.white.withValues(alpha: 0.1),
+                                  valueColor: AlwaysStoppedAnimation<Color>(scoreColor),
+                                ),
+                              ),
+                              Text(
+                                '$displayScore',
+                                style: TextStyle(
+                                  color: scoreColor,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 Positioned(
                   bottom: 0,

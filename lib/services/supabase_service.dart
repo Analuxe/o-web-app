@@ -2,7 +2,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/foundation.dart';
 import 'package:o_web/models/profile.dart';
 import 'package:o_web/models/hub_post.dart';
-import 'package:o_web/models/app_notification.dart';
 
 export 'package:o_web/models/profile.dart';
 export 'package:o_web/models/hub_post.dart';
@@ -48,6 +47,22 @@ class SupabaseService {
 
   static Future<void> signOut() async {
     await client.auth.signOut();
+  }
+
+  static Future<void> resetPassword(String email) async {
+    // For web apps, you should specify a redirectTo URL that matches your site's URL
+    // and is allowed in the Supabase Dashboard under Auth -> URL Configuration.
+    final String baseUrl = Uri.base.origin;
+    await client.auth.resetPasswordForEmail(
+      email.trim(),
+      redirectTo: kIsWeb ? '$baseUrl/#/reset-password' : null,
+    );
+  }
+
+  static Future<void> updatePassword(String newPassword) async {
+    await client.auth.updateUser(
+      UserAttributes(password: newPassword),
+    );
   }
 
   static Future<bool> isUsernameAvailable(String username) async {

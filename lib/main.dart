@@ -7,6 +7,8 @@ import 'package:o_web/screens/messaging_screen.dart';
 import 'package:o_web/screens/admin_screen.dart';
 import 'package:o_web/screens/profile_screen.dart';
 import 'package:o_web/screens/auth_screen.dart';
+import 'package:o_web/screens/forgot_password_screen.dart';
+import 'package:o_web/screens/reset_password_screen.dart';
 import 'package:o_web/screens/matchmaker_screen.dart';
 
 import 'package:o_web/screens/onboarding_screen.dart';
@@ -25,9 +27,12 @@ final _router = GoRouter(
   redirect: (context, state) async {
     final session = SupabaseService.client.auth.currentSession;
     final bool isLoggingIn = state.matchedLocation == '/auth';
+    final bool isForgotPassword = state.matchedLocation == '/forgot-password';
+    final bool isResetPassword = state.matchedLocation == '/reset-password';
 
     if (session == null) {
-      return isLoggingIn ? null : '/auth';
+      if (isLoggingIn || isForgotPassword || isResetPassword) return null;
+      return '/auth';
     }
 
     // Check if profile is complete
@@ -65,6 +70,14 @@ final _router = GoRouter(
     GoRoute(
       path: '/auth',
       builder: (context, state) => const AuthScreen(),
+    ),
+    GoRoute(
+      path: '/forgot-password',
+      builder: (context, state) => const ForgotPasswordScreen(),
+    ),
+    GoRoute(
+      path: '/reset-password',
+      builder: (context, state) => const ResetPasswordScreen(),
     ),
     GoRoute(
       path: '/onboarding',

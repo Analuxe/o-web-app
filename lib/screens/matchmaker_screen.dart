@@ -407,6 +407,7 @@ class _MatchmakerScreenState extends State<MatchmakerScreen> with SingleTickerPr
     
             return DiscoverySwipeTab(
               profiles: profiles,
+              myProfile: myProfile,
               isCurrentUserVerified: myProfile?.isVerified ?? false,
               canMessageAnyone: myProfile?.canMessageAnyone ?? false,
             );

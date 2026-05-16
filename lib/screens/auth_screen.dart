@@ -262,6 +262,18 @@ class _AuthForm extends StatelessWidget {
           isPassword: true, 
           controller: passwordController
         ),
+        if (!isSignUp) ...[
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: () => context.push('/forgot-password'),
+              child: const Text(
+                'Forgot Password?',
+                style: TextStyle(color: Colors.white38, fontSize: 13),
+              ),
+            ),
+          ),
+        ],
         if (isSignUp) ...[
           const SizedBox(height: 24),
           const _AuthField(
