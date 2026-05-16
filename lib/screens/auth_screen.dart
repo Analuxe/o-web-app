@@ -56,7 +56,26 @@ class _AuthScreenState extends State<AuthScreen> {
       } else {
         await SupabaseService.signIn(_emailController.text, _passwordController.text);
       }
-      if (mounted) GoRouter.of(context).go('/');
+      
+      // Fetch profile for welcome message
+      final profile = await SupabaseService.getMyProfile();
+      final username = profile?.displayName ?? profile?.username ?? 'Explorer';
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Welcome, $username',
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
+            backgroundColor: OTheme.neonPink,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 3),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+        GoRouter.of(context).go('/');
+      }
     } catch (e) {
       String errorMessage = e.toString();
       if (errorMessage.contains('429')) {
