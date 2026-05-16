@@ -55,6 +55,58 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
   }
 
+  void _showVisitorsDialog() async {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: OTheme.deepCharcoal,
+        title: const Text('Recent Visitors', style: TextStyle(color: Colors.white)),
+        content: SizedBox(
+          width: 400,
+          height: 500,
+          child: FutureBuilder<List<Profile>>(
+            future: SupabaseService.getProfileViewers(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator(color: OTheme.neonPink));
+              }
+              if (snapshot.hasError) {
+                return Center(child: Text('Error: ${snapshot.error}', style: const TextStyle(color: Colors.white54)));
+              }
+              final viewers = snapshot.data ?? [];
+              if (viewers.isEmpty) {
+                return const Center(child: Text('No recent visitors yet.', style: TextStyle(color: Colors.white54)));
+              }
+              return ListView.builder(
+                itemCount: viewers.length,
+                itemBuilder: (context, index) {
+                  final viewer = viewers[index];
+                  return ListTile(
+                    leading: CircleAvatar(
+                      backgroundImage: viewer.avatarUrl != null ? NetworkImage(viewer.avatarUrl!) : null,
+                      backgroundColor: OTheme.neonPink.withValues(alpha: 0.1),
+                      child: viewer.avatarUrl == null ? const Icon(Icons.person, color: OTheme.neonPink) : null,
+                    ),
+                    title: Text(viewer.displayName ?? 'User', style: const TextStyle(color: Colors.white)),
+                    subtitle: Text('@${viewer.username ?? 'user'}', style: const TextStyle(color: Colors.white54)),
+                    trailing: const Icon(Icons.chevron_right, color: Colors.white24),
+                    onTap: () {
+                      Navigator.pop(context);
+                      context.push('/profile/${viewer.id}');
+                    },
+                  );
+                },
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
+        ],
+      ),
+    );
+  }
+
 
   @override
   void initState() {
@@ -71,6 +123,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final profile = isMe 
           ? await SupabaseService.getMyProfile() 
           : await SupabaseService.getProfile(widget.userId!);
+
+      if (!isMe && widget.userId != null) {
+        SupabaseService.logProfileView(widget.userId!);
+      }
 
       if (mounted) {
         setState(() {
@@ -268,10 +324,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 if (!_isEditing)
                   Padding(
                     padding: EdgeInsets.only(top: isMobile ? 16 : 0),
-                    child: ElevatedButton.icon(
-                      onPressed: () => setState(() => _isEditing = true),
-                      icon: const Icon(Icons.edit, size: 18),
-                      label: const Text('Edit Profile'),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ElevatedButton.icon(
+                          onPressed: () => setState(() => _isEditing = true),
+                          icon: const Icon(Icons.edit, size: 18),
+                          label: const Text('Edit Profile'),
+                        ),
+                        const SizedBox(width: 12),
+                        OutlinedButton.icon(
+                          onPressed: _showVisitorsDialog,
+                          icon: const Icon(Icons.visibility_outlined, size: 18),
+                          label: const Text('Visitors'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.white70,
+                            side: const BorderSide(color: Colors.white10),
+                          ),
+                        ),
+                      ],
                     ),
                   )
                 else

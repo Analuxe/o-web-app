@@ -26,6 +26,7 @@ class _MessagingScreenState extends State<MessagingScreen> {
   bool _isLoadingProfile = true;
   bool _isSearching = false;
   bool _showRequests = false;
+  bool _showVisitors = false;
   bool _isFetchingInitialProfile = false;
 
   @override
@@ -332,9 +333,11 @@ class _MessagingScreenState extends State<MessagingScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 24.0),
             child: Row(
               children: [
-                _buildTabButton('Messages', !_showRequests && _searchController.text.isEmpty),
+                _buildTabButton('Messages', !_showRequests && !_showVisitors && _searchController.text.isEmpty),
                 const SizedBox(width: 16),
-                _buildTabButton('Requests', _showRequests && _searchController.text.isEmpty, count: _matchRequests.length),
+                _buildTabButton('Requests', _showRequests && !_showVisitors && _searchController.text.isEmpty, count: _matchRequests.length),
+                const SizedBox(width: 16),
+                _buildTabButton('Visitors', _showVisitors && _searchController.text.isEmpty),
               ],
             ),
           ),
@@ -352,6 +355,7 @@ class _MessagingScreenState extends State<MessagingScreen> {
     if (_isLoadingChats) {
       return const Center(child: CircularProgressIndicator(color: OTheme.neonPink));
     }
+    if (_showVisitors) return _buildVisitorsList();
     return _showRequests ? _buildRequestsList() : _buildChatsList();
   }
 
@@ -377,7 +381,12 @@ class _MessagingScreenState extends State<MessagingScreen> {
 
   Widget _buildTabButton(String label, bool isSelected, {int count = 0}) {
     return InkWell(
-      onTap: () => setState(() => _showRequests = label == 'Requests'),
+      onTap: () {
+        setState(() {
+          _showRequests = label == 'Requests';
+          _showVisitors = label == 'Visitors';
+        });
+      },
       child: Column(
         children: [
           Row(
@@ -396,6 +405,42 @@ class _MessagingScreenState extends State<MessagingScreen> {
           if (isSelected) Container(height: 2, width: 20, color: OTheme.neonPink),
         ],
       ),
+    );
+  }
+
+  Widget _buildVisitorsList() {
+    return FutureBuilder<List<Profile>>(
+      future: SupabaseService.getProfileViewers(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator(color: OTheme.neonPink));
+        }
+        if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}', style: const TextStyle(color: Colors.white24)));
+        }
+        final viewers = snapshot.data ?? [];
+        if (viewers.isEmpty) {
+          return const Center(child: Text('No recent visitors yet.', style: TextStyle(color: Colors.white24)));
+        }
+        return ListView.builder(
+          itemCount: viewers.length,
+          itemBuilder: (context, index) {
+            final viewer = viewers[index];
+            return ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+              leading: CircleAvatar(
+                backgroundImage: viewer.avatarUrl != null ? NetworkImage(viewer.avatarUrl!) : null,
+                backgroundColor: OTheme.deepCharcoal,
+                child: viewer.avatarUrl == null ? const Icon(Icons.person, color: OTheme.neonPink) : null,
+              ),
+              title: Text(viewer.displayName ?? 'User', style: const TextStyle(color: Colors.white)),
+              subtitle: Text('@${viewer.username ?? 'user'}', style: const TextStyle(color: Colors.white54, fontSize: 12)),
+              trailing: const Icon(Icons.chevron_right, color: Colors.white24, size: 16),
+              onTap: () => context.push('/profile/${viewer.id}'),
+            );
+          },
+        );
+      },
     );
   }
 

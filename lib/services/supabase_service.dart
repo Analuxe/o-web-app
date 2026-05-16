@@ -165,6 +165,47 @@ class SupabaseService {
         .upsert(fullUpdates);
   }
 
+  static Future<void> logProfileView(String viewedUserId) async {
+    final myId = client.auth.currentUser?.id;
+    if (myId == null || myId == viewedUserId) return;
+
+    try {
+      // Use upsert to only track the LATEST view from this user to avoid duplicates
+      await client.from('profile_views').upsert({
+        'viewer_id': myId,
+        'viewed_id': viewedUserId,
+        'viewed_at': DateTime.now().toIso8601String(),
+      }, onConflict: 'viewer_id, viewed_id');
+    } catch (e) {
+      safeLog('Error logging profile view: $e');
+    }
+  }
+
+  static Future<List<Profile>> getProfileViewers() async {
+    final myId = client.auth.currentUser?.id;
+    if (myId == null) return [];
+
+    try {
+      final response = await client
+          .from('profile_views')
+          .select('*, viewer:profiles!viewer_id(*)')
+          .eq('viewed_id', myId)
+          .order('viewed_at', ascending: false)
+          .limit(50);
+
+      final List<Profile> viewers = [];
+      for (var row in response) {
+        if (row['viewer'] != null) {
+          viewers.add(Profile.fromJson(row['viewer']));
+        }
+      }
+      return viewers;
+    } catch (e) {
+      safeLog('Error getting profile viewers: $e');
+      return [];
+    }
+  }
+
   static Future<String> uploadAvatar(String userId, Uint8List bytes, String fileName) async {
     // 1. Pre-moderation check
     final isSafe = await ModerationService.isImageSafe(bytes);
