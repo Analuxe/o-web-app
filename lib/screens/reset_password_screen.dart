@@ -40,7 +40,13 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
         if (mounted) context.go('/hub');
       });
     } catch (e) {
-      setState(() => _error = e.toString());
+      String errorMessage = e.toString();
+      if (errorMessage.contains('429')) {
+        errorMessage = 'Too many attempts. Please wait a few minutes.';
+      } else if (errorMessage.contains('Auth session missing')) {
+        errorMessage = 'Your reset link has expired or is invalid. Please request a new one.';
+      }
+      setState(() => _error = errorMessage);
     } finally {
       setState(() => _isLoading = false);
     }

@@ -31,7 +31,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       await SupabaseService.resetPassword(_emailController.text);
       setState(() => _isSuccess = true);
     } catch (e) {
-      setState(() => _error = e.toString());
+      String errorMessage = e.toString();
+      if (errorMessage.contains('429')) {
+        errorMessage = 'Too many requests. Please wait a few minutes before trying again.';
+      } else if (errorMessage.contains('Email not found')) {
+        errorMessage = 'No account found with this email address.';
+      }
+      setState(() => _error = errorMessage);
     } finally {
       setState(() => _isLoading = false);
     }
