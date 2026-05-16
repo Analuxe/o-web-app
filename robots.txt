@@ -1,0 +1,4 @@
+# O Platform - Privacy-First
+# This is a private dating platform. No content should be indexed.
+User-agent: *
+Disallow: /
