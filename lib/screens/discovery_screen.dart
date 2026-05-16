@@ -687,7 +687,7 @@ class _UserCardState extends State<UserCard> {
                       const SizedBox(height: 4),
                       Text(
                         widget.distanceMiles != null
-                            ? '${widget.profile.pronouns} • ${widget.distanceMiles!.toStringAsFixed(0)} mi away'
+                            ? '${widget.profile.pronouns} • ${Profile.formatDistanceBucket(widget.distanceMiles!)} away'
                             : '${widget.profile.pronouns} • Nearby',
                         style: const TextStyle(
                           fontSize: 12,

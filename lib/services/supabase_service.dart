@@ -474,6 +474,11 @@ class SupabaseService {
   }
 
   // Storage Logic
+
+  /// @deprecated Use [submitVerification] instead. This method is kept for backwards compatibility.
+  /// Privacy: Returns the storage path (NOT a public URL) to prevent unauthenticated access
+  /// to sensitive government ID images. Use [getVerificationIdUrl] to generate a short-lived
+  /// signed URL for admin review.
   static Future<String> uploadValidationPhoto(List<int> bytes, String extension) async {
     final user = client.auth.currentUser;
     if (user == null) throw Exception('Not authenticated');
@@ -482,7 +487,9 @@ class SupabaseService {
     
     await client.storage.from('validation').uploadBinary(path, Uint8List.fromList(bytes));
     
-    return client.storage.from('validation').getPublicUrl(path);
+    // Privacy: Return the storage PATH, not a public URL.
+    // Admins should use createSignedUrl() for time-limited access.
+    return path;
   }
 
   static Future<void> createProfile(Profile profile) async {

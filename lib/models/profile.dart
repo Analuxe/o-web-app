@@ -1,4 +1,6 @@
 
+import 'dart:math' as math;
+
 class Profile {
   final String id;
   final String? username;
@@ -68,8 +70,10 @@ class Profile {
       galleryUrls: (json['gallery_urls'] as List?)?.cast<String>(),
       prompts: json['prompts'] as Map<String, dynamic>?,
       socialLinks: json['social_links'] as Map<String, dynamic>?,
-      latitude: json['latitude']?.toDouble(),
-      longitude: json['longitude']?.toDouble(),
+      // Privacy: Fuzz coordinates to ~1.1km precision to prevent triangulation attacks.
+      // Exact coordinates are never exposed to other clients.
+      latitude: _fuzzCoord(json['latitude']),
+      longitude: _fuzzCoord(json['longitude']),
       zipcode: json['zipcode'],
       activePathway: json['active_pathway'],
       relationshipStatus: json['relationship_status'],
@@ -84,6 +88,25 @@ class Profile {
       isOnline: json['is_online'] ?? false,
       lastActive: json['last_active'] != null ? DateTime.parse(json['last_active']) : null,
     );
+  }
+
+  /// Privacy: Round coordinate to 2 decimal places (~1.1km / 0.7mi precision).
+  /// This prevents triangulation attacks that could locate users to their exact address.
+  static double? _fuzzCoord(dynamic value) {
+    if (value == null) return null;
+    final v = value.toDouble();
+    return (v * 100).roundToDouble() / 100;
+  }
+
+  /// Privacy: Returns a human-friendly distance bucket instead of exact miles.
+  /// Prevents reverse-engineering of exact GPS positions via distance differencing.
+  static String formatDistanceBucket(double miles) {
+    if (miles < 1) return '< 1 mi';
+    if (miles < 5) return '< 5 mi';
+    if (miles < 15) return '< 15 mi';
+    if (miles < 30) return '< 30 mi';
+    if (miles < 50) return '< 50 mi';
+    return '${(miles / 10).round() * 10}+ mi';
   }
 
   Map<String, dynamic> toJson() {
