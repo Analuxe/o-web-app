@@ -24,6 +24,21 @@
         }
     </script>
     <style>
+        .bg-grid-pattern { background-image: linear-gradient(#FF4FA3 1px, transparent 1px), linear-gradient(90deg, #FF4FA3 1px, transparent 1px); background-size: 40px 40px; }
+        .pos-nyc { top: 25%; left: 75%; transform: translate(-50%, -50%); }
+        .pos-dc { top: 45%; left: 70%; transform: translate(-50%, -50%); }
+        .pos-atl { top: 60%; left: 55%; transform: translate(-50%, -50%); }
+        .pos-ftl { top: 75%; left: 65%; transform: translate(-50%, -50%); }
+        .anim-dur-3s { animation-duration: 3s; }
+        .anim-dur-3-5s { animation-duration: 3.5s; }
+        .anim-dur-4s { animation-duration: 4s; }
+        .anim-delay-0-5s { animation-delay: 0.5s; }
+        .anim-delay-1s { animation-delay: 1s; }
+        .anim-delay-1-5s { animation-delay: 1.5s; }
+        .path-glow { filter: drop-shadow(0 0 8px #FF4FA3); }
+        .pos-center-vertical { top: calc(50% - 24px); }
+        .bg-barcode { background-image: repeating-linear-gradient(90deg, #000, #000 4px, transparent 4px, transparent 8px); }
+
         body { font-family: 'Inter', sans-serif; background-color: #0D0D0D; color: white; overflow: hidden; margin: 0; }
         .slide { 
             position: absolute;
@@ -240,7 +255,7 @@
         <h1 class="text-5xl font-black text-white mb-12 tracking-tight">The Geo-Hub Strategy</h1>
         <div class="w-full max-w-5xl aspect-[21/9] bg-pure-black rounded-3xl border border-gray-800 relative flex items-center justify-center overflow-hidden shadow-2xl">
             <!-- Grid overlay -->
-            <div class="absolute inset-0 opacity-10" style="background-image: linear-gradient(#FF4FA3 1px, transparent 1px), linear-gradient(90deg, #FF4FA3 1px, transparent 1px); background-size: 40px 40px;"></div>
+            <div class="absolute inset-0 opacity-10 bg-grid-pattern"></div>
             
             <div class="relative w-full h-full overflow-hidden">
                 <!-- SVG Landmass (East Coast Silhouette) -->
@@ -262,29 +277,29 @@
                 </style>
 
                 <!-- Map Node: NYC -->
-                <div class="absolute" style="top: 25%; left: 75%; transform: translate(-50%, -50%);">
-                    <div class="w-32 h-32 bg-neon-pink/10 rounded-full animate-ping absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" style="animation-duration: 3s;"></div>
+                <div class="absolute pos-nyc">
+                    <div class="w-32 h-32 bg-neon-pink/10 rounded-full animate-ping absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 anim-dur-3s"></div>
                     <div class="w-5 h-5 bg-white rounded-full shadow-[0_0_20px_#FFFFFF] relative z-10 border-4 border-neon-pink"></div>
                     <div class="absolute top-2 left-6 text-white font-black text-xl tracking-wider drop-shadow-md">NYC</div>
                 </div>
 
                 <!-- Map Node: DC -->
-                <div class="absolute" style="top: 45%; left: 70%; transform: translate(-50%, -50%);">
-                    <div class="w-24 h-24 bg-neon-pink/10 rounded-full animate-ping absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" style="animation-duration: 3.5s; animation-delay: 0.5s;"></div>
+                <div class="absolute pos-dc">
+                    <div class="w-24 h-24 bg-neon-pink/10 rounded-full animate-ping absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 anim-dur-3-5s anim-delay-0-5s"></div>
                     <div class="w-4 h-4 bg-neon-pink rounded-full shadow-[0_0_15px_#FF4FA3] relative z-10"></div>
                     <div class="absolute top-2 left-5 text-white font-bold text-lg tracking-wider drop-shadow-md">DC</div>
                 </div>
 
                 <!-- Map Node: Atlanta -->
-                <div class="absolute" style="top: 60%; left: 55%; transform: translate(-50%, -50%);">
-                    <div class="w-40 h-40 bg-neon-pink/10 rounded-full animate-ping absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" style="animation-duration: 4s; animation-delay: 1s;"></div>
+                <div class="absolute pos-atl">
+                    <div class="w-40 h-40 bg-neon-pink/10 rounded-full animate-ping absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 anim-dur-4s anim-delay-1s"></div>
                     <div class="w-5 h-5 bg-neon-pink rounded-full shadow-[0_0_15px_#FF4FA3] relative z-10 border-2 border-white"></div>
                     <div class="absolute -top-8 -left-12 text-white font-black text-xl tracking-wider drop-shadow-md">ATLANTA</div>
                 </div>
 
                 <!-- Map Node: Fort Lauderdale -->
-                <div class="absolute" style="top: 75%; left: 65%; transform: translate(-50%, -50%);">
-                    <div class="w-24 h-24 bg-neon-pink/10 rounded-full animate-ping absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" style="animation-duration: 3s; animation-delay: 1.5s;"></div>
+                <div class="absolute pos-ftl">
+                    <div class="w-24 h-24 bg-neon-pink/10 rounded-full animate-ping absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 anim-dur-3s anim-delay-1-5s"></div>
                     <div class="w-4 h-4 bg-neon-pink rounded-full shadow-[0_0_15px_#FF4FA3] relative z-10"></div>
                     <div class="absolute -top-8 left-0 text-white font-bold text-lg tracking-wider drop-shadow-md whitespace-nowrap">FORT LAUDERDALE</div>
                 </div>
@@ -355,7 +370,7 @@
             <!-- Smooth Curved Line -->
             <svg class="absolute inset-0 w-full h-full" preserveAspectRatio="none" viewBox="0 0 1000 200">
                 <path d="M 50 100 Q 250 150 500 100 T 950 100" fill="none" stroke="#333" stroke-width="4" stroke-linecap="round"/>
-                <path d="M 50 100 Q 250 150 500 100 T 950 100" fill="none" stroke="#FF4FA3" stroke-width="4" stroke-linecap="round" stroke-dasharray="2000" stroke-dashoffset="0" class="animate-[dash_3s_ease-in-out_infinite]" style="filter: drop-shadow(0 0 8px #FF4FA3);"/>
+                <path d="M 50 100 Q 250 150 500 100 T 950 100" fill="none" stroke="#FF4FA3" stroke-width="4" stroke-linecap="round" stroke-dasharray="2000" stroke-dashoffset="0" class="animate-[dash_3s_ease-in-out_infinite] path-glow"/>
             </svg>
             
             <style>
@@ -366,7 +381,7 @@
                 }
             </style>
             
-            <div class="absolute w-full flex justify-between px-12" style="top: calc(50% - 24px);">
+            <div class="absolute w-full flex justify-between px-12 pos-center-vertical">
                 <!-- Node 1 -->
                 <div class="flex flex-col items-center relative -top-6">
                     <div class="w-8 h-8 rounded-full bg-pure-black border-4 border-neon-pink shadow-[0_0_20px_#FF4FA3] mb-6 relative z-10 flex items-center justify-center">
@@ -381,7 +396,7 @@
                 <!-- Node 2 -->
                 <div class="flex flex-col items-center relative top-2">
                     <div class="w-8 h-8 rounded-full bg-pure-black border-4 border-neon-pink shadow-[0_0_20px_#FF4FA3] mb-6 relative z-10 flex items-center justify-center">
-                        <div class="w-3 h-3 bg-neon-pink rounded-full animate-ping" style="animation-delay: 0.5s;"></div>
+                        <div class="w-3 h-3 bg-neon-pink rounded-full animate-ping anim-delay-0-5s"></div>
                     </div>
                     <div class="text-center absolute top-14 w-40">
                         <h4 class="text-white font-bold text-2xl">Beta Loop</h4>
@@ -466,7 +481,7 @@
                 
                 <div class="w-full relative z-10">
                     <div class="h-20 w-full bg-white rounded-xl mb-4 flex items-center justify-center p-2">
-                        <div class="w-full h-full bg-gray-200" style="background-image: repeating-linear-gradient(90deg, #000, #000 4px, transparent 4px, transparent 8px);"></div>
+                        <div class="w-full h-full bg-gray-200 bg-barcode"></div>
                     </div>
                     <p class="text-center text-gray-500 text-xs uppercase tracking-widest">Apple Wallet / Google Pay</p>
                 </div>
@@ -560,7 +575,7 @@
 
     <!-- Navigation Controls -->
     <div class="absolute bottom-8 left-0 right-0 flex justify-center items-center gap-10 z-50">
-        <button onclick="prevSlide()" id="prevBtn" class="p-3 rounded-full border-2 border-gray-700 text-gray-400 hover:border-white hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:border-gray-700 disabled:hover:text-gray-400">
+        <button onclick="prevSlide()" id="prevBtn" aria-label="Previous Slide" title="Previous Slide" class="p-3 rounded-full border-2 border-gray-700 text-gray-400 hover:border-white hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:border-gray-700 disabled:hover:text-gray-400">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
         </button>
         
@@ -568,7 +583,7 @@
             <!-- Dots generated by JS -->
         </div>
         
-        <button onclick="nextSlide()" id="nextBtn" class="p-3 rounded-full bg-neon-pink text-pure-black hover:bg-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed shadow-[0_0_15px_rgba(255,79,163,0.4)]">
+        <button onclick="nextSlide()" id="nextBtn" aria-label="Next Slide" title="Next Slide" class="p-3 rounded-full bg-neon-pink text-pure-black hover:bg-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed shadow-[0_0_15px_rgba(255,79,163,0.4)]">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7"></path></svg>
         </button>
     </div>

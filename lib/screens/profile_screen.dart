@@ -134,7 +134,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   hintText: 'e.g., Great connection, very respectful...',
                   hintStyle: const TextStyle(color: Colors.white24),
                   filled: true,
-                  fillColor: OTheme.pureBlack,
+                  fillColor: OTheme.black,
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                 ),
               ),
@@ -151,16 +151,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 setDialogState(() => isSubmitting = true);
                 try {
                   await SupabaseService.createEndorsement(widget.userId!, controller.text.trim());
-                  if (mounted) {
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Endorsement request sent!')));
-                    setState(() => _hasEndorsed = true);
-                  }
+                  if (!context.mounted) return;
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Endorsement request sent!')));
+                  setState(() => _hasEndorsed = true);
                 } catch (e) {
                   safeLog('Error endorsing: $e');
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
-                  }
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
                 } finally {
                   if (mounted) setDialogState(() => isSubmitting = false);
                 }
