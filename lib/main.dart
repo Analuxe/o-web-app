@@ -51,7 +51,7 @@ final _router = GoRouter(
 
     // Simple, non-blocking check: if no username, go to onboarding
     if (profile == null || profile.username == null || profile.username!.isEmpty) {
-      if (isOnboarding) return null;
+      if (isOnboarding || isResetPassword) return null;
       return '/onboarding';
     }
 

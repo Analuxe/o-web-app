@@ -54,10 +54,14 @@ class SupabaseService {
   static Future<void> resetPassword(String email) async {
     // For web apps, you should specify a redirectTo URL that matches your site's URL
     // and is allowed in the Supabase Dashboard under Auth -> URL Configuration.
-    final String baseUrl = Uri.base.origin;
+    // GitHub Pages usually has a subpath (e.g. /o-web-app/), so we need to include it.
+    final String fullUrl = Uri.base.toString();
+    final String baseUrl = fullUrl.split('#')[0];
+    final String cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl;
+    
     await client.auth.resetPasswordForEmail(
       email.trim(),
-      redirectTo: kIsWeb ? '$baseUrl/#/reset-password' : null,
+      redirectTo: kIsWeb ? '$cleanBaseUrl/#/reset-password' : null,
     );
   }
 
