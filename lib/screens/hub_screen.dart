@@ -34,7 +34,7 @@ class _HubScreenState extends State<HubScreen> {
       if (mounted) {
         setState(() {
           _isAdmin = profile?.isAdmin ?? false;
-          _displayName = profile?.displayName ?? profile?.username ?? 'Explorer';
+          _displayName = profile?.username ?? profile?.displayName ?? 'Explorer';
           _posts = posts;
           _isLoading = false;
         });

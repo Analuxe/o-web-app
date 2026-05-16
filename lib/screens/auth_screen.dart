@@ -59,7 +59,7 @@ class _AuthScreenState extends State<AuthScreen> {
       
       // Fetch profile for welcome message
       final profile = await SupabaseService.getMyProfile();
-      final username = profile?.displayName ?? profile?.username ?? 'Explorer';
+      final username = profile?.username ?? profile?.displayName ?? 'Explorer';
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
